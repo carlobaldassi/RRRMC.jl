@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Carlo Baldassi">
+  
+  <title>Built-in Graphs - RRRMC.jl</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../assets/Documenter.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Built-in Graphs";
+    var mkdocs_page_input_path = "graphs-builtin.md";
+    var mkdocs_page_url = "/graphs-builtin/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <script src="../assets/mathjaxhelper.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> RRRMC.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../algorithms/">Sampling Algorithms</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../graph-types/">Graph Types</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Built-in Graphs</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#built-in-graphs">Built-in graphs</a></li>
+                
+                    <li><a class="toctree-l4" href="#spin-glass-models">Spin glass models</a></li>
+                
+                    <li><a class="toctree-l4" href="#trivial-models-used-for-testing-and-debugging">Trivial models used for testing and debugging</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../interface/">Graphs Interface</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">RRRMC.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Built-in Graphs</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/carlobaldassi/RRRMC.jl" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='builtin-1'></a></p>
+<h1 id="built-in-graphs">Built-in graphs</h1>
+<p>Following is the list of the graph models which are provided with the module. After loading the <code>RRRMC</code> module, they can be constructed like in this example:</p>
+<pre><code class="text">julia&gt; X = RRRMC.GraphRRG(10, 3)
+</code></pre>
+
+<p>Note that for models which involve randomness in the constructor you may want to set the random seed with <code>srand</code> before calling the constructor, for reproducibility purposes.</p>
+<p><a id='Spin-glass-models-1'></a></p>
+<h2 id="spin-glass-models">Spin glass models</h2>
+<p><a id='Random-regular-graphs-1'></a></p>
+<h3 id="random-regular-graphs">Random regular graphs</h3>
+<p><a id='RRRMC.RRG.GraphRRG' href='#RRRMC.RRG.GraphRRG'>#</a>
+<strong><code>RRRMC.RRG.GraphRRG</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphRRG(N::Integer, K::Integer, LEV = (-1,1)) &lt;: DiscrGraph
+</code></pre>
+
+<p>A <code>DiscGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted at random from <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p><a id='RRRMC.RRG.GraphRRGCont' href='#RRRMC.RRG.GraphRRGCont'>#</a>
+<strong><code>RRRMC.RRG.GraphRRGCont</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphRRGCont(N::Integer, K::Integer, LEV) &lt;: DoubleGraph{Float64}
+</code></pre>
+
+<p>A <code>DoubleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance, and are then discretized using the values in <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p>Same as <a href="./#RRRMC.RRG.GraphRRGContSimple"><code>GraphRRGContSimple</code></a>, but it can be used with <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a>.</p>
+<p><a id='RRRMC.RRG.GraphRRGContSimple' href='#RRRMC.RRG.GraphRRGContSimple'>#</a>
+<strong><code>RRRMC.RRG.GraphRRGContSimple</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphRRGContSimple(N::Integer, K::Integer) &lt;: SimpleGraph{Flaot64}
+</code></pre>
+
+<p>A <code>SimpleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance.</p>
+<p>Same as <a href="./#RRRMC.RRG.GraphRRGCont"><code>GraphRRGCont</code></a>, but it's more efficient when used with <a href="../algorithms/#RRRMC.standardMC"><code>standardMC</code></a>.</p>
+<p><a id='Edwards-Anderson-graphs-1'></a></p>
+<h3 id="edwards-anderson-graphs">Edwards-Anderson graphs</h3>
+<p><a id='RRRMC.EA.GraphEA' href='#RRRMC.EA.GraphEA'>#</a>
+<strong><code>RRRMC.EA.GraphEA</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphEA(L::Integer, D::Integer, LEV = (-1,1)) &lt;: DiscrGraph
+</code></pre>
+
+<p>An Edwards-Anderson <code>DiscrGraph</code>: spins are arranged on a square lattice of size <code>L</code> in <code>D</code> dimensions (i.e. there are $L^D$ total spins), with periodic boundary conditions. The interactions are extracted at random from <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p><a id='RRRMC.EA.GraphEACont' href='#RRRMC.EA.GraphEACont'>#</a>
+<strong><code>RRRMC.EA.GraphEACont</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphEACont(L::Integer, D::Integer, LEV) &lt;: DoubleGraph{Float64}
+</code></pre>
+
+<p>An Edwards-Anderson <code>DoubleGraph</code>: spins are arranged on a square lattice of size <code>L</code> in <code>D</code> dimensions (i.e. there are $L^D$ total spins), with periodic boundary conditions. The interactions are extracted at random from a normal distribution with unit variance, and are then discretized using the values in <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p>Same as <a href="./#RRRMC.EA.GraphEAContSimple"><code>GraphEAContSimple</code></a>, but it can be used with <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a>.</p>
+<p><a id='RRRMC.EA.GraphEAContSimple' href='#RRRMC.EA.GraphEAContSimple'>#</a>
+<strong><code>RRRMC.EA.GraphEAContSimple</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphEACont(L::Integer, D::Integer) &lt;: SimpleGraph{Float64}
+</code></pre>
+
+<p>An Edwards-Anderson <code>SimpleGraph</code>: spins are arranged on a square lattice of size <code>L</code> in <code>D</code> dimensions (i.e. there are $L^D$ total spins), with periodic boundary conditions. The interactions are extracted at random from a normal distribution with unit variance.</p>
+<p>Same as <a href="./#RRRMC.EA.GraphEACont"><code>GraphEACont</code></a>, but it's more efficient when used with <a href="../algorithms/#RRRMC.standardMC"><code>standardMC</code></a>.</p>
+<p><a id='p-spin-1'></a></p>
+<h3 id="p-spin">p-spin</h3>
+<p><a id='RRRMC.PSpin3.GraphPSpin3' href='#RRRMC.PSpin3.GraphPSpin3'>#</a>
+<strong><code>RRRMC.PSpin3.GraphPSpin3</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphPSpin3(N::Integer, K::Integer) &lt;: DiscrGraph
+</code></pre>
+
+<p>A <code>DiscrGraph</code> implementing a <code>p</code>-spin regular graph with <code>p=3</code>. <code>N</code> is the number of spins, and must be divisible by <code>3</code>; <code>K</code> is the connectivity. All interactions are set to $J=1$.</p>
+<p><a id='Quantum-models-with-transverse-fields-1'></a></p>
+<h3 id="quantum-models-with-transverse-fields">Quantum models with transverse fields</h3>
+<p><a id='RRRMC.QIsingT.GraphQIsingT' href='#RRRMC.QIsingT.GraphQIsingT'>#</a>
+<strong><code>RRRMC.QIsingT.GraphQIsingT</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphQIsingT(N::Integer, M::Integer, Γ::Float64, β::Float64) &lt;: DoubleGraph
+</code></pre>
+
+<p>A <code>DoubleGraph</code> which implements a quantum Ising spin model in a transverse magnetic field, using the Suzuki-Trotter transformation. <code>N</code> is the number of spins, <code>M</code> the number of Suzuki-Trotter replicas, <code>Γ</code> the transverse field, <code>β</code> the inverse temperature. The graph is fully-connected, the interactions are random ($J ∈ {-1,1}$), there are no external longitudinal fields.</p>
+<p>See also <a href="../interface/#RRRMC.QT.Qenergy"><code>Qenergy</code></a>.</p>
+<p><a id='Trivial-models-used-for-testing-and-debugging-1'></a></p>
+<h2 id="trivial-models-used-for-testing-and-debugging">Trivial models used for testing and debugging</h2>
+<p><a id='RRRMC.TwoSpin.GraphTwoSpin' href='#RRRMC.TwoSpin.GraphTwoSpin'>#</a>
+<strong><code>RRRMC.TwoSpin.GraphTwoSpin</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphTwoSpin() &lt;: DiscrGraph
+</code></pre>
+
+<p>A trivial <code>DiscrGraph</code> type with 2 spins inteacting ferromagnetically ($J=1$), without fields.</p>
+<p>Only useful for testing/debugging purposes.</p>
+<p><a id='RRRMC.ThreeSpin.GraphThreeSpin' href='#RRRMC.ThreeSpin.GraphThreeSpin'>#</a>
+<strong><code>RRRMC.ThreeSpin.GraphThreeSpin</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphThreeSpin() &lt;: DiscrGraph
+</code></pre>
+
+<p>A trivial <code>DiscrGraph</code> type with 3 spins, ferromagnetic interactions ($J=1$), no fields, and periodic boundary conditions.</p>
+<p>Only useful for testing/debugging purposes.</p>
+<p><a id='RRRMC.Fields.GraphFields' href='#RRRMC.Fields.GraphFields'>#</a>
+<strong><code>RRRMC.Fields.GraphFields</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphFields(N::Integer, LEV::Tuple = (1,)) &lt;: DiscrGraph
+</code></pre>
+
+<p>A simple <code>DiscrGraph</code> type with <code>N</code> non-interacting variables, each of which is subject to a local field. The fields are extracted at random from <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s.</p>
+<p>Mostly useful for testing/debugging purposes.</p>
+<p><a id='RRRMC.Fields.GraphFieldsCont' href='#RRRMC.Fields.GraphFieldsCont'>#</a>
+<strong><code>RRRMC.Fields.GraphFieldsCont</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphFieldsCont(N::Integer, LEV::Tuple) &lt;: DoubleGraph
+</code></pre>
+
+<p>A simple <code>DoubleGraph</code> type with <code>N</code> non-interacting variables, each of which is subject to a local field. The fields are extracted independently from a normal distribution with unit variance, and then are discretized using the values in <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s.</p>
+<p>Mostly useful for testing/debugging purposes.</p>
+<p><a id='RRRMC.Ising1D.GraphIsing1D' href='#RRRMC.Ising1D.GraphIsing1D'>#</a>
+<strong><code>RRRMC.Ising1D.GraphIsing1D</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphIsing1D(N::Integer) &lt;: DiscrGraph
+</code></pre>
+
+<p>A simple 1-dimensional <code>DiscrGraph</code> type with <code>N</code> spins, antiferromagnetic interactions ($J=-1$), no fields, and periodic boundary conditions.</p>
+<p>Mostly useful for testing/debugging purposes.</p>
+<p><a id='RRRMC.Q0T.GraphQ0T' href='#RRRMC.Q0T.GraphQ0T'>#</a>
+<strong><code>RRRMC.Q0T.GraphQ0T</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>GraphQ0T(N::Integer, M::Integer, Γ::Float64, β::Float64) &lt;: DoubleGraph
+</code></pre>
+
+<p>A simple <code>DoubleGraph</code> which implements independent spins in a transverse magnetic field, using the Suzuki-Trotter transformation. <code>N</code> is the number of spins, <code>M</code> the number of Suzuki-Trotter replicas, <code>Γ</code> the transverse field, <code>β</code> the inverse temperature.</p>
+<p>Intended for testing/debugging purposes.</p>
+<p>See also <a href="../interface/#RRRMC.QT.Qenergy"><code>Qenergy</code></a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../interface/" class="btn btn-neutral float-right" title="Graphs Interface">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../graph-types/" class="btn btn-neutral" title="Graph Types"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/carlobaldassi/RRRMC.jl" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../graph-types/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../interface/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

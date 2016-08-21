@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="Carlo Baldassi">
+  
+  <title>Graph Types - RRRMC.jl</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../assets/Documenter.css" rel="stylesheet">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Graph Types";
+    var mkdocs_page_input_path = "graph-types.md";
+    var mkdocs_page_url = "/graph-types/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <script src="../assets/mathjaxhelper.js"></script>
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> RRRMC.jl</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Home</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../algorithms/">Sampling Algorithms</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Graph Types</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#graph-types">Graph types</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../graphs-builtin/">Built-in Graphs</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../interface/">Graphs Interface</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">RRRMC.jl</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Graph Types</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/carlobaldassi/RRRMC.jl" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p><a id='graphtype-1'></a></p>
+<h1 id="graph-types">Graph types</h1>
+<p>All graphs which can be used with the <a href="../algorithms/#algorithms-1">sampling algorithms</a> belong to a type hyerarchy, documented here:</p>
+<p><a id='RRRMC.Interface.AbstractGraph' href='#RRRMC.Interface.AbstractGraph'>#</a>
+<strong><code>RRRMC.Interface.AbstractGraph</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>AbstractGraph{ET&lt;:Real}
+</code></pre>
+
+<p>An abstract type representing an Ising spin model. The <code>ET</code> parameter is the type returned by the <a href="../interface/#RRRMC.Interface.energy"><code>energy</code></a> and <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a> functions.</p>
+<p>See also <a href="./#RRRMC.Interface.SimpleGraph"><code>SimpleGraph</code></a>, <a href="./#RRRMC.Interface.DiscrGraph"><code>DiscrGraph</code></a> and <a href="./#RRRMC.Interface.DoubleGraph"><code>DoubleGraph</code></a>.</p>
+<p><a id='RRRMC.Interface.SimpleGraph' href='#RRRMC.Interface.SimpleGraph'>#</a>
+<strong><code>RRRMC.Interface.SimpleGraph</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>SimpleGraph{ET} &lt;: AbstractGraph{ET}
+</code></pre>
+
+<p>An abstract type representing a generic graph. This can only be used with <a href="../algorithms/#RRRMC.standardMC"><code>standardMC</code></a>, not with <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a> or <a href="../algorithms/#RRRMC.bklMC"><code>bklMC</code></a>.</p>
+<p>The <code>ET</code> parameter is the type returned by <a href="../interface/#RRRMC.Interface.energy"><code>energy</code></a> and <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a>.</p>
+<p><a id='RRRMC.Interface.DiscrGraph' href='#RRRMC.Interface.DiscrGraph'>#</a>
+<strong><code>RRRMC.Interface.DiscrGraph</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>DiscrGraph{ET} &lt;: AbstractGraph{ET}
+</code></pre>
+
+<p>An abstract type representing a graph in which the <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a> values produced when flipping a spin belong to a finite discrete set, and thus can be sampled efficiently with <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a> or <a href="../algorithms/#RRRMC.bklMC"><code>bklMC</code></a>.</p>
+<p>The <code>ET</code> parameter is the type returned by <a href="../interface/#RRRMC.Interface.energy"><code>energy</code></a> and <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a>.</p>
+<p>It is also used internally in <a href="./#RRRMC.Interface.DoubleGraph"><code>DoubleGraph</code></a>.</p>
+<p>See also <a href="../interface/#RRRMC.Interface.neighbors"><code>neighbors</code></a> and <a href="../interface/#RRRMC.Interface.allΔE"><code>allΔE</code></a>.</p>
+<p><a id='RRRMC.Interface.DoubleGraph' href='#RRRMC.Interface.DoubleGraph'>#</a>
+<strong><code>RRRMC.Interface.DoubleGraph</code></strong> &mdash; <em>Type</em>.</p>
+<pre><code>DoubleGraph{ET} &lt;: AbstractGraph{ET}
+</code></pre>
+
+<p>An abstract type representing a graph in which the energy is the sum of two contributions, one of which can be encoded in a <a href="./#RRRMC.Interface.DiscrGraph"><code>DiscrGraph</code></a> type. This allows <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a> to sample values more efficiently.</p>
+<p>The <code>ET</code> parameter is the type returned by the <a href="../interface/#RRRMC.Interface.energy"><code>energy</code></a> and <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a> functions. Note that it can be different from the type of the internal <code>DiscrGraph</code> object (e.g., one can have a <code>DiscrGraph{Int}</code> object inside a <code>DoubleGraph{Float64}</code> object).</p>
+<p>See also <a href="../interface/#RRRMC.Interface.discr_graph"><code>discr_graph</code></a>, <a href="../interface/#RRRMC.Interface.delta_energy_residual"><code>delta_energy_residual</code></a> and <a href="../interface/#RRRMC.Interface.update_cache_residual!"><code>update_cache_residual!</code></a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../graphs-builtin/" class="btn btn-neutral float-right" title="Built-in Graphs">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../algorithms/" class="btn btn-neutral" title="Sampling Algorithms"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/carlobaldassi/RRRMC.jl" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../algorithms/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../graphs-builtin/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>
