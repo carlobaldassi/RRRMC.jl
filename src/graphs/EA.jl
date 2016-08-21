@@ -5,6 +5,10 @@ using ..Interface
 using ..Common
 using ..DFloats
 
+if isdefined(Main, :Documenter)
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
+end
+
 export GraphEA, GraphEACont, GraphEAContSimple
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,

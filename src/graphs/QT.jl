@@ -48,7 +48,7 @@ end
 @doc """
     GraphQT{fourK}(N::Integer, M::Integer) <: DiscrGraph
 
-An auxiliary `DiscGraph` used to implement the interactions in the
+An auxiliary `DiscrGraph` used to implement the interactions in the
 Suzuki-Trotter dimension when simulating quantum spin systems in a
 transverse field.
 

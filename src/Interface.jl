@@ -3,9 +3,16 @@ module Interface
 using ExtractMacro
 using ..Common
 
+if isdefined(Main, :Documenter)
+# this is silly but it's required for correct cross-linking in docstrings, apparently
+using ...RRRMC
+end
+
 export Config, AbstractGraph, SimpleGraph, DiscrGraph, DoubleGraph, spinflip!,
        energy, delta_energy, neighbors, getN, allΔE, discr_graph,
        delta_energy_residual, update_cache!, update_cache_residual!
+
+import Base: length
 
 immutable Config
     N::Int
@@ -26,6 +33,8 @@ a `BitArray`, in the type field `s`, so that to obtain the real
 value one needs to perform the transformation \$σ_i = 2s_i - 1\$.
 """ -> Config(N::Integer)
 
+length(C::Config) = C.N
+
 #spinflip!(C::Config, move::Int) = (C.s[move] $= 1)
 spinflip!(C::Config, move::Int) = unsafe_bitflip!(C.s, move)
 
@@ -36,7 +45,7 @@ An abstract type representing an Ising spin model. The `ET` parameter
 is the type returned by the [`energy`](@ref) and [`delta_energy`](@ref)
 functions.
 
-See also [`DiscrGraph`](@ref) and [`DoubleGraph`](@ref).
+See also [`SimpleGraph`](@ref), [`DiscrGraph`](@ref) and [`DoubleGraph`](@ref).
 """
 abstract AbstractGraph{ET<:Real}
 
@@ -45,8 +54,8 @@ abstract AbstractGraph{ET<:Real}
 
 A function which is called every time a spin is flipped. This may happen:
 
-1. when a move is accepted, in [`standardMC`](@ref) and [`rrrMC`](@ref)
-2. when a move is attempted to evaluate the effect on the neighbors, in [`rrrMC`](@ref) and [`bklMC`](@ref).
+1. when a move is accepted, in [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref)
+2. when a move is attempted to evaluate the effect on the neighbors, in [`rrrMC`](@ref).
 
 `move` is the spin index. By default, this function does nothing, but it may be overloaded
 by particular graph types.
@@ -106,7 +115,7 @@ end
 """
     getN(X::AbstractGraph)
 
-Returns the number of spins for a graph. Defaults to just `X.N`.
+Returns the number of spins for a graph. The default implementation just returns `X.N`.
 """
 getN(X::AbstractGraph) = X.N
 
@@ -152,7 +161,7 @@ neighbors(::DiscrGraph, i::Int) = error("not implemented")
 """
     allΔE{P<:DiscrGraph}(::Type{P})
 
-Returns a tuple of all possible *positive* values that can be returned
+Returns a tuple of all possible *non-negative* values that can be returned
 by [`delta_energy`](@ref). This must be implemented by all `DiscrGraph`
 objects in order to use [`rrrMC`](@ref) or [`bklMC`](@ref).
 
@@ -183,7 +192,7 @@ abstract DoubleGraph{ET} <: AbstractGraph{ET}
     discr_graph(X::DoubleGraph)
 
 Returns the internal [`DiscrGraph`](@ref) used by the given
-[`DoubleGraph`](@ref). The default is simply `X.X0`.
+[`DoubleGraph`](@ref). The default implementation simply returns `X.X0`.
 """
 discr_graph(X::DoubleGraph) = X.X0
 discr_graph(X::DiscrGraph) = X

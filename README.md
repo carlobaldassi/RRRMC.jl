@@ -11,7 +11,7 @@ This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Isi
 
 It also provides a standard Metropolis-Hastings sampler, and an implementation of the BKL method described in the paper
 ["A new algorithm for Monte Carlo simulation of Ising spin systems"][BKLpaper] by A.B. Bortz, M.H. Kalos and J.L. Lebowitz
- 	
+
 The code is written in [Julia].
 
 The package was tested on Julia `0.4` and `0.5`.
@@ -32,14 +32,3 @@ after the module is installed and loaded: press `?` to enter the Julia help mode
 
 [Julia]: http://julialang.org
 [BKLpaper]: http://www.sciencedirect.com/science/article/pii/0021999175900601
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
