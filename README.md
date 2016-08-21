@@ -20,6 +20,8 @@ To install the module, use this command from within Julia:
 julia> Pkg.clone("https://github.com/carlobaldassi/RRRMC.jl")
 ```
 
+Dependencies will be installed automatically.
+
 ### Documentation
 
 - [**LATEST**][docs-latest-url] &mdash; *in-development version of the documentation.*
