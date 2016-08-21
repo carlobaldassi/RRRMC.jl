@@ -5,7 +5,7 @@ using ..Interface
 
 export GraphThreeSpin
 
-import ..Interface: energy, delta_energy, neighbors, allΔE
+import ..Interface: energy, delta_energy, neighbors, allΔE, getN
 
 type GraphThreeSpin <: DiscrGraph{Int}
 end
