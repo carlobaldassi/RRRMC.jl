@@ -9,7 +9,6 @@ module RRRMC
 
 export standardMC, rrrMC, bklMC
 
-using Compat
 using ExtractMacro
 
 include("DFloats.jl")
