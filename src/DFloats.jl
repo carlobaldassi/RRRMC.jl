@@ -14,6 +14,8 @@ i2d(x::Int64) = reinterpret(DFloat64, x)
 d2i(x::DFloat64) = reinterpret(Int64, x)
 convert(::Type{DFloat64}, x::DFloat64) = x
 convert(::Type{DFloat64}, x::Real) = i2d(round(Int64, x * dfact))
+convert(::Type{Bool}, x::DFloat64) = d2i(x) > 0
+convert(::Type{Integer}, x::DFloat64) = Int64(d2i(x) / dfact)
 convert{T<:Real}(::Type{T}, x::DFloat64) = T(d2i(x) / dfact)
 convert(::Type{DFloat64}, x::Integer) = i2d(Int64(x * dfact))
 
