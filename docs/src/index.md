@@ -50,8 +50,9 @@ user-defined models.
 
 !!! note
 
-    The three sampling functions are the only names exported by the module; all other function and types must
-    be qualified with the `RRRMC` module name.
+    The three sampling functions are the only names exported by the module;
+    all other function and types must be qualified with the `RRRMC` module
+    name.
 
 ### Manual
 
