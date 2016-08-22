@@ -63,5 +63,5 @@ Pages = [
     "graphs-builtin.md",
     "interface.md",
     ]
-Depth = 1
+Depth = 3
 ```

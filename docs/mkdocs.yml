@@ -5,10 +5,10 @@ site_author:      Carlo Baldassi
 
 theme: readthedocs
 
-extra:
-  palette:
-    primary: 'indigo'
-    accent:  'blue'
+# extra:
+  # palette:
+    # primary: 'indigo'
+    # accent:  'blue'
 
 extra_css:
   - assets/Documenter.css
