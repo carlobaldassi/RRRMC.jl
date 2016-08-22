@@ -22,7 +22,7 @@ discr{ET}(::Type{ET}, x::Real) = convert(ET, round(x, MAXDIGITS))
 discr(::Type{DFloat64}, x::Real) = x
 discr{ET<:Integer}(::Type{ET}, x::Integer) = convert(ET, x)
 
-# Bollobás paring model generator for random regular graphs.
+# Bollobás pairing model generator for random regular graphs.
 # Will fail when `K` is too large.
 function gen_RRG(N::Integer, K::Integer)
     @assert K ≥ 1
@@ -140,7 +140,7 @@ end
     GraphRRG(N::Integer, K::Integer, LEV = (-1,1)) <: DiscrGraph
 
 A `DiscGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the paring model method by Bollobás,
+*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
 The interactions are extracted at random from `LEV`, which must be a `Tuple` of `Real`s.
 No external fields.
@@ -307,7 +307,7 @@ end
     GraphRRGCont(N::Integer, K::Integer, LEV) <: DoubleGraph{Float64}
 
 A `DoubleGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the paring model method by Bollobás,
+*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
 The interactions are extracted from a normal distribution with unit variance, and are then
 discretized using the values in `LEV`, which must be a `Tuple` of `Real`s. No external fields.
@@ -511,7 +511,7 @@ end
     GraphRRGContSimple(N::Integer, K::Integer) <: SimpleGraph{Flaot64}
 
 A `SimpleGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the paring model method by Bollobás,
+*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
 The interactions are extracted from a normal distribution with unit variance.
 
