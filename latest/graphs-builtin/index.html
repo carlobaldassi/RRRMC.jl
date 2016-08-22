@@ -155,20 +155,20 @@
 <pre><code>GraphRRG(N::Integer, K::Integer, LEV = (-1,1)) &lt;: DiscrGraph
 </code></pre>
 
-<p>A <code>DiscGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted at random from <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p>A <code>DiscGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the pairing model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted at random from <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
 <p><a id='RRRMC.RRG.GraphRRGCont' href='#RRRMC.RRG.GraphRRGCont'>#</a>
 <strong><code>RRRMC.RRG.GraphRRGCont</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>GraphRRGCont(N::Integer, K::Integer, LEV) &lt;: DoubleGraph{Float64}
 </code></pre>
 
-<p>A <code>DoubleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance, and are then discretized using the values in <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
+<p>A <code>DoubleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the pairing model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance, and are then discretized using the values in <code>LEV</code>, which must be a <code>Tuple</code> of <code>Real</code>s. No external fields.</p>
 <p>Same as <a href="./#RRRMC.RRG.GraphRRGContSimple"><code>GraphRRGContSimple</code></a>, but it can be used with <a href="../algorithms/#RRRMC.rrrMC"><code>rrrMC</code></a>.</p>
 <p><a id='RRRMC.RRG.GraphRRGContSimple' href='#RRRMC.RRG.GraphRRGContSimple'>#</a>
 <strong><code>RRRMC.RRG.GraphRRGContSimple</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>GraphRRGContSimple(N::Integer, K::Integer) &lt;: SimpleGraph{Flaot64}
 </code></pre>
 
-<p>A <code>SimpleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the paring model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance.</p>
+<p>A <code>SimpleGraph</code> implementing a random regular graph with <code>N</code> spins and connectivity <code>K</code>. <em>Note</em>: <code>N*K</code> must be even. Also, the graph generator uses the pairing model method by Bollobás, with a cutoff on the number of restarts, and thus it may occasionally fail if <code>K</code> is large. The interactions are extracted from a normal distribution with unit variance.</p>
 <p>Same as <a href="./#RRRMC.RRG.GraphRRGCont"><code>GraphRRGCont</code></a>, but it's more efficient when used with <a href="../algorithms/#RRRMC.standardMC"><code>standardMC</code></a>.</p>
 <p><a id='Edwards-Anderson-graphs-1'></a></p>
 <h3 id="edwards-anderson-graphs">Edwards-Anderson graphs</h3>

@@ -137,7 +137,7 @@
               
                 <p><a id='graphtype-1'></a></p>
 <h1 id="graph-types">Graph types</h1>
-<p>All graphs which can be used with the <a href="../algorithms/#algorithms-1">sampling algorithms</a> belong to a type hyerarchy, documented here:</p>
+<p>All graphs which can be used with the <a href="../algorithms/#algorithms-1">sampling algorithms</a> belong to a type hierarchy. At the top of the hierarchy, there is <code>AbstractGraph</code>:</p>
 <p><a id='RRRMC.Interface.AbstractGraph' href='#RRRMC.Interface.AbstractGraph'>#</a>
 <strong><code>RRRMC.Interface.AbstractGraph</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>AbstractGraph{ET&lt;:Real}
@@ -145,6 +145,7 @@
 
 <p>An abstract type representing an Ising spin model. The <code>ET</code> parameter is the type returned by the <a href="../interface/#RRRMC.Interface.energy"><code>energy</code></a> and <a href="../interface/#RRRMC.Interface.delta_energy"><code>delta_energy</code></a> functions.</p>
 <p>See also <a href="./#RRRMC.Interface.SimpleGraph"><code>SimpleGraph</code></a>, <a href="./#RRRMC.Interface.DiscrGraph"><code>DiscrGraph</code></a> and <a href="./#RRRMC.Interface.DoubleGraph"><code>DoubleGraph</code></a>.</p>
+<p>There are currently three abstract subclasses, which determine which sampling algorithms can be used:</p>
 <p><a id='RRRMC.Interface.SimpleGraph' href='#RRRMC.Interface.SimpleGraph'>#</a>
 <strong><code>RRRMC.Interface.SimpleGraph</code></strong> &mdash; <em>Type</em>.</p>
 <pre><code>SimpleGraph{ET} &lt;: AbstractGraph{ET}
