@@ -12,7 +12,7 @@ It also provides a standard Metropolis-Hastings sampler, and an implementation o
 
 The code is written in [Julia](http://julialang.org), and tested against Julia `0.4`, `0.5` and *current* `0.6-dev` on Linux, OS X, and Windows.
 
-### Installation
+## Installation
 
 To install the module, use this command from within Julia:
 
@@ -22,7 +22,7 @@ julia> Pkg.clone("https://github.com/carlobaldassi/RRRMC.jl")
 
 Dependencies will be installed automatically.
 
-### Usage
+## Usage
 
 The module is loaded as any other Julia module:
 
@@ -53,7 +53,7 @@ user-defined models.
     all other function and types must be qualified with the `RRRMC` module
     name.
 
-### Manual
+## Manual
 
 ```@contents
 Pages = [
