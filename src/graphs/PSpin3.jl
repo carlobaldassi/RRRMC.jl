@@ -53,8 +53,8 @@ end
 """
     GraphPSpin3(N::Integer, K::Integer) <: DiscrGraph
 
-A `DiscrGraph` implementing a `p`-spin regular graph with `p=3`. `N` is the number of spins, and must
-be divisible by `3`; `K` is the connectivity. All interactions are set to \$J=1\$.
+A `DiscrGraph` implementing a \$p\$-spin regular graph with \$p=3\$. `N` is the number of spins, and must
+be divisible by \$3\$; `K` is the connectivity. All interactions are set to \$J=1\$.
 """
 GraphPSpin3(N, K) = GraphPSpin3{K}(N)
 
