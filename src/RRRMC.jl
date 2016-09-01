@@ -24,6 +24,9 @@ using .WaitingTimes
 
 include("load_graphs.jl")
 
+include("QAliases.jl")
+using .QAliases
+
 @inline accept(x) = x ≥ 0 || rand() < exp(x)
 @inline function accept(c, x)
     c ≥ 1 && x ≥ 0 && return true

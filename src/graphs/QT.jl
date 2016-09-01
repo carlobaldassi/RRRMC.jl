@@ -4,9 +4,11 @@ using ExtractMacro
 using ..Interface
 using ..Common
 
-export GraphQT, Qenergy, transverse_mag
+export GraphQT, Qenergy, transverse_mag,
+       GraphQuant
 
-import ..Interface: energy, delta_energy, neighbors, allΔE
+import ..Interface: energy, delta_energy, neighbors, allΔE,
+                    update_cache!, delta_energy_residual
 
 """
     Qenergy(X::DoubleGraph, C::Config)
@@ -110,6 +112,120 @@ function transverse_mag{fourK}(X::GraphQT{fourK}, C::Config, β::Float64)
     x = β * fourK / 2
 
     return cosh(x) - p * sinh(x)
+end
+
+
+# Add Transverse field to (almost) any AbstractGraph
+
+type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{Float64}
+    N::Int
+    M::Int
+    Nk::Int
+    X0::GraphQT{fourK}
+    X1::Vector{G}
+    C1::Vector{Config}
+    λ::Float64
+    H0::Float64 # useless!!!
+    β::Float64
+    Γ::Float64
+    function GraphQuant(N::Integer, M::Integer, H0::Real, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
+        X0 = GraphQT{fourK}(N, M)
+        Nk = X0.Nk
+        #J = gen_J(Nk)
+        X1 = Array{G}(M)
+        X1[1] = g0
+        for k = 2:M
+            X1[k] = Gconstr(args...)
+        end
+        C1 = [Config(Nk, init=false) for k = 1:M]
+        λ = 1 / (M * √N)
+        return new(N, M, Nk, X0, X1, C1, λ, H0, β, Γ)
+    end
+end
+
+#  """
+#      GraphQIsingT(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+#  A `DoubleGraph` which implements a quantum Ising spin model in a transverse magnetic field,
+#  using the Suzuki-Trotter transformation.
+#  `N` is the number of spins, `M` the number of Suzuki-Trotter replicas, `Γ` the transverse
+#  field, `β` the inverse temperature.
+#  The graph is fully-connected, the interactions are random (\$J ∈ {-1,1}\$),
+#  there are no external longitudinal fields.
+#
+#  See also [`Qenergy`](@ref).
+#  """
+function GraphQuant(Nk::Integer, M::Integer, Γ::Float64, β::Float64, Gconstr, args...)
+    @assert Γ ≥ 0
+    fourK = round(2/β * log(coth(β * Γ / M)), MAXDIGITS)
+    H0 = Nk * M / 2β * log(sinh(2β * Γ / M) / 2) # useless!!!
+    g0 = Gconstr(args...)
+    G = typeof(g0)
+    return GraphQuant{fourK,G}(Nk * M, M, H0, β, Γ, g0, Gconstr, args...)
+end
+
+function update_cache!(X::GraphQuant, C::Config, move::Int)
+    @extract X : X1 Nk C1
+    #@extract C : s
+    k = (move - 1) ÷ Nk + 1
+    i = mod1(move, Nk)
+
+    spinflip!(X1[k], C1[k], i)
+
+    #s1 = C1[k].s
+    #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+    #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
+end
+
+function energy(X::GraphQuant, C::Config)
+    @assert X.N == C.N
+    @extract X : M Nk X0 X1 C1 λ H0
+    @extract C : s
+
+    E = energy(X0, C)
+
+    for k = 1:M
+        s1 = C1[k].s
+        copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+        E += energy(X1[k], C1[k]) * λ
+    end
+
+    return E - H0
+end
+
+function Qenergy(X::GraphQuant, C::Config)
+    @assert X.N == C.N
+    @extract X : M Nk X0 X1 C1 λ β Γ
+    #@extract C : s
+
+    E = -Γ * transverse_mag(X0, C, β)
+
+    for k = 1:M
+        #s1 = C1[k].s
+        #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+        #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
+        E += energy(X1[k], C1[k]) * λ / Nk
+    end
+
+    return E
+end
+
+function delta_energy_residual(X::GraphQuant, C::Config, move::Int)
+    @extract X : Nk X1 C1 λ
+    #@extract C : s
+
+    k = (move - 1) ÷ Nk + 1
+    #s1 = C1[k].s
+    #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+    #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
+
+    i = mod1(move, Nk)
+    return delta_energy(X1[k], C1[k], i) * λ
+end
+
+function delta_energy(X::GraphQuant, C::Config, move::Int)
+    return delta_energy(X.X0, C, move) +
+           delta_energy_residual(X, C, move)
 end
 
 end
