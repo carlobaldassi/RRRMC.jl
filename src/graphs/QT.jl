@@ -5,7 +5,7 @@ using ..Interface
 using ..Common
 
 export GraphQT, Qenergy, transverse_mag,
-       GraphQuant
+       GraphQuant, Renergies
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
@@ -188,6 +188,18 @@ function energy(X::GraphQuant, C::Config)
     end
 
     return E
+end
+
+function Renergies(X::GraphQuant)
+    @extract X : M X1 C1
+
+    Es = zeros(M)
+
+    for k = 1:M
+        Es[k] = energy(X1[k], C1[k])
+    end
+
+    return Es
 end
 
 function Qenergy(X::GraphQuant, C::Config)
