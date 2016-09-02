@@ -70,6 +70,53 @@ function gen_J{twoD}(f, ET::Type, N::Integer, A::Vector{NTuple{twoD,Int}})
     return tJ
 end
 
+function gen_AJ(fname::AbstractString)
+    D = 2
+    twoD = 2D
+    f = open(fname)
+    local N, L, A, J, tJ
+    try
+        @assert startswith(strip(readline(f)), "type:")
+        ls = split(readline(f))
+        @assert length(ls) == 2
+        @assert ls[1] == "size:"
+        L = parse(Int, ls[2])
+        @assert startswith(strip(readline(f)), "name:")
+        A = EA.gen_EA(L, D)
+        N = length(A)
+
+        m = EA.sentinel(Float64)
+        J = Vector{Float64}[zeros(twoD) for i = 1:N]
+        map(Jx->fill!(Jx, m), J)
+
+        for l in eachline(f)
+            ls = split(l)
+            @assert length(ls) == 3
+            x, y, Jxy = parse(Int, ls[1]), parse(Int, ls[2]), parse(Float64, ls[3])
+
+            Jx = J[x]
+            Ax = A[x]
+            k = findfirst(Ax, y)
+            @assert k ≠ 0
+            @assert Jx[k] == m
+            Jx[k] = Jxy
+
+            Jy = J[y]
+            Ay = A[y]
+            k = findfirst(Ay, x)
+            @assert k ≠ 0
+            @assert Jy[k] == m
+            Jy[k] = Jxy
+        end
+        @assert all(Jx->all(Jx .≠ m), J)
+    finally
+        close(f)
+    end
+    tJ = NTuple{twoD,Float64}[tuple(Jx...) for Jx in J]
+
+    return L, D, A, tJ
+end
+
 function get_vLEV(LEV, ET::Type)
     isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
     length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
@@ -482,16 +529,13 @@ type GraphEAContSimple{twoD} <: SimpleGraph{Float64}
     J::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    function GraphEAContSimple(L::Integer)
+    function GraphEAContSimple(L::Integer, A, J)
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
         D ≥ 1 || throw(ArgumentError("D must be ≥ 0, given: $D"))
-        A = gen_EA(L, D)
         N = length(A)
-        J = gen_J(Float64, N, A) do
-            randn()
-        end
+        # TODO: check A and J
 
         uA = [unique(a) for a in A] # needed for the case L=2
 
@@ -510,7 +554,23 @@ with unit variance.
 
 Same as [`GraphEACont`](@ref), but it's more efficient when used with [`standardMC`](@ref).
 """
-GraphEAContSimple(L::Integer, D::Integer) = GraphEAContSimple{2D}(L)
+function GraphEAContSimple(L::Integer, D::Integer; genJf=randn)
+    D ≥ 1 || throw(ArgumentError("D must be ≥ 0, given: $D"))
+    A = gen_EA(L, D)
+    J = gen_J(Float64, N, A) do
+        genJf()
+    end
+
+    return GraphEAContSimple{2D}(L, A, J)
+end
+
+function GraphEAContSimple(fname::AbstractString)
+    L, D, A, J = EA.gen_AJ(fname)
+    N = length(A)
+    @assert N == L^D
+    return GraphEAContSimple{2D}(L, A, J)
+end
+
 
 function energy(X::GraphEAContSimple, C::Config)
     @assert X.N == C.N
