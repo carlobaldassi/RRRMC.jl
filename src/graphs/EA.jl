@@ -501,7 +501,7 @@ type GraphEAContSimple{twoD} <: SimpleGraph{Float64}
 end
 
 """
-    GraphEACont(L::Integer, D::Integer) <: SimpleGraph{Float64}
+    GraphEAContSimple(L::Integer, D::Integer) <: SimpleGraph{Float64}
 
 An Edwards-Anderson `SimpleGraph`: spins are arranged on a square lattice of size `L`
 in `D` dimensions (i.e. there are \$L^D\$ total spins), with periodic boundary
