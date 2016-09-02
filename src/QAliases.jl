@@ -1,10 +1,10 @@
 module QAliases
 
 using ..QT
-using ..IsingSK
 using ..Empty
+using ..IsingSK
 
-export GraphQIsingT, GraphQ0T
+export GraphQ0T, GraphQIsingT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
@@ -38,6 +38,6 @@ there are no external longitudinal fields.
 
 See also [`Qenergy`](@ref).
 """
-GraphQIsingT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSK, gen_J(Nk))
+GraphQIsingT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSK, IsingSK.gen_J(Nk))
 
 end # module

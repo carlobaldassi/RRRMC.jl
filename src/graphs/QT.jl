@@ -124,11 +124,9 @@ type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{Float64}
     X0::GraphQT{fourK}
     X1::Vector{G}
     C1::Vector{Config}
-    λ::Float64
-    H0::Float64 # useless!!!
     β::Float64
     Γ::Float64
-    function GraphQuant(N::Integer, M::Integer, H0::Real, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
+    function GraphQuant(N::Integer, M::Integer, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
         X0 = GraphQT{fourK}(N, M)
         Nk = X0.Nk
         #J = gen_J(Nk)
@@ -138,8 +136,7 @@ type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{Float64}
             X1[k] = Gconstr(args...)
         end
         C1 = [Config(Nk, init=false) for k = 1:M]
-        λ = 1 / (M * √N)
-        return new(N, M, Nk, X0, X1, C1, λ, H0, β, Γ)
+        return new(N, M, Nk, X0, X1, C1, β, Γ)
     end
 end
 
@@ -158,10 +155,10 @@ end
 function GraphQuant(Nk::Integer, M::Integer, Γ::Float64, β::Float64, Gconstr, args...)
     @assert Γ ≥ 0
     fourK = round(2/β * log(coth(β * Γ / M)), MAXDIGITS)
-    H0 = Nk * M / 2β * log(sinh(2β * Γ / M) / 2) # useless!!!
+    # H0 = Nk * M / 2β * log(sinh(2β * Γ / M) / 2) # useless!!!
     g0 = Gconstr(args...)
     G = typeof(g0)
-    return GraphQuant{fourK,G}(Nk * M, M, H0, β, Γ, g0, Gconstr, args...)
+    return GraphQuant{fourK,G}(Nk * M, M, β, Γ, g0, Gconstr, args...)
 end
 
 function update_cache!(X::GraphQuant, C::Config, move::Int)
@@ -179,7 +176,7 @@ end
 
 function energy(X::GraphQuant, C::Config)
     @assert X.N == C.N
-    @extract X : M Nk X0 X1 C1 λ H0
+    @extract X : M Nk X0 X1 C1
     @extract C : s
 
     E = energy(X0, C)
@@ -187,15 +184,15 @@ function energy(X::GraphQuant, C::Config)
     for k = 1:M
         s1 = C1[k].s
         copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
-        E += energy(X1[k], C1[k]) * λ
+        E += energy(X1[k], C1[k]) / M
     end
 
-    return E - H0
+    return E
 end
 
 function Qenergy(X::GraphQuant, C::Config)
     @assert X.N == C.N
-    @extract X : M Nk X0 X1 C1 λ β Γ
+    @extract X : M N X0 X1 C1 β Γ
     #@extract C : s
 
     E = -Γ * transverse_mag(X0, C, β)
@@ -204,14 +201,14 @@ function Qenergy(X::GraphQuant, C::Config)
         #s1 = C1[k].s
         #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
         #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
-        E += energy(X1[k], C1[k]) * λ / Nk
+        E += energy(X1[k], C1[k]) / N
     end
 
     return E
 end
 
 function delta_energy_residual(X::GraphQuant, C::Config, move::Int)
-    @extract X : Nk X1 C1 λ
+    @extract X : M Nk X1 C1
     #@extract C : s
 
     k = (move - 1) ÷ Nk + 1
@@ -220,7 +217,7 @@ function delta_energy_residual(X::GraphQuant, C::Config, move::Int)
     #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
 
     i = mod1(move, Nk)
-    return delta_energy(X1[k], C1[k], i) * λ
+    return delta_energy(X1[k], C1[k], i) / M
 end
 
 function delta_energy(X::GraphQuant, C::Config, move::Int)

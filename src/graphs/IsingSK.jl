@@ -20,8 +20,9 @@ function gen_J(N::Integer)
     return J
 end
 
-type GraphIsingSK <: SimpleGraph{Int}
+type GraphIsingSK <: SimpleGraph{Float64}
     N::Int
+    sN::Float64
     J::Vector{BitVector}
     #tmps::BitVector
     cache::LocalFields{Int}
@@ -38,14 +39,14 @@ type GraphIsingSK <: SimpleGraph{Int}
         end
         #tmps = BitArray(N)
         cache = LocalFields{Int}(N)
-        return new(N, J, cache)
+        return new(N, √N, J, cache)
     end
 end
 
 function energy(X::GraphIsingSK, C::Config)
     @assert X.N == C.N
     @extract C : s
-    @extract X : N J cache
+    @extract X : N sN J cache
     @extract cache : lfields lfields_last
     tmps = BitArray(N)
     n = -2 * sum(s)
@@ -73,7 +74,7 @@ function energy(X::GraphIsingSK, C::Config)
     # altn ÷= 2
     # @assert n == altn
 
-    return n
+    return n / sN
 end
 
 function update_cache!(X::GraphIsingSK, C::Config, move::Int)
@@ -116,10 +117,10 @@ function update_cache!(X::GraphIsingSK, C::Config, move::Int)
 end
 
 function delta_energy(X::GraphIsingSK, C::Config, move::Int)
-    @extract X : cache
+    @extract X : sN cache
     @extract cache : lfields
 
-    @inbounds Δ = lfields[move]
+    @inbounds Δ = lfields[move] / sN
     return Δ
 
     # @extract X : N J tmps
@@ -134,15 +135,15 @@ function delta_energy(X::GraphIsingSK, C::Config, move::Int)
     # return Δ
 end
 
-function check_delta(X::GraphIsingSK, C::Config, move::Int)
-    @extract C : s
-    delta = delta_energy(X, s, move)
-    e0 = energy(X, s)
-    s[move] $= 1
-    e1 = energy(X, s)
-    s[move] $= 1
-
-    (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
-end
+# function check_delta(X::GraphIsingSK, C::Config, move::Int)
+#     @extract C : s
+#     delta = delta_energy(X, s, move)
+#     e0 = energy(X, s)
+#     s[move] $= 1
+#     e1 = energy(X, s)
+#     s[move] $= 1
+#
+#     (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
+# end
 
 end
