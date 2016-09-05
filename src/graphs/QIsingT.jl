@@ -164,7 +164,7 @@ type GraphQIsingT{fourK} <: DoubleGraph{Float64}
         J = gen_J(Nk)
         X1 = [GraphIsingSK(J, check=false) for k = 1:M]
         C1 = [Config(Nk, init=false) for k = 1:M]
-        λ = 1 / (M * √N)
+        λ = 1 / (M * √Nk)
         return new(N, M, Nk, X0, X1, C1, λ, H0, β, Γ)
     end
 end
