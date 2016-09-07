@@ -70,7 +70,7 @@ julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
 function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
-    srand(seed)
+    seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
@@ -123,7 +123,7 @@ that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`]
 function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    srand(seed)
+    seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
@@ -181,7 +181,7 @@ end
 function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    srand(seed)
+    seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
@@ -199,7 +199,7 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
     accepted = 0
     acc_rate = 0.5
     while it < iters
-        #@assert E == energy(X, C) (E, energy(X, C))
+        #@assert abs(E - energy(X, C)) < 1e-10 (E, energy(X, C), abs(E - energy(X,C)))
         #DeltaE.check_consistency(ΔEcache)
         it += 1
         if (it % step == 0)
@@ -262,7 +262,7 @@ Note that the number of iterations includes the rejected moves. This makes the r
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
 function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
-    srand(seed)
+    seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
@@ -342,7 +342,7 @@ end
 
 # TODO: document!
 function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
-    srand(seed)
+    seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, samples)))
 
     N = getN(X)
