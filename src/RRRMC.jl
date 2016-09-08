@@ -69,7 +69,7 @@ julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; tr
 julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
-function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing, pp = nothing)
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
@@ -78,6 +78,8 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
     accepted = 0
+    # pp ≡ nothing && (pp = randperm(N))
+    # j = 0
     it = 0
     while it < iters
         it += 1
@@ -87,6 +89,9 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
             push!(Es, E)
             hook(it, X, C, accepted, E) || break
         end
+        # j += 1
+        # j > N && (j -= N)
+        # i = pp[j]
         i = rand(1:N)
         ΔE = delta_energy(X, C, i)
         accept(-β * ΔE) || continue
