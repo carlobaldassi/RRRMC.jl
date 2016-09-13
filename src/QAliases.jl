@@ -71,6 +71,15 @@ function GraphQEAT(fname::AbstractString, M::Integer, Γ::Float64, β::Float64)
     GraphQuant(N, M, Γ, β, GraphEAContSimple{2D}, L, A, J)
 end
 
+function GraphQEAT{twoD}(X::GraphEAContSimple{twoD}, M::Integer, Γ::Float64, β::Float64)
+    @assert iseven(twoD)
+    D = twoD ÷ 2
+    N = X.N
+    L = round(Int, N^(1/D))
+    @assert L^D == N
+    GraphQuant(N, M, Γ, β, GraphEAContSimple{twoD}, L, X.A, X.J)
+end
+
 typealias GraphQPercOldT{fourK} GraphQuant{fourK,GraphPercOld}
 
 # """
