@@ -11,12 +11,6 @@ import ..Interface: energy, delta_energy, neighbors, allΔE,
 
 import Base: start, next, done, length, eltype
 
-const MAXDIGITS = 8
-
-discr{ET}(::Type{ET}, x::Real) = convert(ET, round(x, MAXDIGITS))
-#discr(::Type{DFloat64}, x::Real) = x
-discr{ET<:Integer}(::Type{ET}, x::Integer) = convert(ET, x)
-
 function logcoshratio(a, b)
     #return log(cosh(a) / cosh(b))
     #log((exp(a) + exp(-a)) / (exp(b) + exp(-b)))
@@ -24,6 +18,8 @@ function logcoshratio(a, b)
     b = abs(b)
     return a - b + (log1p(exp(-2a)) - log1p(exp(-2b)))
 end
+
+fk(μ̄::Integer, γ::Real, β::Real) = logcoshratio(γ * (μ̄ + 1), γ * (μ̄ - 1)) / β
 
 type GraphRE{M,γ,β} <: DiscrGraph{Float64}
     N::Int
@@ -54,6 +50,16 @@ end
 
 GraphRE{M,oldγ,β}(X::GraphRE{M,oldγ,β}, newγ::Float64) = GraphRE{M,newγ,β}(X.N, X.μ)
 
+@generated function ΔElist{M,γ,β}(::Type{GraphRE{M,γ,β}})
+    Expr(:tuple, ntuple(d->fk(2*(d - 1 - (M-1) >>> 0x1) - iseven(M), γ, β), M)...)
+end
+lstind(μ̄::Int, M::Int) = (μ̄ + M-1) >>> 0x1 + 1
+
+function getk{M,γ,β}(X::GraphRE{M,γ,β}, μ̄::Int)
+    @inbounds k = ΔElist(GraphRE{M,γ,β})[lstind(μ̄, M)]
+    return k
+end
+
 function energy{M,γ,β}(X::GraphRE{M,γ,β}, C::Config)
     @assert X.N == C.N
     @extract X : Nk μ cache
@@ -80,7 +86,9 @@ function energy{M,γ,β}(X::GraphRE{M,γ,β}, C::Config)
         @assert j == i + (k-1) * Nk
         σj = 2s[j] - 1
         μ̄ = μ[i] - σj
-        kj = fk(μ̄, γ, β)
+        # kj = fk(μ̄, γ, β)
+        kj = getk(X, μ̄)
+        # @assert kj == fk(μ̄, γ, β)
         lfields[j] = σj * kj
     end
     cache.move_last = 0
@@ -123,8 +131,10 @@ function update_cache!{M,γ,β}(X::GraphRE{M,γ,β}, C::Config, move::Int)
             σy = 2s[y] - 1
             μ̄ = μnew - σy
             # @assert -M+1 ≤ μ̄ ≤ M-1    μ̄
-            ky = fk(μ̄, γ, β)
-            lfields[y] = discr(Float64, σy * ky)
+            # ky = fk(μ̄, γ, β)
+            ky = getk(X, μ̄)
+            # @assert ky == fk(μ̄, γ, β)
+            lfields[y] = σy * ky
         end
         lfm = lfields[move]
         lfields_last[move] = lfm
@@ -181,7 +191,6 @@ eltype(::Type{CavityRange}) = Int
     return CavityRange(j0, j1, j, Nk)
 end
 
-fk(μ̄::Integer, γ::Real, β::Real) = discr(Float64, logcoshratio(γ * (μ̄ + 1), γ * (μ̄ - 1)) / β)
 @generated function allΔE{M,γ,β}(::Type{GraphRE{M,γ,β}})
     K = M - 1
     iseven(K) ? Expr(:tuple, ntuple(d->fk(2*(d-1), γ, β), K÷2+1)...) :
