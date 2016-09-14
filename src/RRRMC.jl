@@ -25,7 +25,9 @@ using .WaitingTimes
 include("load_graphs.jl")
 
 include("QAliases.jl")
+include("REAliases.jl")
 using .QAliases
+using .REAliases
 
 @inline accept(x) = x ≥ 0 || rand() < exp(x)
 @inline function accept(c, x)
@@ -84,7 +86,7 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
     while it < iters
         it += 1
         #println("it=$it")
-        #@assert abs(E - energy(X, C)) < 1e-10 (E, energy(X, C))
+        #@assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
         if (it % step == 0)
             push!(Es, E)
             hook(it, X, C, accepted, E) || break

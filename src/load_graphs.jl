@@ -11,7 +11,8 @@ macro include_graph(filename)
 end
 
 @include_graph "QT.jl"
+@include_graph "RE.jl"
 
-for filename in filter(f->endswith(f, ".jl") && f ≠ "QT.jl", readdir(graphs_dir))
+for filename in filter(f->endswith(f, ".jl") && f ∉ ["QT.jl", "RE.jl"], readdir(graphs_dir))
     @eval @include_graph $filename
 end
