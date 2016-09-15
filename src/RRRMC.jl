@@ -26,8 +26,10 @@ include("load_graphs.jl")
 
 include("QAliases.jl")
 include("REAliases.jl")
+include("LEAliases.jl")
 using .QAliases
 using .REAliases
+using .LEAliases
 
 @inline accept(x) = x ≥ 0 || rand() < exp(x)
 @inline function accept(c, x)

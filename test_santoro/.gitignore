@@ -1,5 +1,6 @@
 test_QSA_*.txt
 test_RSA_*.txt
+test_LSA_*.txt
 test_SA_*.txt
 1000_uniform_systems
 oldtst
