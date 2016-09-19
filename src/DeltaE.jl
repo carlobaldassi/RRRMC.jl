@@ -34,6 +34,7 @@ type DeltaECache{ET,L}
         for i = 1:N
             ΔE = delta_energy(X, C, i)
             aki = findk(ΔElist, ΔE)
+            #@assert aki > 0 (ΔE, ΔElist)
             upi = ΔE > 0 || (ΔE == 0 && C.s[i] == 1)
             ki = aki + L * upi
             pos[i] = ki

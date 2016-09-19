@@ -4,7 +4,7 @@ using ExtractMacro
 using ..Interface
 using ..Common
 
-export GraphLE, GraphLocEntr, LEenergies
+export GraphLE, GraphLocEntr, LEenergies, cenergy
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
@@ -196,18 +196,21 @@ type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{Float64}
     N::Int
     Nk::Int
     X0::GraphLE{M,γT}
+    Xc::G
     X1::Vector{G}
+    Cc::Config
     C1::Vector{Config}
     function GraphLocEntr(N::Integer, g0::G, Gconstr, args...)
         X0 = GraphLE{M,γT}(N)
         Nk = X0.Nk
         X1 = Array{G}(M)
-        X1[1] = g0
-        for k = 2:M
+        Xc = g0
+        for k = 1:M
             X1[k] = Gconstr(args...)
         end
+        Cc = Config(Nk, init=false)
         C1 = [Config(Nk, init=false) for k = 1:M]
-        return new(N, Nk, X0, X1, C1)
+        return new(N, Nk, X0, Xc, X1, Cc, C1)
     end
 end
 
@@ -223,21 +226,32 @@ function GraphLocEntr(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gconstr
 end
 
 function update_cache!{M}(X::GraphLocEntr{M}, C::Config, move::Int)
-    @extract X : X0 X1 C1
+    @extract X : X0 Xc X1 Cc C1
     k = mod1(move, M+1)
     i = (move - 1) ÷ (M+1) + 1
 
-    k > 1 && spinflip!(X1[k-1], C1[k-1], i)
+    if k == 1
+        #spinflip!(Xc, Cc, i)
+        spinflip!(Cc, i) # Xc cache not updated!
+    else
+        spinflip!(X1[k-1], C1[k-1], i)
+    end
 
     update_cache!(X0, C, move)
 end
 
 function energy{M}(X::GraphLocEntr{M}, C::Config)
     # @assert X.N == C.N
-    @extract X : Nk X0 X1 C1
+    @extract X : Nk X0 Xc X1 Cc C1
     @extract C : s
 
     E = energy(X0, C)
+
+    s1 = Cc.s
+    for (i,j) = enumerate(1:(M+1):(1 + (M+1) * (Nk-1)))
+        s1[i] = s[j]
+    end
+    energy(Xc, Cc)
 
     for k = 1:M
         s1 = C1[k].s
@@ -260,6 +274,11 @@ function LEenergies{M}(X::GraphLocEntr{M})
     end
 
     return Es
+end
+
+function cenergy{M}(X::GraphLocEntr{M})
+    @extract X : Xc Cc
+    return energy(Xc, Cc)
 end
 
 function delta_energy_residual{M}(X::GraphLocEntr{M}, C::Config, move::Int)
