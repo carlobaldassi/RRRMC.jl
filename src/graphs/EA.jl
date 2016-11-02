@@ -309,7 +309,7 @@ function energy(X::GraphEACont, C::Config)
     @assert X.N == C.N
     @extract X : X0 A J=rJ cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E0 = energy(X0, C)
 
@@ -330,6 +330,8 @@ function energy(X::GraphEACont, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return convert(Float64, E0 + E1)
 end
@@ -514,7 +516,7 @@ function energy(X::GraphEAContSimple, C::Config)
     @assert X.N == C.N
     @extract X : A J cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E1 = 0.0
     for x = 1:length(A)
@@ -533,6 +535,8 @@ function energy(X::GraphEAContSimple, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return E1
 end
@@ -603,5 +607,7 @@ function delta_energy(X::GraphEAContSimple, C::Config, move::Int)
     # end
     # return Δ
 end
+
+neighbors(X::GraphEAContSimple, i::Int) = return X.uA[i]
 
 end

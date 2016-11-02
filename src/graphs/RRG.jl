@@ -118,6 +118,7 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
     N::Int
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,ET}}
+    uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
     function GraphRRG(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}})
         isa(K, Integer) || throw(ArgumentError("K must be integer, given a: $(typeof(K))"))
@@ -130,9 +131,11 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
         length(J) == N || throw(ArgumentError("incompatible lengths of A and J: $(length(A)), $(length(J))"))
         #all(j->length(j) == K, J) || throw(ArgumentError("invalid J inner length, expected $K, given: $(unique(map(length,J)))"))
 
+        uA = [collect(A[x][find(J[x])]) for x = 1:N]
+
         cache = LocalFields{ET}(N)
 
-        return new(N, A, J, cache)
+        return new(N, A, J, uA, cache)
     end
 end
 
@@ -255,7 +258,7 @@ function delta_energy{ET}(X::GraphRRG{ET}, C::Config, move::Int)
     # return discr(ET, Δ)
 end
 
-neighbors(X::GraphRRG, i::Int) = return X.A[i]
+neighbors(X::GraphRRG, i::Int) = return X.uA[i]
 @generated _allΔE{K}(::Type{GraphRRG{Int,(-1,1),K}}) =
     iseven(K) ? Expr(:tuple, ntuple(d->4*(d-1), K÷2+1)...) :
                 Expr(:tuple, ntuple(d->2*(2d-1), (K+1)÷2)...)
@@ -323,7 +326,7 @@ function energy(X::GraphRRGCont, C::Config)
     @assert X.N == C.N
     @extract X : X0 A J=rJ cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E0 = energy(X0, C)
 
@@ -344,6 +347,8 @@ function energy(X::GraphRRGCont, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return convert(Float64, E0 + E1)
 end
@@ -523,7 +528,7 @@ function energy(X::GraphRRGContSimple, C::Config)
     @assert X.N == C.N
     @extract X : A J cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E1 = 0.0
     for x = 1:length(A)
@@ -542,6 +547,8 @@ function energy(X::GraphRRGContSimple, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return E1
 end
@@ -611,5 +618,7 @@ function delta_energy(X::GraphRRGContSimple, C::Config, move::Int)
     # end
     # return Δ
 end
+
+neighbors(X::GraphRRGContSimple, i::Int) = return X.A[i]
 
 end
