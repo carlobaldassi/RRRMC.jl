@@ -97,6 +97,9 @@ function rand_move{ET,L}(ΔEcache::DeltaECache{ET,L})
         cT += T[k]
         r < cT && break
     end
+    r < cT || while T[k] == 0
+        k -= 1
+    end
 
     if k ≤ L
         ΔE = -ΔElist[k]
