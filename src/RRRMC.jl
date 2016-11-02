@@ -46,7 +46,8 @@ Possible keyord arguments are:
   Passing the result of a previous run can be useful e.g. when implementing a simulated annealing protocol, or if the system has not equilibrated yet.
 * `hook`: a function to be executed after every `step` number of iterations (see above). It must take five arguments: the current iteration, the graph `X`,
   the current configuration, the number of accepted moves so far, and the current energy. Useful to collect data other than the energy, write to files ecc;
-  you'd probably want to use a closure, see the example below. The default is a no-op.
+  you'd probably want to use a closure, see the example below. The return value must be a `Bool`: return `false` to interrupt the simulation, `true` otherwise.
+  The default is a no-op and just returns `true`.
 
 Basic example:
 
@@ -59,25 +60,27 @@ Example of using the `hook` for collecting samples as the columns of a `BitMatri
 
 ```
 julia> iters = 100_000; step = 1_000; l = iters ÷ step; N = RRRMC.getN(X);
-julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s);
+julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; true);
 julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
-function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing)
+function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
     accepted = 0
-    for it = 1:iters
+    it = 0
+    while it < iters
+        it += 1
         #println("it=$it")
         #@assert abs(E - energy(X, C)) < 1e-10 (E, energy(X, C))
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
         i = rand(1:N)
         ΔE = delta_energy(X, C, i)
@@ -86,7 +89,9 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
         E += ΔE
         accepted += 1
     end
-    println("accept rate = ", accepted / iters)
+    println("samples = ", length(Es))
+    println("iters = ", it)
+    println("accept rate = ", accepted / it)
     return Es, C
 end
 
@@ -110,11 +115,11 @@ so fewer iterations overall should be needed normally. Whether this trade-off is
 The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
 that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`](@ref) models.
 """
-function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing,
+function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -135,7 +140,7 @@ function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
         it += 1
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
         acc = false
         if acc_rate < staged_thr
@@ -161,16 +166,18 @@ function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / it)
     println("frac. staged iters = ", staged_its / it)
     return Es, C
 end
 
-function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing,
+function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -192,7 +199,7 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
         it += 1
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
         acc = false
         if acc_rate < staged_thr
@@ -220,6 +227,8 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / it)
     println("frac. staged iters = ", staged_its / it)
     return Es, C
@@ -247,9 +256,9 @@ that this function can only be used with [`DiscrGraph`](@ref) models.
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing)
+function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -261,6 +270,7 @@ function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
     it = 0
     accepted = 0
     nextstep = step
+    stop = false
     while it < iters
         #@assert E == energy(X, C)
         #check_consistency(ΔEcache)
@@ -269,14 +279,17 @@ function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
 
         while it + skip + 1 ≥ nextstep
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(nextstep, X, C, accepted, E) || @goto out
             nextstep += step
-            nextstep > iters && break
+            nextstep > iters && @goto out
         end
         it += skip + 1
         E += ΔE
         accepted += 1
     end
+    @label out
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / iters)
     println("true it = ", accepted)
     return Es, C
