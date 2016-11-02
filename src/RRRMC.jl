@@ -7,7 +7,7 @@ See [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref).
 """
 module RRRMC
 
-export standardMC, rrrMC, bklMC
+export standardMC, rrrMC, bklMC, wtmMC
 
 using ExtractMacro
 
@@ -15,10 +15,12 @@ include("DFloats.jl")
 include("Common.jl")
 include("Interface.jl")
 include("DeltaE.jl")
+include("WaitingTimes.jl")
 
 using .Common
 using .Interface
 using .DeltaE
+using .WaitingTimes
 
 include("load_graphs.jl")
 
@@ -292,6 +294,87 @@ function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
     println("iters = ", it)
     println("accept rate = ", accepted / iters)
     println("true it = ", accepted)
+    return Es, C
+end
+
+# function step_wtm!(X::AbstractGraph, C::Config, ΔEcache::THeap, β::Real, t0::Float64)
+#     t, move = pick_next(ΔEcache)
+#     δt = t - t0
+#     ΔE = update_heap!(ΔEcache, X, C, β, move, t)
+#     return ΔE, t, δt
+# end
+
+## function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+##     srand(seed)
+##     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+##
+##     N = getN(X)
+##     C::Config = C0 ≡ nothing ? Config(N) : C0
+##     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
+##     E = energy(X, C)
+##     theap = THeap(X, C, β)
+##     #check_consistency(ΔEcache)
+##
+##     it = 0
+##     t = 0.0
+##     nextstep = step
+##     while it < iters
+##         #@assert E == energy(X, C)
+##
+##         it += 1
+##         t′, move = pick_next(theap)
+##         δt = t′ - t
+##         if (it % step == 0)
+##             push!(Es, E)
+##             hook(it, X, C, t, δt, E) || break
+##         end
+##         t = t′
+##         ΔE = update_heap!(theap, X, C, β, move, t)
+##         E += ΔE
+##     end
+##     println("global time = ", t)
+##     println("ratio = ", t / it)
+##     return Es, C
+## end
+
+# TODO: document!
+function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+    srand(seed)
+    Es = empty!(Array(ET, min(10^8, samples)))
+
+    N = getN(X)
+    C::Config = C0 ≡ nothing ? Config(N) : C0
+    C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
+    E = energy(X, C)
+    theap = THeap(X, C, β)
+    #check_consistency(ΔEcache)
+
+    num_moves = 0
+    tmax = step * samples
+    t = 0.0
+    nextstep = step
+    while t < tmax
+        #@assert E == energy(X, C)
+
+        t′, move = pick_next(theap)
+        #δt = t′ - t
+        while t′ ≥ nextstep
+            push!(Es, E)
+            hook(nextstep, X, C, num_moves, E) || @goto out
+            nextstep += step
+            nextstep > tmax + 1e-10 && @goto out
+        end
+        t = t′
+        ΔE = update_heap!(theap, X, C, β, move, t)
+        E += ΔE
+
+        num_moves += 1
+    end
+    @label out
+    println("samples = ", length(Es))
+    println("num_moves = ", num_moves)
+    println("global time = ", t)
+    println("ratio = ", t / num_moves)
     return Es, C
 end
 
