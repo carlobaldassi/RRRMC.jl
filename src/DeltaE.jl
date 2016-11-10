@@ -9,9 +9,12 @@ using .ArraySets
 
 import .ArraySets: check_consistency
 
-export DeltaECache, check_consistency, compute_staged!, apply_staged!,
+include("LogCumSums.jl")
+using .LogCumSums
+
+export DeltaECache, gen_ΔEcache, check_consistency, compute_staged!, apply_staged!,
        compute_reverse_probabilities!, rand_move, rand_skip, apply_move!,
-       get_class_f
+       get_class_f, get_z
 
 findk(ΔElist, dE) = findfirst(ΔElist, abs(dE))
 
@@ -62,6 +65,10 @@ end
     ΔElist = allΔE(X)
     Expr(:call, Expr(:curly, :DeltaECache, ET, length(ΔElist)), :X, :C, ΔElist, :β, :rrr)
 end
+
+gen_ΔEcache(X::DiscrGraph, C::Config, β::Float64, rrr::Bool = true) = DeltaECache(X, C, β, rrr)
+
+get_z(ΔEcache::DeltaECache) = ΔEcache.z
 
 function check_consistency{ET,L}(ΔEcache::DeltaECache{ET,L})
     @extract ΔEcache : ΔElist ascache pos
@@ -238,5 +245,112 @@ function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move
     ΔEcache.z = z′
     return c
 end
+
+prior(x) = x > 0 ? exp(-x) : 1.0
+
+type DeltaECacheCont{ET}
+    lcs::LogCumSum
+    ΔEs::Vector{ET}
+    β::Float64
+    staged::Vector{Tuple{Int,ET,Float64}}
+    function DeltaECacheCont(X::SimpleGraph, C::Config, β::Float64)
+        N = getN(X)
+        @assert C.N == N
+        ΔEs = [delta_energy(X, C, i) for i = 1:N]
+        lcs = LogCumSum(prior(β * ΔE) for ΔE in ΔEs)
+        staged = empty!(Array(Tuple{Int,ET,Float64}, N))
+        return new(lcs, ΔEs, β, staged)
+    end
+end
+
+# the rrr argument here is just for consistency but it's unused
+gen_ΔEcache{ET}(X::SimpleGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
+
+get_z(ΔEcache::DeltaECacheCont) = ΔEcache.lcs.z
+
+function rand_skip(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : lcs
+    @extract lcs : z N
+    return floor(Int, Base.log1p(-rand()) / Base.log1p(-z / N))
+end
+
+function rand_move(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache: lcs ΔEs
+
+    move = rand(lcs)
+    ΔE = ΔEs[move]
+    return move, ΔE
+end
+
+function apply_staged!(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : lcs ΔEs staged
+
+    @inbounds for (j,ΔE,p) in staged
+        ΔEs[j] = ΔE
+        lcs[j] = p
+    end
+    return ΔEcache
+end
+
+function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : lcs staged
+
+    z = lcs.z
+    @inbounds for (j,_,p) in staged
+        z += p - lcs[j]
+    end
+
+    return z
+end
+
+function compute_staged!{ET}(X::SimpleGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET})
+    @extract C : N s
+    @extract ΔEcache : β staged
+
+    spinflip!(X, C, i)
+    empty!(staged)
+
+    ΔE = delta_energy(X, C, i)
+    p = prior(β * ΔE)
+    push!(staged, (i,ΔE,p))
+    for j in neighbors(X, i)
+        ΔE = delta_energy(X, C, j)
+        p = prior(β * ΔE)
+        push!(staged, (j,ΔE,p))
+    end
+
+    spinflip!(X, C, i)
+end
+
+function apply_move!{ET}(X::SimpleGraph{ET}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET})
+    ## equivalent to:
+    #
+    # compute_staged!(X, C, move, ΔEcache)
+    # compute_reverse_probabilities!(ΔEcache)
+    # spinflip!(X, C, move)
+    # apply_staged!(ΔEcache)
+
+    @extract C : s
+    @extract ΔEcache : lcs ΔEs β
+
+    spinflip!(X, C, move)
+
+    z = lcs.z
+    @inbounds begin
+        ΔE = delta_energy(X, C, move)
+        ΔEs[move] = ΔE
+        lcs[move] = prior(β * ΔE)
+
+        for j in neighbors(X, move)
+            ΔE = delta_energy(X, C, j)
+            ΔEs[j] = ΔE
+            lcs[j] = prior(β * ΔE)
+        end
+    end
+    z′ = lcs.z
+    c = z / z′
+    return c
+end
+
 
 end # module

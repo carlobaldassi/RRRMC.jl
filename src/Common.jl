@@ -1,9 +1,10 @@
 module Common
 
-export Vec, IVec, unsafe_bitflip!, discretize,
+export Vec, Vec2, IVec, unsafe_bitflip!, discretize,
        LocalFields
 
-typealias Vec Vector{Float64}
+typealias Vec  Vector{Float64}
+typealias Vec2 Vector{Vec}
 typealias IVec Vector{Int}
 
 @inline function unsafe_bitflip!(Bc::Array{UInt64}, i::Int)

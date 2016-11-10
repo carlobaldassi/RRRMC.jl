@@ -111,8 +111,8 @@ end
 
 ### Begin RRR-related functions
 
-function step_rrr(X::DiscrGraph, C::Config, ΔEcache::DeltaECache)
-    @extract ΔEcache : z
+function step_rrr(X, C::Config, ΔEcache)
+    z = get_z(ΔEcache)
     move, ΔE = rand_move(ΔEcache)
     compute_staged!(X, C, move, ΔEcache)
     z′ = compute_reverse_probabilities!(ΔEcache)
@@ -129,17 +129,22 @@ so fewer iterations overall should be needed normally. Whether this trade-off is
 The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
 that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`](@ref) models.
 """
-function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
-                   staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
+function rrrMC{ET}(X::Union{SimpleGraph{ET},DiscrGraph{ET}}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
+                   staged_thr::Real = NaN, staged_thr_fact::Real = 5.0)
+
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+
+    if staged_thr ≡ NaN
+        staged_thr = isa(X, SimpleGraph) ? 0.8 : 0.5
+    end
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    ΔEcache = DeltaECache(X, C, β)
+    ΔEcache = gen_ΔEcache(X, C, β)
     #check_consistency(ΔEcache)
 
     λ = staged_thr_fact / N
@@ -198,7 +203,7 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
     X0 = discr_graph(X)
-    ΔEcache = DeltaECache(X0, C, β)
+    ΔEcache = gen_ΔEcache(X0, C, β)
     #check_consistency(ΔEcache)
 
     λ = staged_thr_fact / N
@@ -250,7 +255,7 @@ end
 
 ### Begin BKL-related functions
 
-function step_bkl(X::DiscrGraph, C::Config, ΔEcache::DeltaECache)
+function step_bkl(X, C::Config, ΔEcache)
     skip = rand_skip(ΔEcache)
     move, ΔE = rand_move(ΔEcache)
     apply_move!(X, C, move, ΔEcache)
@@ -270,7 +275,7 @@ that this function can only be used with [`DiscrGraph`](@ref) models.
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function bklMC{ET}(X::Union{DiscrGraph{ET},SimpleGraph{ET}}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
@@ -278,7 +283,7 @@ function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    ΔEcache = DeltaECache(X, C, β, false)
+    ΔEcache = gen_ΔEcache(X, C, β, false)
     #check_consistency(ΔEcache)
 
     it = 0
@@ -518,7 +523,7 @@ function second_eigenvalue_rrr(X::DiscrGraph, β::Float64)
         C.s.chunks[1] = ks - 1
 
         energy(X, C)
-        ΔEcache = DeltaECache(X, C, β)
+        ΔEcache = gen_ΔEcache(X, C, β)
         #DeltaE.check_consistency(ΔEcache)
 
         pchg = 0.0
