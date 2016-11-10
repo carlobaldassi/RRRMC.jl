@@ -1,4 +1,4 @@
-module Perc
+module PercNaive
 
 using ExtractMacro
 using ..Interface
@@ -6,7 +6,7 @@ using ..Common
 
 using ..DeltaE.ArraySets
 
-export GraphPerc
+export GraphPercNaive
 
 import ..Interface: energy, delta_energy, update_cache!
 
@@ -37,14 +37,14 @@ type Stabilities
     end
 end
 
-type GraphPerc <: SimpleGraph{Int}
+type GraphPercNaive <: SimpleGraph{Int}
     N::Int
     P::Int
     ξ::BitMatrix
     ξv::Vector{BitVector}
     stab::Stabilities
     tmps::BitVector
-    function GraphPerc(ξ::BitMatrix, ξv::Vector{BitVector})
+    function GraphPercNaive(ξ::BitMatrix, ξv::Vector{BitVector})
         P, N = size(ξ)
         #TODO: check
         isodd(N) || throw(ArgumentError("N must be odd, given: $N"))
@@ -54,7 +54,7 @@ type GraphPerc <: SimpleGraph{Int}
     end
 end
 
-GraphPerc(N::Integer, P::Integer) = GraphPerc(gen_ξ(N, P)...)
+GraphPercNaive(N::Integer, P::Integer) = GraphPercNaive(gen_ξ(N, P)...)
 
 function Base.empty!(stab::Stabilities)
     @extract stab : p m Δs ξsi
@@ -65,7 +65,7 @@ function Base.empty!(stab::Stabilities)
     return stab
 end
 
-function energy(X::GraphPerc, C::Config)
+function energy(X::GraphPercNaive, C::Config)
     @assert X.N == C.N
     @extract C : s
     @extract X : N P ξv stab tmps
@@ -76,24 +76,21 @@ function energy(X::GraphPerc, C::Config)
     tmps = BitArray(N)
 
     for a = 1:P
-        # tmps[:] = ξ[a,:]
-        # map!($, tmps, s, tmps)
-        # Δ = N - 2 * sum(tmps)
         map!($, tmps, s, ξv[a])
         Δ = N - 2 * sum(tmps)
         Δs[a] = Δ
         if Δ == 1
             push!(p, a)
         elseif Δ < 0
-            push!(m, a)
-            E += (-Δ-1) ÷ 2 + 1
+            Δ == -1 && push!(m, a)
+            E += 1
         end
     end
 
     return E
 end
 
-function update_cache!(X::GraphPerc, C::Config, move::Int)
+function update_cache!(X::GraphPercNaive, C::Config, move::Int)
     @assert X.N == C.N
     @extract C : s
     @extract X : N P ξ stab
@@ -113,10 +110,12 @@ function update_cache!(X::GraphPerc, C::Config, move::Int)
             push!(p, a)
         elseif oldΔ == 1
             delete!(p, a)
-            newΔ < 0 && push!(m, a)
-        elseif oldΔ < 0 && newΔ == 1
+            newΔ == -1 && push!(m, a)
+        elseif oldΔ == -1
             delete!(m, a)
-            push!(p, a)
+            newΔ == 1 && push!(p, a)
+        elseif oldΔ < -1 && newΔ == -1
+            push!(m, a)
         end
         Δs[a] = newΔ
     end
@@ -125,7 +124,7 @@ function update_cache!(X::GraphPerc, C::Config, move::Int)
     return
 end
 
-function delta_energy_naive(X::GraphPerc, C::Config, move::Int)
+function delta_energy_naive(X::GraphPercNaive, C::Config, move::Int)
     @assert C.N == X.N
     @extract C : s
     @extract X : N P ξ stab
@@ -138,7 +137,7 @@ function delta_energy_naive(X::GraphPerc, C::Config, move::Int)
     return E1 - E0
 end
 
-function delta_energy(X::GraphPerc, C::Config, move::Int)
+function delta_energy(X::GraphPercNaive, C::Config, move::Int)
     @assert C.N == X.N
     @extract C : s
     @extract X : N P ξ stab
@@ -155,7 +154,7 @@ function delta_energy(X::GraphPerc, C::Config, move::Int)
         ΔE += ~ξsi[a]
     end
     @inbounds for a in m
-        ΔE -= 2 * ξsi[a] - 1
+        ΔE -= ξsi[a]
     end
     si && flipbits!(ξsi)
     # td = delta_energy_naive(X, s, stab, move)
@@ -164,7 +163,7 @@ function delta_energy(X::GraphPerc, C::Config, move::Int)
     return ΔE
 end
 
-function check_delta(X::GraphPerc, C::Config, move::Int)
+function check_delta(X::GraphPercNaive, C::Config, move::Int)
     delta = delta_energy(X, C, move)
     e0 = energy(X, s)
     spinflip!(C, move)

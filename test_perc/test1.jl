@@ -54,6 +54,7 @@ function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = not
             t = time() - t0
             #@assert abs(E - RRRMC.energy(X, C)) < 1e-10
             println(f, "$(it+it0) $acc $(E/N) $t $β")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -164,6 +165,7 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $t $QE $β $Γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -277,6 +279,7 @@ function test_QSA_alt(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg =
             QE = RRRMC.Qenergy(X, C)
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $t $QE $β $Γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -354,6 +357,7 @@ function test_QSA_alt2(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg 
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $t $QE $β $Γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -452,6 +456,7 @@ function test_QSA_alt3(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg 
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $t $QE $β $Γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -549,6 +554,7 @@ function test_QSA_alt4(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg 
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $t $QE $β $Γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -711,6 +717,7 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $(ME/N) $(aE/N) $(sE/N) $t $β $γ")
+            return true
         end
         cleanup = () -> begin
             close(f)
@@ -851,6 +858,7 @@ function test_LSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $(ME/N) $(aE/N) $(sE/N) $(cE/N) $t $β $γ")
+            return true
         end
         cleanup = () -> begin
             close(f)

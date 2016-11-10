@@ -6,8 +6,9 @@ using ..IsingSK
 using ..EA
 using ..PercOld
 using ..Perc
+using ..PercNaive
 
-export Graph0LE, GraphIsingLE, GraphEALE, GraphPercLE, GraphPercOldLE
+export Graph0LE, GraphIsingLE, GraphEALE, GraphPercLE, GraphPercNaiveLE, GraphPercOldLE
 
 typealias Graph0LE{M,γT} GraphLocEntr{M,γT,GraphEmpty}
 
@@ -98,5 +99,20 @@ function GraphPercLE(X::GraphPerc, M::Integer, γ::Float64, β::Float64)
     GraphLocEntr(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
 end
 
-end # module
+typealias GraphPercNaiveLE{M,γT} GraphLocEntr{M,γT,GraphPercNaive}
 
+# """
+#     GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercNaive.gen_ξ(N, P)
+    GraphLocEntr(N, M, γ, β, GraphPercNaive, ξ, ξv)
+end
+
+function GraphPercNaiveLE(X::GraphPercNaive, M::Integer, γ::Float64, β::Float64)
+    GraphLocEntr(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
+end
+
+end # module

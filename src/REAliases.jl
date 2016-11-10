@@ -6,8 +6,9 @@ using ..IsingSK
 using ..EA
 using ..PercOld
 using ..Perc
+using ..PercNaive
 
-export Graph0RE, GraphIsingRE, GraphEARE, GraphPercRE, GraphPercOldRE
+export Graph0RE, GraphIsingRE, GraphEARE, GraphPercRE, GraphPercNaiveRE, GraphPercOldRE
 
 typealias Graph0RE{M,γ,β} GraphRepl{M,γ,β,GraphEmpty}
 
@@ -96,6 +97,22 @@ end
 
 function GraphPercRE(X::GraphPerc, M::Integer, γ::Float64, β::Float64)
     GraphRepl(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
+end
+
+typealias GraphPercNaiveRE{M,γ,β} GraphRepl{M,γ,β,GraphPercNaive}
+
+# """
+#     GraphPercNaiveRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercNaiveRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercNaive.gen_ξ(N, P)
+    GraphRepl(N, M, γ, β, GraphPercNaive, ξ, ξv)
+end
+
+function GraphPercNaiveRE(X::GraphPercNaive, M::Integer, γ::Float64, β::Float64)
+    GraphRepl(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
 end
 
 end # module

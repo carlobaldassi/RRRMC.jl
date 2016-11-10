@@ -5,7 +5,7 @@ using ..Interface
 using ..Common
 
 export GraphQT, Qenergy, transverse_mag,
-       GraphQuant, Renergies
+       GraphQuant, Renergies, overlaps
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
@@ -200,6 +200,46 @@ function Renergies(X::GraphQuant)
     end
 
     return Es
+end
+
+function overlaps(X::GraphQuant)
+    @extract X : M Nk C1
+
+    aux = BitArray(Nk)
+    ovs = zeros(M ÷ 2)
+
+    for k1 = 1:(M-1)
+        @extract C1[k1] : s1=s
+        for k2 = (k1+1):M
+            @extract C1[k2] : s2=s
+            map!($, aux, s1, s2)
+            δ = min(k2 - k1, M + k1 - k2)
+            ovs[δ] += Nk - 2 * sum(aux)
+        end
+    end
+
+    # for i = 1:Nk
+    #     for k1 = 1:(M-1)
+    #         s1 = s[i + (k1-1) * Nk]
+    #         for k2 = (k1+1):M
+    #             δ = min(k2 - k1, M + k1 - k2)
+    #             s2 = s[i + (k2-1) * Nk]
+    #             ovs[δ] += 1 - 2 * (sk1 $ sk2)
+    #         end
+    #     end
+    # end
+
+    # note: for each node in the loop, there are
+    # 2 edges linking to other nodes at a given distance δ,
+    # except if M is even and δ=M÷2, in which case there is
+    # only 1 edge. So the multiplicity is M for all overlaps
+    # except for the last entry for even M, then it's M/2.
+    for δ = 1:((M-1)÷2)
+        ovs[δ] /= M * Nk
+    end
+    iseven(M) && (ovs[M÷2] /= M * Nk / 2)
+
+    return ovs
 end
 
 function Qenergy(X::GraphQuant, C::Config)

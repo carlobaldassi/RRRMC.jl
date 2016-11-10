@@ -6,8 +6,9 @@ using ..IsingSK
 using ..EA
 using ..PercOld
 using ..Perc
+using ..PercNaive
 
-export GraphQ0T, GraphQIsingT, GraphQEAT, GraphQPercT, GraphQPercOldT
+export GraphQ0T, GraphQIsingT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
@@ -110,6 +111,22 @@ end
 
 function GraphQPercT(X::GraphPerc, M::Integer, Γ::Float64, β::Float64)
     GraphQuant(X.N, M, Γ, β, GraphPerc, X.ξ, X.ξv)
+end
+
+typealias GraphQPercNaiveT{fourK} GraphQuant{fourK,GraphPercNaive}
+
+# """
+#     GraphQPercNaiveT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphQPercNaiveT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = PercNaive.gen_ξ(N, P)
+    GraphQuant(N, M, Γ, β, GraphPercNaive, ξ, ξv)
+end
+
+function GraphQPercNaiveT(X::GraphPercNaive, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphPercNaive, X.ξ, X.ξv)
 end
 
 end # module
