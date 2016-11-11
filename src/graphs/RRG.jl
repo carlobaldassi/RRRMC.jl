@@ -282,7 +282,7 @@ end
 
 ## continous weights
 
-type GraphRRGCont{ET,LEV,K} <: DoubleGraph{Float64}
+type GraphRRGCont{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphRRG{ET,LEV,K}
     A::Vector{NTuple{K,Int}}
@@ -307,7 +307,7 @@ type GraphRRGCont{ET,LEV,K} <: DoubleGraph{Float64}
 end
 
 """
-    GraphRRGCont(N::Integer, K::Integer, LEV) <: DoubleGraph{Float64}
+    GraphRRGCont(N::Integer, K::Integer, LEV) <: DoubleGraph{DiscrGraph,Float64}
 
 A `DoubleGraph` implementing a random regular graph with `N` spins and connectivity `K`.
 *Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
@@ -315,7 +315,7 @@ with a cutoff on the number of restarts, and thus it may occasionally fail if `K
 The interactions are extracted from a normal distribution with unit variance, and are then
 discretized using the values in `LEV`, which must be a `Tuple` of `Real`s. No external fields.
 
-Same as [`GraphRRGContSimple`](@ref), but it can be used with [`rrrMC`](@ref).
+Same as [`GraphRRGContSimple`](@ref), but it works differently when used with [`rrrMC`](@ref).
 """
 GraphRRGCont{ET<:Real}(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphRRGCont{ET,LEV,K}(N)
 GraphRRGCont(N::Integer, K::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphRRGCont(N, K, promote(LEV...))

@@ -306,7 +306,7 @@ neighbors(X::GraphEA, i::Int) = return X.uA[i]
     return Expr(:tuple, deltas...)
 end
 
-type GraphEACont{ET,LEV,twoD} <: DoubleGraph{Float64}
+type GraphEACont{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphEA{ET,LEV,twoD}
     A::Vector{NTuple{twoD,Int}}
@@ -337,7 +337,7 @@ type GraphEACont{ET,LEV,twoD} <: DoubleGraph{Float64}
 end
 
 """
-    GraphEACont(L::Integer, D::Integer, LEV) <: DoubleGraph{Float64}
+    GraphEACont(L::Integer, D::Integer, LEV) <: DoubleGraph{DiscrGraph,Float64}
 
 An Edwards-Anderson `DoubleGraph`: spins are arranged on a square lattice of size `L`
 in `D` dimensions (i.e. there are \$L^D\$ total spins), with periodic boundary
@@ -345,7 +345,7 @@ conditions. The interactions are extracted at random from a normal distribution
 with unit variance, and are then discretized using the values in `LEV`,
 which must be a `Tuple` of `Real`s. No external fields.
 
-Same as [`GraphEAContSimple`](@ref), but it can be used with [`rrrMC`](@ref).
+Same as [`GraphEAContSimple`](@ref), but works differently when used with [`rrrMC`](@ref).
 """
 GraphEACont{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphEACont{ET,LEV,2D}(L)
 GraphEACont(L::Integer, D::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphEACont(L, D, promote(LEV...))

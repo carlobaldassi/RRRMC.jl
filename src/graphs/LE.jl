@@ -192,7 +192,7 @@ end
 
 # Replicate an existsing graph
 
-type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{Float64}
+type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphLE{M,γT}

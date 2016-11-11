@@ -8,7 +8,7 @@ using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export GraphQ0T, GraphQIsingT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
+export GraphQ0T, GraphQIsingT, GraphQIsingGaussT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
@@ -37,13 +37,16 @@ A `DoubleGraph` which implements a quantum Ising spin model in a transverse magn
 using the Suzuki-Trotter transformation.
 `N` is the number of spins, `M` the number of Suzuki-Trotter replicas, `Γ` the transverse
 field, `β` the inverse temperature.
-The graph is fully-connected, the interactions are random (\$J ∈ {-1,1}\$),
+The graph is fully-connected, the interactions are random (\$J ∈ {-1/√N,1/√N}\$),
 there are no external longitudinal fields.
 
 See also [`Qenergy`](@ref).
 """
 GraphQIsingT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSK, IsingSK.gen_J(Nk))
 
+
+typealias GraphQIsingGaussT{fourK} GraphQuant{fourK,GraphIsingSKGauss}
+GraphQIsingGaussT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSKGauss, IsingSK.gen_J_gauss(Nk))
 
 
 

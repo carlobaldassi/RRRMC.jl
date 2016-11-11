@@ -79,7 +79,7 @@ neighbors(X::GraphFields, i::Int) = return ()
 end
 
 
-type GraphFieldsCont{ET,LEV} <: DoubleGraph{Float64}
+type GraphFieldsCont{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphFields{ET,LEV}
     rfields::Vec
@@ -92,7 +92,7 @@ type GraphFieldsCont{ET,LEV} <: DoubleGraph{Float64}
 end
 
 """
-    GraphFieldsCont(N::Integer, LEV::Tuple) <: DoubleGraph
+    GraphFieldsCont(N::Integer, LEV::Tuple) <: DoubleGraph{Float64,GraphFields}
 
 A simple `DoubleGraph` type with `N` non-interacting variables, each of which is
 subject to a local field. The fields are extracted independently from a normal

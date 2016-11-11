@@ -182,7 +182,7 @@ function compute_staged!{ET,L}(X::DiscrGraph{ET}, C::Config, i::Int, ΔEcache::D
     spinflip!(X, C, i)
 end
 
-function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move::Int, ΔEcache::DeltaECache{ET,L})
+function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph{DiscrGraph{ET}}}, C::Config, move::Int, ΔEcache::DeltaECache{ET,L})
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -195,7 +195,7 @@ function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move
 
     spinflip!(X, C, move)
 
-    X0 = discr_graph(X)
+    X0 = inner_graph(X)
 
     z′ = z
     @inbounds begin
@@ -322,7 +322,7 @@ function compute_staged!{ET}(X::SimpleGraph{ET}, C::Config, i::Int, ΔEcache::De
     spinflip!(X, C, i)
 end
 
-function apply_move!{ET}(X::SimpleGraph{ET}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET})
+function apply_move!{ET}(X::Union{SimpleGraph{ET},DoubleGraph{SimpleGraph{ET}}}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET})
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -335,14 +335,16 @@ function apply_move!{ET}(X::SimpleGraph{ET}, C::Config, move::Int, ΔEcache::Del
 
     spinflip!(X, C, move)
 
+    X0 = inner_graph(X)
+
     z = lcs.z
     @inbounds begin
-        ΔE = delta_energy(X, C, move)
+        ΔE = delta_energy(X0, C, move)
         ΔEs[move] = ΔE
         lcs[move] = prior(β * ΔE)
 
-        for j in neighbors(X, move)
-            ΔE = delta_energy(X, C, j)
+        for j in neighbors(X0, move)
+            ΔE = delta_energy(X0, C, j)
             ΔEs[j] = ΔE
             lcs[j] = prior(β * ΔE)
         end

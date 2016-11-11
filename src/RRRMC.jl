@@ -129,7 +129,7 @@ so fewer iterations overall should be needed normally. Whether this trade-off is
 The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
 that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`](@ref) models.
 """
-function rrrMC{ET}(X::Union{SimpleGraph{ET},DiscrGraph{ET}}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
+function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = NaN, staged_thr_fact::Real = 5.0)
 
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
@@ -192,7 +192,7 @@ function rrrMC{ET}(X::Union{SimpleGraph{ET},DiscrGraph{ET}}, β::Real, iters::In
     return Es, C
 end
 
-function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
+function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
@@ -202,7 +202,7 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    X0 = discr_graph(X)
+    X0 = inner_graph(X)
     ΔEcache = gen_ΔEcache(X0, C, β)
     #check_consistency(ΔEcache)
 
@@ -275,7 +275,7 @@ that this function can only be used with [`DiscrGraph`](@ref) models.
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::Union{DiscrGraph{ET},SimpleGraph{ET}}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function bklMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 

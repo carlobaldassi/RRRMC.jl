@@ -201,7 +201,7 @@ end
 
 # Replicate an existsing graph
 
-type GraphRepl{M,γ,β,G<:AbstractGraph} <: DoubleGraph{Float64}
+type GraphRepl{M,γ,β,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphRE{M,γ,β}

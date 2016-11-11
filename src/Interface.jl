@@ -8,8 +8,8 @@ if isdefined(Main, :Documenter)
 using ...RRRMC
 end
 
-export Config, AbstractGraph, SimpleGraph, DiscrGraph, DoubleGraph, spinflip!,
-       energy, delta_energy, neighbors, getN, allΔE, discr_graph,
+export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
+       spinflip!, energy, delta_energy, neighbors, getN, allΔE, inner_graph,
        delta_energy_residual, update_cache!, update_cache_residual!
 
 import Base: length
@@ -45,7 +45,8 @@ An abstract type representing an Ising spin model. The `ET` parameter
 is the type returned by the [`energy`](@ref) and [`delta_energy`](@ref)
 functions.
 
-See also [`SimpleGraph`](@ref), [`DiscrGraph`](@ref) and [`DoubleGraph`](@ref).
+See also [`SimpleGraph`](@ref), [`DiscrGraph`](@ref), [`SingleGraph`](@ref)
+and [`DoubleGraph`](@ref).
 """
 abstract AbstractGraph{ET<:Real}
 
@@ -61,7 +62,7 @@ A function which is called every time a spin is flipped. This may happen:
 by particular graph types.
 
 When `X` is a [`DoubleGraph`](@ref), there is a default implementation which first calls
-`update_cache!` on [`discr_graph`](@ref)`(X)`, then
+`update_cache!` on [`inner_graph`](@ref)`(X)`, then
 calls [`update_cache_residual!`](@ref) on `X`.
 
 *Note*: this function is always invoked *after* the flip has been performed, unlike in [`delta_energy`](@ref)
@@ -78,8 +79,8 @@ end
     energy(X::AbstractGraph, C::Config)
 
 Returns the energy of graph `X` in the configuration `C`. This is always invoked at the
-beginning of [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref). Subsequently,
-[`delta_energy`](@ref) is used instead.
+beginning of [`standardMC`](@ref), [`rrrMC`](@ref), [`bklMC`](@ref) and [`wtmMC`](@ref).
+Subsequently, [`delta_energy`](@ref) is used instead.
 
 All graphs must implement this function.
 
@@ -119,12 +120,25 @@ Returns the number of spins for a graph. The default implementation just returns
 """
 getN(X::AbstractGraph) = X.N
 
+"""
+    neighbors(X::AbstractGraph, i::Int)
+
+Returns an iterable with all the neighbors of spin `i`. This is required
+by [`rrrMC`](@ref), [`bklMC`](@ref) and [`wtmMC`](@ref) since those methods need to
+evaluate the effect of flipping a spin on its neighbors' local fields. It is
+not required by [`standardMC`](@ref).
+
+For performance reasons, it is best if the returned value is stack-allocated
+rather than heap-allocated, e.g. it is better to return a `Tuple` than a `Vector`.
+"""
+neighbors(::AbstractGraph, i::Int) = error("not implemented")
+
+
 
 """
     SimpleGraph{ET} <: AbstractGraph{ET}
 
-An abstract type representing a generic graph. This can only be used with [`standardMC`](@ref),
-not with [`rrrMC`](@ref) or [`bklMC`](@ref).
+An abstract type representing a generic graph.
 
 The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`](@ref).
 """
@@ -136,27 +150,13 @@ abstract SimpleGraph{ET} <: AbstractGraph{ET}
 
 An abstract type representing a graph in which the [`delta_energy`](@ref) values
 produced when flipping a spin belong to a finite discrete set, and thus can be
-sampled efficiently with [`rrrMC`](@ref) or [`bklMC`](@ref).
+sampled more efficiently with [`rrrMC`](@ref) or [`bklMC`](@ref).
 
 The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`](@ref).
-
-It is also used internally in [`DoubleGraph`](@ref).
 
 See also [`neighbors`](@ref) and [`allΔE`](@ref).
 """
 abstract DiscrGraph{ET} <: AbstractGraph{ET}
-
-"""
-    neighbors(X::DiscrGraph, i::Int)
-
-Returns an iterable with all the neighbors of spin `i`. This is required
-by [`rrrMC`](@ref) and [`bklMC`](@ref) since those methods need to evaluate
-the effect of flipping a spin on its neighbors' delta-energy classes.
-
-For performance reasons, it is best if the returned value is stack-allocated
-rather than heap-allocated, e.g. it is better to return a `Tuple` than a `Vector`.
-"""
-neighbors(::DiscrGraph, i::Int) = error("not implemented")
 
 """
     allΔE{P<:DiscrGraph}(::Type{P})
@@ -172,44 +172,57 @@ allΔE{P<:DiscrGraph}(::Type{P}) = error("not implemented")
 allΔE(X::DiscrGraph) = allΔE(typeof(X))
 
 """
-    DoubleGraph{ET} <: AbstractGraph{ET}
+    SingleGraph{ET}
+
+A type alias representing either a [`SimpleGraph`](@ref) or a
+[`DiscrGraph{ET}`](@ref). See also [`DoubleGraph`](@ref).
+"""
+typealias SingleGraph{ET} Union{SimpleGraph{ET},DiscrGraph{ET}}
+
+"""
+    DoubleGraph{GT<:SingleGraph,ET} <: AbstractGraph{ET}
 
 An abstract type representing a graph in which the energy is the sum of two
-contributions, one of which can be encoded in a [`DiscrGraph`](@ref) type.
-This allows [`rrrMC`](@ref) to sample values more efficiently.
+contributions, one of which is encoded in a graph of type `GT` (see
+[`SingleGraph`](@ref)). This allows [`rrrMC`](@ref) to sample values
+more efficiently.
 
 The `ET` parameter is the type returned by the [`energy`](@ref) and
 [`delta_energy`](@ref) functions. Note that it can be different from
-the type of the internal `DiscrGraph` object (e.g., one can have
-a `DiscrGraph{Int}` object inside a `DoubleGraph{Float64}` object).
+the energy type of the internal `GT` object (e.g., one can have
+a `DoubleGraph{DiscrGraph{Int},Float64}` object).
 
-See also [`discr_graph`](@ref), [`delta_energy_residual`](@ref) and
+*Note*: When you declare a type as subtype of this, `GT` should *not* be the
+concrete type of the inner graph, but either `SimpleGraph{T}` or
+`DiscrGraph{T}` for some `T`.
+
+See also [`inner_graph`](@ref), [`delta_energy_residual`](@ref) and
 [`update_cache_residual!`](@ref).
 """
-abstract DoubleGraph{ET} <: AbstractGraph{ET}
+abstract DoubleGraph{GT,ET} <: AbstractGraph{ET}
 
 """
-    discr_graph(X::DoubleGraph)
+    inner_graph(X::DoubleGraph)
 
-Returns the internal [`DiscrGraph`](@ref) used by the given
-[`DoubleGraph`](@ref). The default implementation simply returns `X.X0`.
+Returns the internal graph used by the given [`DoubleGraph`](@ref).
+The default implementation simply returns `X.X0`.
 """
-discr_graph(X::DoubleGraph) = X.X0
-discr_graph(X::DiscrGraph) = X
+inner_graph(X::DoubleGraph) = X.X0
+inner_graph(X::SingleGraph) = X
 
 """
     delta_energy_residual(X::DoubleGraph, C::Config, move::Int)
 
 Returns the residual part of the energy difference produced if the spin `move` would
-be flipped, excluding the contribution from the internal [`DiscrGraph`](@ref)
-(see [`discr_graph`](@ref)).
+be flipped, excluding the contribution from the internal [`SimpleGraph`](@ref)
+(see [`inner_graph`](@ref)).
 
 See also [`delta_energy`](@ref). There is a default fallback implementation, but
 it should be overloaded for efficiency.
 """
 
 delta_energy_residual(X::DoubleGraph, C::Config, move::Int) =
-    delta_energy(X, C, move) - delta_energy(discr_graph(X), C, move)
+    delta_energy(X, C, move) - delta_energy(inner_graph(X), C, move)
 
 """
     update_cache_residual!(X::DoubleGraph, C::Config, move::Int)
@@ -222,10 +235,10 @@ By default, it does nothing.
 update_cache_residual!(X::DoubleGraph, C::Config, move::Int) = nothing
 
 function update_cache!(X::DoubleGraph, C::Config, move::Int)
-    update_cache!(discr_graph(X), C, move)
+    update_cache!(inner_graph(X), C, move)
     update_cache_residual!(X, C, move)
 end
 
-allΔE(X::DoubleGraph) = allΔE(typeof(discr_graph(X)))
+allΔE{ET,GT<:DiscrGraph}(X::DoubleGraph{ET,GT}) = allΔE(typeof(inner_graph(X)))
 
 end # module

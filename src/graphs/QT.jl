@@ -28,7 +28,7 @@ systems in a transverse magnetic field with a replicated classical
 system, this function should be used to obtain the average value of the
 transverse magnetization observable.
 """
-transverse_mag(X::DoubleGraph, C::Config, β::Float64) = transverse_mag(discr_graph(X), C, β)
+transverse_mag(X::DoubleGraph, C::Config, β::Float64) = transverse_mag(inner_graph(X), C, β)
 
 
 const MAXDIGITS = 8
@@ -117,7 +117,7 @@ end
 
 # Add Transverse field to (almost) any AbstractGraph
 
-type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{Float64}
+type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     M::Int
     Nk::Int
