@@ -7,10 +7,12 @@ using ..QT
 
 export GraphIsingSK, GraphIsingSKGauss
 
-import ..Interface: energy, delta_energy, update_cache!
+import ..Interface: energy, delta_energy, update_cache!, neighbors
+
+import Base: start, next, done
 
 function gen_J(N::Integer)
-    J = BitVector[scale!(bitrand(N), 1/√N) for i = 1:N]
+    J = BitVector[bitrand(N) for i = 1:N]
     for i = 1:N
         J[i][i] = 0
         for j = (i+1):N
@@ -148,12 +150,22 @@ end
 #     (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
 # end
 
+type FCNeighbors
+    N::Int
+    i::Int
+end
+
+start(fcn::FCNeighbors) = 1 + (fcn.i == 1)
+done(fcn::FCNeighbors, j) = j > fcn.N
+next(fcn::FCNeighbors, j) = (j, j + 1 + (j == fcn.i - 1))
+
+neighbors(X::GraphIsingSK, i::Int) = FCNeighbors(X.N, i)
 
 #####
 
 
 function gen_J_gauss(N::Integer)
-    J = Vec[randn(N) for i = 1:N]
+    J = Vec[scale!(randn(N), 1/√N) for i = 1:N]
     for i = 1:N
         J[i][i] = 0
         for j = (i+1):N
@@ -270,5 +282,6 @@ function check_delta(X::GraphIsingSKGauss, C::Config, move::Int)
     abs((e1-e0) - delta) < 1e-10 || (@show e1,e0,delta,e1-e0; error())
 end
 
+neighbors(X::GraphIsingSKGauss, i::Int) = FCNeighbors(X.N, i)
 
 end

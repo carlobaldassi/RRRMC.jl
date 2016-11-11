@@ -10,6 +10,8 @@ export GraphQT, Qenergy, transverse_mag,
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
 
+import Base: start, next, done
+
 """
     Qenergy(X::DoubleGraph, C::Config)
 
@@ -276,5 +278,36 @@ function delta_energy(X::GraphQuant, C::Config, move::Int)
     return delta_energy(X.X0, C, move) +
            delta_energy_residual(X, C, move)
 end
+
+type QNeighbIter{T}
+    tn1::Int
+    tn2::Int
+    off::Int
+    r::T
+    QNeighbIter(tn1, tn2, off, r) = new(tn1, tn2, off, r)
+end
+
+QNeighbIter{T}(tn1::Integer, tn2::Integer, off::Integer, r::T) = QNeighbIter{T}(tn1, tn2, off, r)
+
+start(qn::QNeighbIter) = (1, false)
+done(qn::QNeighbIter, st::Tuple{Int,Bool}) = st[2] && done(qn.r, st[1])
+function next(qn::QNeighbIter, st::Tuple{Int,Bool})
+    if !st[2]
+        return st[1] == 1 ? (qn.tn1, (2, false)) : (qn.tn2, (start(qn.r), true))
+    end
+    v, i = next(qn.r, st[1])::NTuple{2,Int} # XXX: dangerous assumption!
+    return v+qn.off, (i, true)
+end
+
+function neighbors(X::GraphQuant, i::Int)
+    @extract X : N Nk X0 X1
+    j1, j2 = neighbors(X0, i)
+
+    k = (i - 1) ÷ Nk + 1
+    j = mod1(i, Nk)
+
+    return QNeighbIter(j1, j2, (k-1)*Nk, neighbors(X1[k], j))
+end
+
 
 end

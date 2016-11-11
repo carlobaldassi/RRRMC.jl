@@ -255,10 +255,10 @@ end
 
 ### Begin BKL-related functions
 
-function step_bkl(X, C::Config, ΔEcache)
+function step_bkl(X::AbstractGraph, C::Config, ΔEcache)
     skip = rand_skip(ΔEcache)
     move, ΔE = rand_move(ΔEcache)
-    apply_move!(X, C, move, ΔEcache)
+    apply_move!(X, C, move, ΔEcache, Val{false})
     #check_consistency(ΔEcache)
     return ΔE, skip
 end
@@ -275,7 +275,7 @@ that this function can only be used with [`DiscrGraph`](@ref) models.
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
@@ -364,17 +364,15 @@ function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 1674
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
     theap = THeap(X, C, β)
-    #check_consistency(ΔEcache)
 
     num_moves = 0
     tmax = step * samples
     t = 0.0
     nextstep = step
     while t < tmax
-        #@assert E == energy(X, C)
+        #@assert abs(E - energy(X, C)) < 1e-10 E-energy(X,C)
 
         t′, move = pick_next(theap)
-        #δt = t′ - t
         while t′ ≥ nextstep
             push!(Es, E)
             hook(nextstep, X, C, num_moves, E) || @goto out

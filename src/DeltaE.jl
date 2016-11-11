@@ -253,7 +253,7 @@ type DeltaECacheCont{ET}
     ΔEs::Vector{ET}
     β::Float64
     staged::Vector{Tuple{Int,ET,Float64}}
-    function DeltaECacheCont(X::SimpleGraph, C::Config, β::Float64)
+    function DeltaECacheCont(X::AbstractGraph, C::Config, β::Float64)
         N = getN(X)
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]
@@ -264,7 +264,7 @@ type DeltaECacheCont{ET}
 end
 
 # the rrr argument here is just for consistency but it's unused
-gen_ΔEcache{ET}(X::SimpleGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
+gen_ΔEcache{ET}(X::AbstractGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
 
 get_z(ΔEcache::DeltaECacheCont) = ΔEcache.lcs.z
 
@@ -303,7 +303,7 @@ function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
     return z
 end
 
-function compute_staged!{ET}(X::SimpleGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET})
+function compute_staged!{ET}(X::AbstractGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET})
     @extract C : N s
     @extract ΔEcache : β staged
 
@@ -322,7 +322,10 @@ function compute_staged!{ET}(X::SimpleGraph{ET}, C::Config, i::Int, ΔEcache::De
     spinflip!(X, C, i)
 end
 
-function apply_move!{ET}(X::Union{SimpleGraph{ET},DoubleGraph{SimpleGraph{ET}}}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET})
+get_inner(X, ::Type{Val{true}}) = inner_graph(X)
+get_inner(X, ::Type{Val{false}}) = X
+
+function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET}, inner = Val{true})
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -335,7 +338,7 @@ function apply_move!{ET}(X::Union{SimpleGraph{ET},DoubleGraph{SimpleGraph{ET}}},
 
     spinflip!(X, C, move)
 
-    X0 = inner_graph(X)
+    X0 = get_inner(X, inner)
 
     z = lcs.z
     @inbounds begin
@@ -353,6 +356,5 @@ function apply_move!{ET}(X::Union{SimpleGraph{ET},DoubleGraph{SimpleGraph{ET}}},
     c = z / z′
     return c
 end
-
 
 end # module

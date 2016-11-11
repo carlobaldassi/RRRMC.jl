@@ -55,7 +55,8 @@ abstract AbstractGraph{ET<:Real}
 
 A function which is called every time a spin is flipped. This may happen:
 
-1. when a move is accepted, in [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref)
+1. when a move is accepted, in [`standardMC`](@ref), [`rrrMC`](@ref), [`bklMC`](@ref) and
+   [`wtmMC`](@ref).
 2. when a move is attempted to evaluate the effect on the neighbors, in [`rrrMC`](@ref).
 
 `move` is the spin index. By default, this function does nothing, but it may be overloaded
