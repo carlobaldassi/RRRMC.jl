@@ -1,26 +1,26 @@
-module LogCumSums
+module DynamicSamplers
 
 using ExtractMacro
 using ..Common
 
 import Base: getindex, setindex!, @propagate_inbounds, rand, copy!, copy
 
-export LogCumSum, refresh!, getel
+export DynamicSampler, refresh!, getel
 
-type LogCumSum
+type DynamicSampler
     v::Vec
     ps::Vec
     z::Float64
     N::Int
     levs::Int
-    function LogCumSum(N::Int)
+    function DynamicSampler(N::Int)
         levs = ceil(Int, log2(N))
         N2 = 2^levs
         v2 = zeros(N2)
         ps = zeros(N2 - 1)
         return new(v2, ps, 0.0, N, levs)
     end
-    function LogCumSum(v)
+    function DynamicSampler(v)
         isempty(v) && throw(ArgumentError("input must be non-empty"))
         N = length(v)
         levs = ceil(Int, log2(N))
@@ -33,18 +33,18 @@ type LogCumSum
         n == 0 || throw(ArgumentError("negative element given: v[$n] = $(v2[n])"))
         ps = zeros(N2 - 1)
 
-        lcs = new(v2, ps, 0.0, N, levs)
-        refresh!(lcs)
+        dynsmp = new(v2, ps, 0.0, N, levs)
+        refresh!(dynsmp)
 
-        return lcs
+        return dynsmp
     end
 end
 
 # this could probably be improved a little
-function refresh!(lcs::LogCumSum)
-    @extract lcs : v ps levs
+function refresh!(dynsmp::DynamicSampler)
+    @extract dynsmp : v ps levs
     N = length(v)
-    lcs.z = sum(v)
+    dynsmp.z = sum(v)
     L = 1
     K = N
     off = 0
@@ -65,10 +65,10 @@ function refresh!(lcs::LogCumSum)
         L *= 2
         K ÷= 2
     end
-    return lcs
+    return dynsmp
 end
 
-function copy!(dest::LogCumSum, src::LogCumSum)
+function copy!(dest::DynamicSampler, src::DynamicSampler)
     @extract src : v ps z N levs
     dest.N == N || throw(ArgumentError("dest N=$(dest.N), src N=$N"))
     dest.levs == levs || throw(ArgumentError("dest levs=$(dest.levs), src levs=$levs"))
@@ -79,12 +79,12 @@ function copy!(dest::LogCumSum, src::LogCumSum)
     return dest
 end
 
-copy(lcs::LogCumSum) = copy!(LogCumSum(lcs.N), lcs)
+copy(dynsmp::DynamicSampler) = copy!(DynamicSampler(dynsmp.N), dynsmp)
 
 # for checking purposes
 function getel_naive(v::Vec, z::Float64, x::Float64)
     @assert 0 ≤ x < 1
-    #@extract lcs : v z N
+    #@extract dynsmp : v z N
     N = length(v)
     x *= z
     i = 0
@@ -96,11 +96,11 @@ function getel_naive(v::Vec, z::Float64, x::Float64)
     return i
 end
 
-getel_naive(lcs::LogCumSum, x::Float64) = getel_naive(lcs.v, lcs.z, x)
+getel_naive(dynsmp::DynamicSampler, x::Float64) = getel_naive(dynsmp.v, dynsmp.z, x)
 
-function getel(lcs::LogCumSum, x::Float64)
+function getel(dynsmp::DynamicSampler, x::Float64)
     #@assert 0 ≤ x < 1
-    @extract lcs : v ps z N levs
+    @extract dynsmp : v ps z N levs
     x *= z
 
     k = 0
@@ -119,18 +119,18 @@ function getel(lcs::LogCumSum, x::Float64)
     return k+1
 end
 
-rand(rng::AbstractRNG, lcs::LogCumSum) = getel(lcs, rand(rng))
-rand(lcs::LogCumSum) = rand(Base.GLOBAL_RNG, lcs)
+rand(rng::AbstractRNG, dynsmp::DynamicSampler) = getel(dynsmp, rand(rng))
+rand(dynsmp::DynamicSampler) = rand(Base.GLOBAL_RNG, dynsmp)
 
-@inline getindex(lcs::LogCumSum, i::Int) = lcs.v[i]
+@inline getindex(dynsmp::DynamicSampler, i::Int) = dynsmp.v[i]
 
-@propagate_inbounds function setindex!(lcs::LogCumSum, x::Float64, i::Int)
-    @extract lcs : v ps N levs
-    @boundscheck 1 ≤ i ≤ N || throw(BoundsError(lcs, i))
+@propagate_inbounds function setindex!(dynsmp::DynamicSampler, x::Float64, i::Int)
+    @extract dynsmp : v ps N levs
+    @boundscheck 1 ≤ i ≤ N || throw(BoundsError(dynsmp, i))
 
     @inbounds d = x - v[i]
     @inbounds v[i] = x
-    lcs.z += d
+    dynsmp.z += d
     k = 0
     u = 1 << (levs-1)
     i -= 1
@@ -145,7 +145,7 @@ rand(lcs::LogCumSum) = rand(Base.GLOBAL_RNG, lcs)
         u >>>= 1
         off *= 2
     end
-    return lcs
+    return dynsmp
 end
 
 end # module

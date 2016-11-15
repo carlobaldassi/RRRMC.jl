@@ -9,8 +9,8 @@ using .ArraySets
 
 import .ArraySets: check_consistency
 
-include("LogCumSums.jl")
-using .LogCumSums
+include("DynamicSamplers.jl")
+using .DynamicSamplers
 
 export DeltaECache, gen_ΔEcache, check_consistency, compute_staged!, apply_staged!,
        compute_reverse_probabilities!, rand_move, rand_skip, apply_move!,
@@ -249,7 +249,7 @@ end
 prior(x) = x > 0 ? exp(-x) : 1.0
 
 type DeltaECacheCont{ET}
-    lcs::LogCumSum
+    dynsmp::DynamicSampler
     ΔEs::Vector{ET}
     β::Float64
     staged::Vector{Tuple{Int,ET,Float64}}
@@ -257,47 +257,47 @@ type DeltaECacheCont{ET}
         N = getN(X)
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]
-        lcs = LogCumSum(prior(β * ΔE) for ΔE in ΔEs)
+        dynsmp = DynamicSampler(prior(β * ΔE) for ΔE in ΔEs)
         staged = empty!(Array(Tuple{Int,ET,Float64}, N))
-        return new(lcs, ΔEs, β, staged)
+        return new(dynsmp, ΔEs, β, staged)
     end
 end
 
 # the rrr argument here is just for consistency but it's unused
 gen_ΔEcache{ET}(X::AbstractGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
 
-get_z(ΔEcache::DeltaECacheCont) = ΔEcache.lcs.z
+get_z(ΔEcache::DeltaECacheCont) = ΔEcache.dynsmp.z
 
 function rand_skip(ΔEcache::DeltaECacheCont)
-    @extract ΔEcache : lcs
-    @extract lcs : z N
+    @extract ΔEcache : dynsmp
+    @extract dynsmp : z N
     return floor(Int, Base.log1p(-rand()) / Base.log1p(-z / N))
 end
 
 function rand_move(ΔEcache::DeltaECacheCont)
-    @extract ΔEcache: lcs ΔEs
+    @extract ΔEcache: dynsmp ΔEs
 
-    move = rand(lcs)
+    move = rand(dynsmp)
     ΔE = ΔEs[move]
     return move, ΔE
 end
 
 function apply_staged!(ΔEcache::DeltaECacheCont)
-    @extract ΔEcache : lcs ΔEs staged
+    @extract ΔEcache : dynsmp ΔEs staged
 
     @inbounds for (j,ΔE,p) in staged
         ΔEs[j] = ΔE
-        lcs[j] = p
+        dynsmp[j] = p
     end
     return ΔEcache
 end
 
 function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
-    @extract ΔEcache : lcs staged
+    @extract ΔEcache : dynsmp staged
 
-    z = lcs.z
+    z = dynsmp.z
     @inbounds for (j,_,p) in staged
-        z += p - lcs[j]
+        z += p - dynsmp[j]
     end
 
     return z
@@ -334,25 +334,25 @@ function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::D
     # apply_staged!(ΔEcache)
 
     @extract C : s
-    @extract ΔEcache : lcs ΔEs β
+    @extract ΔEcache : dynsmp ΔEs β
 
     spinflip!(X, C, move)
 
     X0 = get_inner(X, inner)
 
-    z = lcs.z
+    z = dynsmp.z
     @inbounds begin
         ΔE = delta_energy(X0, C, move)
         ΔEs[move] = ΔE
-        lcs[move] = prior(β * ΔE)
+        dynsmp[move] = prior(β * ΔE)
 
         for j in neighbors(X0, move)
             ΔE = delta_energy(X0, C, j)
             ΔEs[j] = ΔE
-            lcs[j] = prior(β * ΔE)
+            dynsmp[j] = prior(β * ΔE)
         end
     end
-    z′ = lcs.z
+    z′ = dynsmp.z
     c = z / z′
     return c
 end
