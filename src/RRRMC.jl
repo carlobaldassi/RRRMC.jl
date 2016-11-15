@@ -255,6 +255,14 @@ end
 
 ### Begin BKL-related functions
 
+function step_bkl(X::DiscrGraph, C::Config, ΔEcache)
+    skip = rand_skip(ΔEcache)
+    move, ΔE = rand_move(ΔEcache)
+    apply_move!(X, C, move, ΔEcache)
+    #check_consistency(ΔEcache)
+    return ΔE, skip
+end
+
 function step_bkl(X::AbstractGraph, C::Config, ΔEcache)
     skip = rand_skip(ΔEcache)
     move, ΔE = rand_move(ΔEcache)
