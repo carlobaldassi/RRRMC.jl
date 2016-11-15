@@ -373,6 +373,8 @@ function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 1674
     E = energy(X, C)
     theap = THeap(X, C, β)
 
+    step /= N
+
     num_moves = 0
     tmax = step * samples
     t = 0.0
