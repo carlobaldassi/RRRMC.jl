@@ -13,12 +13,15 @@ type DynamicSampler
     z::Float64
     N::Int
     levs::Int
+    tinds::Vector{Int}
+    tpos::Vector{Int}
     function DynamicSampler(N::Int)
         levs = ceil(Int, log2(N))
         N2 = 2^levs
         v2 = zeros(N2)
         ps = zeros(N2 - 1)
-        return new(v2, ps, 0.0, N, levs)
+        tinds, tpos = buildtable(levs)
+        return new(v2, ps, 0.0, N, levs, tinds, tpos)
     end
     function DynamicSampler(v)
         isempty(v) && throw(ArgumentError("input must be non-empty"))
@@ -32,12 +35,43 @@ type DynamicSampler
         n = findfirst(v2 .< 0)
         n == 0 || throw(ArgumentError("negative element given: v[$n] = $(v2[n])"))
         ps = zeros(N2 - 1)
+        tinds, tpos = buildtable(levs)
 
-        dynsmp = new(v2, ps, 0.0, N, levs)
+        dynsmp = new(v2, ps, 0.0, N, levs, tinds, tpos)
         refresh!(dynsmp)
 
         return dynsmp
     end
+end
+
+function buildtable(levs::Int)
+    N2 = 2^levs
+
+    tinds = Array(Int, N2+1)
+    tpos = empty!(Array(Int, N2 * levs))
+
+    j0 = 1
+    for i = 1:N2
+        tinds[i] = j0
+        j1 = j0
+        k = 0
+        u = 1 << (levs-1)
+        off = 1
+        @inbounds for lev = 1:levs
+            if (i-1) & u == 0
+                push!(tpos, off + k)
+                j1 += 1
+                k *= 2
+            else
+                k = 2k + 1
+            end
+            u >>>= 1
+            off *= 2
+        end
+        j0 = j1
+    end
+    tinds[N2+1] = j0
+    return tinds, tpos
 end
 
 # this could probably be improved a little
@@ -51,7 +85,6 @@ function refresh!(dynsmp::DynamicSampler)
     for lev = 1:levs
         @assert L < N
         i = 0
-        #p = ps[lev]
         for l = off + (1:L)
             x = 0.0
             for k = 1:(K÷2)
@@ -125,27 +158,34 @@ rand(dynsmp::DynamicSampler) = rand(Base.GLOBAL_RNG, dynsmp)
 @inline getindex(dynsmp::DynamicSampler, i::Int) = dynsmp.v[i]
 
 @propagate_inbounds function setindex!(dynsmp::DynamicSampler, x::Float64, i::Int)
-    @extract dynsmp : v ps N levs
+    @extract dynsmp : v ps N levs tinds tpos
     @boundscheck 1 ≤ i ≤ N || throw(BoundsError(dynsmp, i))
 
     @inbounds d = x - v[i]
     @inbounds v[i] = x
     dynsmp.z += d
-    k = 0
-    u = 1 << (levs-1)
-    i -= 1
-    off = 1
-    @inbounds for lev = 1:levs
-        if i & u == 0
-            ps[off+k] += d
-            k *= 2
-        else
-            k = 2k + 1
-        end
-        u >>>= 1
-        off *= 2
+
+    @inbounds @simd for j = tinds[i]:(tinds[i+1]-1)
+        k = tpos[j]
+        ps[k] += d
     end
     return dynsmp
+
+    # k = 0
+    # u = 1 << (levs-1)
+    # i -= 1
+    # off = 1
+    # @inbounds for lev = 1:levs
+    #     if i & u == 0
+    #         ps[off+k] += d
+    #         k *= 2
+    #     else
+    #         k = 2k + 1
+    #     end
+    #     u >>>= 1
+    #     off *= 2
+    # end
+    # return dynsmp
 end
 
 end # module
