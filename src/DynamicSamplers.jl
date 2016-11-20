@@ -74,29 +74,17 @@ function buildtable(levs::Int)
     return tinds, tpos
 end
 
-# this could probably be improved a little
 function refresh!(dynsmp::DynamicSampler)
-    @extract dynsmp : v ps levs
-    N = length(v)
+    @extract dynsmp : v ps N levs tinds tpos
+
     dynsmp.z = sum(v)
-    L = 1
-    K = N
-    off = 0
-    for lev = 1:levs
-        @assert L < N
-        i = 0
-        for l = off + (1:L)
-            x = 0.0
-            for k = 1:(K÷2)
-                i += 1
-                x += v[i]
-            end
-            i += K ÷ 2
-            ps[l] = x
+    fill!(ps, 0.0)
+    @inbounds for i = 1:N
+        x = v[i]
+        @simd for j = tinds[i]:(tinds[i+1]-1)
+            k = tpos[j]
+            ps[k] += v[i]
         end
-        off += L
-        L *= 2
-        K ÷= 2
     end
     return dynsmp
 end
@@ -170,6 +158,10 @@ rand(dynsmp::DynamicSampler) = rand(Base.GLOBAL_RNG, dynsmp)
         ps[k] += d
     end
     return dynsmp
+
+    ## following is the version without using
+    ## the tinds/tpos tables, for reference
+    ## (may be useful to save memory)
 
     # k = 0
     # u = 1 << (levs-1)
