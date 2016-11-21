@@ -1,39 +1,41 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module LEAliases
 
 using ..LE
 using ..Empty
-using ..IsingSK
+using ..SK
 using ..EA
 using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export Graph0LE, GraphIsingLE, GraphEALE, GraphPercLE, GraphPercNaiveLE, GraphPercOldLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphPercLE, GraphPercNaiveLE, GraphPercOldLE
 
-typealias Graph0LE{M,γT} GraphLocEntr{M,γT,GraphEmpty}
+typealias Graph0LE{M,γT} GraphLocalEntropy{M,γT,GraphEmpty}
 
 # """
 #     Graph0LE(...)
 #
 # TODO
 # """
-Graph0LE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocEntr(Nk, M, γ, β, GraphEmpty, Nk)
+Graph0LE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy(Nk, M, γ, β, GraphEmpty, Nk)
 
 
 
-typealias GraphIsingLE{M,γT} GraphLocEntr{M,γT,GraphIsingSK}
+typealias GraphSKLE{M,γT} GraphLocalEntropy{M,γT,GraphSK}
 
 # """
-#     GraphIsingLE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#     GraphSKLE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-GraphIsingLE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocEntr(Nk, M, γ, β, GraphIsingSK, IsingSK.gen_J(Nk))
+GraphSKLE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy(Nk, M, γ, β, GraphSK, SK.gen_J(Nk))
 
 
 
 
-typealias GraphEALE{M,γT,twoD} GraphLocEntr{M,γT,GraphEAContSimple{twoD}}
+typealias GraphEALE{M,γT,twoD} GraphLocalEntropy{M,γT,GraphEANormal{twoD}}
 
 # """
 #     GraphEALE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -48,26 +50,26 @@ function GraphEALE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64)
         4*rand() - 2
     end
 
-    GraphLocEntr(N, M, γ, β, GraphEAContSimple{2D}, L, A, J)
+    GraphLocalEntropy(N, M, γ, β, GraphEANormal{2D}, L, A, J)
 end
 
 function GraphEALE(fname::AbstractString, M::Integer, γ::Float64, β::Float64)
     L, D, A, J = EA.gen_AJ(fname)
     N = length(A)
     @assert N == L^D
-    GraphLocEntr(N, M, γ, β, GraphEAContSimple{2D}, L, A, J)
+    GraphLocalEntropy(N, M, γ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphEALE{twoD}(X::GraphEAContSimple{twoD}, M::Integer, γ::Float64, β::Float64)
+function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Float64)
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
     L = round(Int, N^(1/D))
     @assert L^D == N
-    GraphLocEntr(N, M, γ, β, GraphEAContSimple{twoD}, L, X.A, X.J)
+    GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-typealias GraphPercOldLE{M,γT} GraphLocEntr{M,γT,GraphPercOld}
+typealias GraphPercOldLE{M,γT} GraphLocalEntropy{M,γT,GraphPercOld}
 
 # """
 #     GraphPercOldLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -76,14 +78,14 @@ typealias GraphPercOldLE{M,γT} GraphLocEntr{M,γT,GraphPercOld}
 # """
 function GraphPercOldLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
     ξ = PercOld.gen_ξ(N, P)
-    GraphLocEntr(N, M, γ, β, GraphPercOld, ξ)
+    GraphLocalEntropy(N, M, γ, β, GraphPercOld, ξ)
 end
 
 function GraphPercOldLE(X::GraphPercOld, M::Integer, γ::Float64, β::Float64)
-    GraphLocEntr(X.N, M, γ, β, GraphPercOld, X.ξ)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercOld, X.ξ)
 end
 
-typealias GraphPercLE{M,γT} GraphLocEntr{M,γT,GraphPerc}
+typealias GraphPercLE{M,γT} GraphLocalEntropy{M,γT,GraphPerc}
 
 # """
 #     GraphPercLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -92,14 +94,14 @@ typealias GraphPercLE{M,γT} GraphLocEntr{M,γT,GraphPerc}
 # """
 function GraphPercLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
     ξ, ξv = Perc.gen_ξ(N, P)
-    GraphLocEntr(N, M, γ, β, GraphPerc, ξ, ξv)
+    GraphLocalEntropy(N, M, γ, β, GraphPerc, ξ, ξv)
 end
 
 function GraphPercLE(X::GraphPerc, M::Integer, γ::Float64, β::Float64)
-    GraphLocEntr(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
 end
 
-typealias GraphPercNaiveLE{M,γT} GraphLocEntr{M,γT,GraphPercNaive}
+typealias GraphPercNaiveLE{M,γT} GraphLocalEntropy{M,γT,GraphPercNaive}
 
 # """
 #     GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -108,11 +110,11 @@ typealias GraphPercNaiveLE{M,γT} GraphLocEntr{M,γT,GraphPercNaive}
 # """
 function GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
     ξ, ξv = PercNaive.gen_ξ(N, P)
-    GraphLocEntr(N, M, γ, β, GraphPercNaive, ξ, ξv)
+    GraphLocalEntropy(N, M, γ, β, GraphPercNaive, ξ, ξv)
 end
 
 function GraphPercNaiveLE(X::GraphPercNaive, M::Integer, γ::Float64, β::Float64)
-    GraphLocEntr(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
 end
 
 end # module

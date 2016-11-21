@@ -1,10 +1,16 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module RE
 
 using ExtractMacro
 using ..Interface
 using ..Common
 
-export GraphRE, GraphRepl, REenergies
+if isdefined(Main, :Documenter)
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
+end
+
+export GraphRE, GraphRobustEnsemble, REenergies
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
@@ -45,7 +51,10 @@ end
 @doc """
     GraphRE{M,γ,β}(N::Integer) <: DiscrGraph
 
-    TODO
+An auxiliary `DiscrGraph` used to implement the interactions in the
+Robust Ensemble.
+
+It is only useful when implementing other graph types; see [`GraphRobustEnsemble`](@ref).
 """ -> GraphRE{M,γ,β}(N::Integer)
 
 GraphRE{M,oldγ,β}(X::GraphRE{M,oldγ,β}, newγ::Float64) = GraphRE{M,newγ,β}(X.N, X.μ)
@@ -201,13 +210,13 @@ end
 
 # Replicate an existsing graph
 
-type GraphRepl{M,γ,β,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
+type GraphRobustEnsemble{M,γ,β,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphRE{M,γ,β}
     X1::Vector{G}
     C1::Vector{Config}
-    function GraphRepl(N::Integer, g0::G, Gconstr, args...)
+    function GraphRobustEnsemble(N::Integer, g0::G, Gconstr, args...)
         X0 = GraphRE{M,γ,β}(N)
         Nk = X0.Nk
         X1 = Array{G}(M)
@@ -220,18 +229,27 @@ type GraphRepl{M,γ,β,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Floa
     end
 end
 
-#  """
-#      GraphRepl(...)
-#
-#  TODO
-#  """
-function GraphRepl(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...)
+"""
+    GraphRobustEnsemble(N::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...) <: DoubleGraph
+
+A `DoubleGraph` which implements a "Robust Ensemble" model, given any other Ising model previously defined.
+This kind of graph can be simulated efficiently with [`rrrMC`](@ref).
+
+`N` is the number of spins, `M` the number of replicas, `γ` the interaction strength,
+`β` the inverse temperature. `GConstr` is the (original) graph constructor, and `args` the
+arguments to the contructor.
+
+This is similar to [`GraphLocalEntropy`](@ref RRRMC.GraphLocalEntropy), but the reference configuration is traced out.
+
+See also [`REenergies`](@ref).
+"""
+function GraphRobustEnsemble(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...)
     g0 = Gconstr(args...)
     G = typeof(g0)
-    return GraphRepl{M,γ,β,G}(Nk * M, g0, Gconstr, args...)
+    return GraphRobustEnsemble{M,γ,β,G}(Nk * M, g0, Gconstr, args...)
 end
 
-function update_cache!{M}(X::GraphRepl{M}, C::Config, move::Int)
+function update_cache!{M}(X::GraphRobustEnsemble{M}, C::Config, move::Int)
     @extract X : X0 X1 C1
     k = mod1(move, M)
     i = (move - 1) ÷ M + 1
@@ -241,7 +259,7 @@ function update_cache!{M}(X::GraphRepl{M}, C::Config, move::Int)
     update_cache!(X0, C, move)
 end
 
-function energy{M}(X::GraphRepl{M}, C::Config)
+function energy{M}(X::GraphRobustEnsemble{M}, C::Config)
     # @assert X.N == C.N
     @extract X : Nk X0 X1 C1
     @extract C : s
@@ -259,7 +277,13 @@ function energy{M}(X::GraphRepl{M}, C::Config)
     return E
 end
 
-function REenergies{M}(X::GraphRepl{M})
+"""
+    REenergies(X::GraphRobustEnsemble)
+
+Returns a Vector with the individual energy (as defined by the original model)
+of each replica in a [`GraphRobustEnsemble`](@ref) graph.
+"""
+function REenergies{M}(X::GraphRobustEnsemble{M})
     @extract X : X1 C1
 
     Es = zeros(M)
@@ -271,7 +295,7 @@ function REenergies{M}(X::GraphRepl{M})
     return Es
 end
 
-function delta_energy_residual{M}(X::GraphRepl{M}, C::Config, move::Int)
+function delta_energy_residual{M}(X::GraphRobustEnsemble{M}, C::Config, move::Int)
     @extract X : X1 C1
 
     k = mod1(move, M)
@@ -280,9 +304,23 @@ function delta_energy_residual{M}(X::GraphRepl{M}, C::Config, move::Int)
     return delta_energy(X1[k], C1[k], i)
 end
 
-function delta_energy(X::GraphRepl, C::Config, move::Int)
+function delta_energy(X::GraphRobustEnsemble, C::Config, move::Int)
     return delta_energy(X.X0, C, move) +
            delta_energy_residual(X, C, move)
 end
 
+# This is inefficient. On the other hand, it is
+# basically only written for testing purposes...
+function neighbors{M}(X::GraphRobustEnsemble{M}, i::Int)
+    @extract X : X0 X1
+    jts = neighbors(X0, i)
+
+    k = mod1(i, M)
+    i1 = (i - 1) ÷ M + 1
+
+    is = neighbors(X1[k], i1)
+
+    return tuple(jts..., map(i->((i-1)*M+k), is)...)
 end
+
+end # module

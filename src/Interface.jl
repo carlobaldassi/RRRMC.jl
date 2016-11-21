@@ -1,3 +1,5 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module Interface
 
 using ExtractMacro
@@ -66,7 +68,7 @@ When `X` is a [`DoubleGraph`](@ref), there is a default implementation which fir
 `update_cache!` on [`inner_graph`](@ref)`(X)`, then
 calls [`update_cache_residual!`](@ref) on `X`.
 
-*Note*: this function is always invoked *after* the flip has been performed, unlike in [`delta_energy`](@ref)
+*Note:* this function is always invoked *after* the flip has been performed, unlike in [`delta_energy`](@ref)
 and [`delta_energy_residual`](@ref).
 """
 update_cache!(X::AbstractGraph, C::Config, move::Int) = nothing
@@ -85,7 +87,7 @@ Subsequently, [`delta_energy`](@ref) is used instead.
 
 All graphs must implement this function.
 
-It should also be used to initialize/reset the cache for a given graph, if any (see [`update_cache!`](@ref)).
+It *must* also be used to initialize/reset the cache for a given graph, if any (see [`update_cache!`](@ref)).
 """
 energy(::AbstractGraph, ::Config) = error("not implemented")
 
@@ -97,11 +99,11 @@ Returns the energy difference that would be associated to flipping the spin `mov
 A default fallback implementation based on `energy` is provided, to be used for debugging,
 but having an efficient implementation for each graph is critical for performance.
 
-*Note*: when `X` is a [`DiscrGraph`](@ref), the absolute value of the result must be contained in the
+*Note:* when `X` is a [`DiscrGraph`](@ref), the absolute value of the result must be contained in the
 tuple returned by [`allΔE`](@ref) – no approximations are allowed, and missing values will cause crashes
 (unless Julia is run with the `--check-bounds=yes` option, in which case they will cause errors).
 
-*Note*: this function is always invoked *before* performing the flip, unlike in [`update_cache!`](@ref)
+*Note:* this function is always invoked *before* performing the flip, unlike in [`update_cache!`](@ref)
 and [`update_cache_residual!`](@ref).
 """
 function delta_energy(X::AbstractGraph, C::Config, move::Int)
@@ -130,7 +132,7 @@ evaluate the effect of flipping a spin on its neighbors' local fields. It is
 not required by [`standardMC`](@ref).
 
 For performance reasons, it is best if the returned value is stack-allocated
-rather than heap-allocated, e.g. it is better to return a `Tuple` than a `Vector`.
+rather than heap-allocated, e.g. it is better to return an `NTuple` than a `Vector`.
 """
 neighbors(::AbstractGraph, i::Int) = error("not implemented")
 
@@ -151,11 +153,12 @@ abstract SimpleGraph{ET} <: AbstractGraph{ET}
 
 An abstract type representing a graph in which the [`delta_energy`](@ref) values
 produced when flipping a spin belong to a finite discrete set, and thus can be
-sampled more efficiently with [`rrrMC`](@ref) or [`bklMC`](@ref).
+sampled more efficiently with [`rrrMC`](@ref) or [`bklMC`](@ref) if the set is
+small.
 
 The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`](@ref).
 
-See also [`neighbors`](@ref) and [`allΔE`](@ref).
+See also [`allΔE`](@ref).
 """
 abstract DiscrGraph{ET} <: AbstractGraph{ET}
 
@@ -193,7 +196,7 @@ The `ET` parameter is the type returned by the [`energy`](@ref) and
 the energy type of the internal `GT` object (e.g., one can have
 a `DoubleGraph{DiscrGraph{Int},Float64}` object).
 
-*Note*: When you declare a type as subtype of this, `GT` should *not* be the
+*Note:* When you declare a type as subtype of this, `GT` should *not* be the
 concrete type of the inner graph, but either `SimpleGraph{T}` or
 `DiscrGraph{T}` for some `T`.
 

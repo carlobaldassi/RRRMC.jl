@@ -5,7 +5,7 @@ CurrentModule = RRRMC
 ```
 
 This page contains all the functions which are needed when implementing a [graph type](@ref graphtype).
-See the [built-in graphs](@ref builtin) for concrete examples (in particular, the RRG and EA family of
+See the [built-in graphs](@ref builtin) for concrete examples (in particular, the SK, RRG and EA family of
 graphs have the most complete implementations). See also the documentation for the [`Config`](@ref) type.
 
 ## Functions used by all graph types
@@ -26,11 +26,11 @@ update_cache!
 getN
 ```
 
-## Functions used by `DiscrGraph` models
-
 ```@docs
 neighbors
 ```
+
+## Functions used by `DiscrGraph` models
 
 ```@docs
 allΔE
@@ -39,7 +39,7 @@ allΔE
 ## Functions used by `DoubleGraph` models
 
 ```@docs
-discr_graph
+inner_graph
 ```
 
 ```@docs
@@ -58,4 +58,20 @@ Qenergy
 
 ```@docs
 transverse_mag
+```
+
+## Functions specific to robust-ensemble models
+
+```@docs
+REenergies
+```
+
+## Functions specific to local-entropy models
+
+```@docs
+LEenergies
+```
+
+```@docs
+cenergy
 ```

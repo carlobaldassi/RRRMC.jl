@@ -1,3 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# This implements an efficient sampler from a discrete probability distribution
+# which changes in time.
+# See Wong and Easton 1980: http://dx.doi.org/10.1137/0209009
+
 module DynamicSamplers
 
 using ExtractMacro

@@ -1,15 +1,19 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module LE
 
 using ExtractMacro
 using ..Interface
 using ..Common
 
-export GraphLE, GraphLocEntr, LEenergies, cenergy
+if isdefined(Main, :Documenter)
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
+end
+
+export GraphLE, GraphLocalEntropy, LEenergies, cenergy
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
-
-import Base: start, next, done, length, eltype
 
 type GraphLE{M,γT} <: DiscrGraph{Float64}
     N::Int
@@ -31,7 +35,10 @@ end
 @doc """
     GraphLE{M,γT}(N::Integer) <: DiscrGraph
 
-    TODO
+An auxiliary `DiscrGraph` used to implement the interactions in the
+Local Entropy Ensemble.
+
+It is only useful when implementing other graph types; see [`GraphLocalEntropy`](@ref).
 """ -> GraphLE{M,γT}(N::Integer)
 
 GraphLE{M,oldγ}(X::GraphLE{M,oldγ}, newγ::Float64) = GraphLE{M,newγ}(X.N)
@@ -157,32 +164,14 @@ end
     return Δ
 end
 
-immutable CavityRange
-    j0::Int
-    j1::Int
-    jX::Int
-    function CavityRange(j0::Integer, j1::Integer, jX::Integer)
-        j0 ≤ jX ≤ j1 || throw(ArgumentError("invalid CavityRange parameters, expected j0≤jX≤j1, given: j0=$j0, j1=$j1, jX=$X"))
-        return new(j0, j1, jX)
-    end
-end
-
-start(crange::CavityRange) = crange.j0 + (crange.jX == crange.j0)
-done(crange::CavityRange, j) = j > crange.j1
-@inline function next(crange::CavityRange, j)
-    @extract crange : j0 j1 jX
-    # @assert j ≠ jX
-    nj = j + 1
-    nj += (nj == jX)
-    return (j, nj)
-end
-length(crange::CavityRange) = crange.j1 - crange.j0
-eltype(::Type{CavityRange}) = Int
-
 @inline function neighbors{M}(X::GraphLE{M}, j::Int)
-    j0 = j - ((j-1) % (M+1))
-    j1 = j0 + M
-    return CavityRange(j0, j1, j)
+    r = (j-1) % (M+1)
+    if r == 0
+        return (j+1):(j+M)
+    else
+        j0 = j - r
+        return j0:j0
+    end
 end
 
 @generated function allΔE{M,γT}(::Type{GraphLE{M,γT}})
@@ -192,7 +181,7 @@ end
 
 # Replicate an existsing graph
 
-type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
+type GraphLocalEntropy{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphLE{M,γT}
@@ -200,7 +189,7 @@ type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Flo
     X1::Vector{G}
     Cc::Config
     C1::Vector{Config}
-    function GraphLocEntr(N::Integer, g0::G, Gconstr, args...)
+    function GraphLocalEntropy(N::Integer, g0::G, Gconstr, args...)
         X0 = GraphLE{M,γT}(N)
         Nk = X0.Nk
         X1 = Array{G}(M)
@@ -214,18 +203,29 @@ type GraphLocEntr{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Flo
     end
 end
 
-#  """
-#      GraphLocEntr(...)
-#
-#  TODO
-#  """
-function GraphLocEntr(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...)
+"""
+    GraphLocalEntropy(N::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...) <: DoubleGraph
+
+A `DoubleGraph` which implements a "Local Entropy" model, given any other Ising model previously defined.
+This simulates a replicated system in which each replica interacts with an extra "reference"
+configuration.
+This kind of graph can be simulated efficiently with [`rrrMC`](@ref).
+
+`N` is the number of spins, `M` the number of replicas, `γ` the interaction strength,
+`β` the inverse temperature. `GConstr` is the (original) graph constructor, and `args` the
+arguments to the contructor.
+
+This is similar to [`GraphRobustEnsemble`](@ref RRRMC.GraphRobustEnsemble), but the reference is simulated explicitly.
+
+See also [`LEenergies`](@ref) and [`cenergy`](@ref).
+"""
+function GraphLocalEntropy(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gconstr, args...)
     g0 = Gconstr(args...)
     G = typeof(g0)
-    return GraphLocEntr{M,γ/β,G}(Nk * (M+1), g0, Gconstr, args...)
+    return GraphLocalEntropy{M,γ/β,G}(Nk * (M+1), g0, Gconstr, args...)
 end
 
-function update_cache!{M}(X::GraphLocEntr{M}, C::Config, move::Int)
+function update_cache!{M}(X::GraphLocalEntropy{M}, C::Config, move::Int)
     @extract X : X0 Xc X1 Cc C1
     k = mod1(move, M+1)
     i = (move - 1) ÷ (M+1) + 1
@@ -240,7 +240,7 @@ function update_cache!{M}(X::GraphLocEntr{M}, C::Config, move::Int)
     update_cache!(X0, C, move)
 end
 
-function energy{M}(X::GraphLocEntr{M}, C::Config)
+function energy{M}(X::GraphLocalEntropy{M}, C::Config)
     # @assert X.N == C.N
     @extract X : Nk X0 Xc X1 Cc C1
     @extract C : s
@@ -264,7 +264,13 @@ function energy{M}(X::GraphLocEntr{M}, C::Config)
     return E
 end
 
-function LEenergies{M}(X::GraphLocEntr{M})
+"""
+    LEenergies(X::GraphLocalEntropy)
+
+Returns a Vector with the individual energy (as defined by the original model)
+of each replica in a [`GraphLocalEntropy`](@ref) graph.
+"""
+function LEenergies{M}(X::GraphLocalEntropy{M})
     @extract X : X1 C1
 
     Es = zeros(M)
@@ -276,12 +282,18 @@ function LEenergies{M}(X::GraphLocEntr{M})
     return Es
 end
 
-function cenergy{M}(X::GraphLocEntr{M})
+"""
+    cenergy(X::GraphLocalEntropy)
+
+Returns a the individual energy (as defined by the original model)
+of the reference configuration in a [`GraphLocalEntropy`](@ref) graph.
+"""
+function cenergy{M}(X::GraphLocalEntropy{M})
     @extract X : Xc Cc
     return energy(Xc, Cc)
 end
 
-function delta_energy_residual{M}(X::GraphLocEntr{M}, C::Config, move::Int)
+function delta_energy_residual{M}(X::GraphLocalEntropy{M}, C::Config, move::Int)
     @extract X : X1 C1
 
     k = mod1(move, M+1)
@@ -292,9 +304,26 @@ function delta_energy_residual{M}(X::GraphLocEntr{M}, C::Config, move::Int)
     return delta_energy(X1[k-1], C1[k-1], i)
 end
 
-function delta_energy(X::GraphLocEntr, C::Config, move::Int)
+function delta_energy(X::GraphLocalEntropy, C::Config, move::Int)
     return delta_energy(X.X0, C, move) +
            delta_energy_residual(X, C, move)
 end
 
+# This is type-instable and inefficient. On the other hand, it is
+# basically only written for testing purposes...
+function neighbors{M}(X::GraphLocalEntropy{M}, i::Int)
+    @extract X : X0 X1
+    jts = neighbors(X0, i)
+
+    k = mod1(i, M+1)
+
+    k == 1 && return jts
+
+    i1 = (i - 1) ÷ (M+1) + 1
+
+    is = neighbors(X1[k-1], i1)
+
+    return tuple(jts..., map(i->((i-1)*(M+1)+k), is)...)
 end
+
+end # module

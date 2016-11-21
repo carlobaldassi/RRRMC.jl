@@ -1,3 +1,5 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module PSpin3
 
 using ExtractMacro
@@ -51,7 +53,7 @@ type GraphPSpin3{K} <: DiscrGraph{Int}
 end
 
 """
-    GraphPSpin3(N::Integer, K::Integer) <: DiscrGraph
+    GraphPSpin3(N::Integer, K::Integer) <: DiscrGraph{Int}
 
 A `DiscrGraph` implementing a \$p\$-spin regular graph with \$p=3\$. `N` is the number of spins, and must
 be divisible by \$3\$; `K` is the connectivity. All interactions are set to \$J=1\$.

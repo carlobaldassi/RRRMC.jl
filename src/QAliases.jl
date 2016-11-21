@@ -1,56 +1,50 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module QAliases
 
 using ..QT
 using ..Empty
-using ..IsingSK
+using ..SK
 using ..EA
 using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export GraphQ0T, GraphQIsingT, GraphQIsingGaussT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
+export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
 """
     GraphQ0T(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
 
-A simple `DoubleGraph` which implements independent spins in a transverse magnetic field,
-using the Suzuki-Trotter transformation.
-`N` is the number of spins, `M` the number of Suzuki-Trotter replicas,
-`Γ` the transverse field, `β` the inverse temperature.
+Shortcut for GraphQuant(N, M, Γ, β, GraphEmpty, N).
+
+See [`GraphQuant`](@ref).
 
 Intended for testing/debugging purposes.
-
-See also [`Qenergy`](@ref).
 """
 GraphQ0T(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphEmpty, Nk)
 
 
 
-typealias GraphQIsingT{fourK} GraphQuant{fourK,GraphIsingSK}
+typealias GraphQSKT{fourK} GraphQuant{fourK,GraphSK}
 
 """
-    GraphQIsingT(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+    GraphQSKT(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
 
-A `DoubleGraph` which implements a quantum Ising spin model in a transverse magnetic field,
-using the Suzuki-Trotter transformation.
-`N` is the number of spins, `M` the number of Suzuki-Trotter replicas, `Γ` the transverse
-field, `β` the inverse temperature.
-The graph is fully-connected, the interactions are random (\$J ∈ {-1/√N,1/√N}\$),
-there are no external longitudinal fields.
+Shortcut for GraphQuant(N, M, Γ, β, GraphSK, N), slightly optimized.
 
-See also [`Qenergy`](@ref).
+See [`GraphQuant`](@ref).
 """
-GraphQIsingT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSK, IsingSK.gen_J(Nk))
+GraphQSKT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSK, SK.gen_J(Nk))
 
 
-typealias GraphQIsingGaussT{fourK} GraphQuant{fourK,GraphIsingSKGauss}
-GraphQIsingGaussT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphIsingSKGauss, IsingSK.gen_J_gauss(Nk))
+typealias GraphQSKNormalT{fourK} GraphQuant{fourK,GraphSKNormal}
+GraphQSKNormalT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSKNormal, SK.gen_J_gauss(Nk))
 
 
 
-typealias GraphQEAT{fourK,twoD} GraphQuant{fourK,GraphEAContSimple{twoD}}
+typealias GraphQEAT{fourK,twoD} GraphQuant{fourK,GraphEANormal{twoD}}
 
 # """
 #     GraphQEAT(L::Integer, D::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -65,23 +59,23 @@ function GraphQEAT(L::Integer, D::Integer, M::Integer, Γ::Float64, β::Float64)
         4*rand() - 2
     end
 
-    GraphQuant(N, M, Γ, β, GraphEAContSimple{2D}, L, A, J)
+    GraphQuant(N, M, Γ, β, GraphEANormal{2D}, L, A, J)
 end
 
 function GraphQEAT(fname::AbstractString, M::Integer, Γ::Float64, β::Float64)
     L, D, A, J = EA.gen_AJ(fname)
     N = length(A)
     @assert N == L^D
-    GraphQuant(N, M, Γ, β, GraphEAContSimple{2D}, L, A, J)
+    GraphQuant(N, M, Γ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphQEAT{twoD}(X::GraphEAContSimple{twoD}, M::Integer, Γ::Float64, β::Float64)
+function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Float64)
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
     L = round(Int, N^(1/D))
     @assert L^D == N
-    GraphQuant(N, M, Γ, β, GraphEAContSimple{twoD}, L, X.A, X.J)
+    GraphQuant(N, M, Γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
 typealias GraphQPercOldT{fourK} GraphQuant{fourK,GraphPercOld}

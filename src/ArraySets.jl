@@ -1,3 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# This implements an unsorted set which allows for
+# fast insertion-deletion and randomly choosing one
+# element.
+
 module ArraySets
 
 using ExtractMacro

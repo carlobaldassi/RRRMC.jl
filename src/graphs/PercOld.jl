@@ -1,6 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module PercOld
 
 using ExtractMacro
+using Compat
 using ..Interface
 using ..Common
 using ..QT
@@ -67,7 +70,7 @@ function energy(X::GraphPercOld, C::Config)
 
     for a = 1:P
         ξa = ξ[a]
-        map!($, tmps, s, ξa)
+        map!(⊻, tmps, s, ξa)
         Δ = N - 2 * sum(tmps)
         if Δ == 1
             push!(p, a)

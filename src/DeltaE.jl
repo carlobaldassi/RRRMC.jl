@@ -1,3 +1,8 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# This implements the functions needed by the BKL and RRR methods
+# for the choice of the next move
+
 module DeltaE
 
 using ExtractMacro

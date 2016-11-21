@@ -1,15 +1,18 @@
-module IsingSK
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+module SK
 
 using ExtractMacro
+using Compat
 using ..Interface
 using ..Common
 using ..QT
 
-export GraphIsingSK, GraphIsingSKGauss
+export GraphSK, GraphSKNormal
 
 import ..Interface: energy, delta_energy, update_cache!, neighbors
 
-import Base: start, next, done
+import Base: start, next, done, length
 
 function gen_J(N::Integer)
     J = BitVector[bitrand(N) for i = 1:N]
@@ -22,13 +25,13 @@ function gen_J(N::Integer)
     return J
 end
 
-type GraphIsingSK <: SimpleGraph{Float64}
+type GraphSK <: SimpleGraph{Float64}
     N::Int
     sN::Float64
     J::Vector{BitVector}
     #tmps::BitVector
     cache::LocalFields{Int}
-    function GraphIsingSK(J::Vector{BitVector}; check::Bool = true)
+    function GraphSK(J::Vector{BitVector}; check::Bool = true)
         N = length(J)
         if check
             all(Jx->length(Jx) == N, J) || throw(ArgumentError("invalid J inner length, expected $N, given: $(unique(map(length,J)))"))
@@ -45,9 +48,18 @@ type GraphIsingSK <: SimpleGraph{Float64}
     end
 end
 
-GraphIsingSK(N::Integer) = GraphIsingSK(gen_J(N), check=false)
+"""
+    GraphSK(N::Integer) <: SimpleGraph{Float64}
 
-function energy(X::GraphIsingSK, C::Config)
+A `SimpleGraph` implementing a Sherrington-Kirkpatrick fully-connected Ising model
+with `N` spins and random binary interactions (\$J ∈ \\{-1/√N,1/√N\\}\$) and no
+external fields.
+
+Same as [`GraphSKNormal`](@ref), but with binary interactions.
+"""
+GraphSK(N::Integer) = GraphSK(gen_J(N), check=false)
+
+function energy(X::GraphSK, C::Config)
     @assert X.N == C.N
     @extract C : s
     @extract X : N sN J cache
@@ -56,7 +68,7 @@ function energy(X::GraphIsingSK, C::Config)
     n = -2 * sum(s)
     for i = 1:N
         Ji = J[i]
-        sc = sum(map!($, tmps, Ji, s))
+        sc = sum(map!(⊻, tmps, Ji, s))
         si = s[i]
         lf = -(2si-1) * (N-1 - 2sc)
         lfields[i] = 2 * (-lf + 2si)
@@ -81,7 +93,7 @@ function energy(X::GraphIsingSK, C::Config)
     return n / sN
 end
 
-function update_cache!(X::GraphIsingSK, C::Config, move::Int)
+function update_cache!(X::GraphSK, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -100,7 +112,7 @@ function update_cache!(X::GraphIsingSK, C::Config, move::Int)
         lfm = lfields[move]
         @simd for j = 1:N
             # note: we don't check move ≠ j to avoid branching
-            Jσij = si $ s[j] $ Ji[j]
+            Jσij = si ⊻ s[j] ⊻ Ji[j]
             lfj = lfields[j]
             lfields_last[j] = lfj
             lfields[j] = lfj + 8 * Jσij - 4
@@ -120,7 +132,7 @@ function update_cache!(X::GraphIsingSK, C::Config, move::Int)
     return
 end
 
-function delta_energy(X::GraphIsingSK, C::Config, move::Int)
+function delta_energy(X::GraphSK, C::Config, move::Int)
     @extract X : sN cache
     @extract cache : lfields
 
@@ -134,18 +146,18 @@ function delta_energy(X::GraphIsingSK, C::Config, move::Int)
 
     # Ji = J[move]
     # si = s[move]
-    # sc = sum(map!($, tmps, Ji, s)) - si
+    # sc = sum(map!(⊻, tmps, Ji, s)) - si
     # @assert Δ == 2 * (2si-1) * (N-1 - 2sc)
     # return Δ
 end
 
-# function check_delta(X::GraphIsingSK, C::Config, move::Int)
+# function check_delta(X::GraphSK, C::Config, move::Int)
 #     @extract C : s
 #     delta = delta_energy(X, s, move)
 #     e0 = energy(X, s)
-#     s[move] $= 1
+#     s[move] ⊻= 1
 #     e1 = energy(X, s)
-#     s[move] $= 1
+#     s[move] ⊻= 1
 #
 #     (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
 # end
@@ -158,8 +170,9 @@ end
 start(fcn::FCNeighbors) = 1 + (fcn.i == 1)
 done(fcn::FCNeighbors, j) = j > fcn.N
 next(fcn::FCNeighbors, j) = (j, j + 1 + (j == fcn.i - 1))
+length(fcn::FCNeighbors) = fcn.N - (1 ≤ fcn.i ≤ fcn.N)
 
-neighbors(X::GraphIsingSK, i::Int) = FCNeighbors(X.N, i)
+neighbors(X::GraphSK, i::Int) = FCNeighbors(X.N, i)
 
 #####
 
@@ -175,11 +188,11 @@ function gen_J_gauss(N::Integer)
     return J
 end
 
-type GraphIsingSKGauss <: SimpleGraph{Float64}
+type GraphSKNormal <: SimpleGraph{Float64}
     N::Int
     J::Vec2
     cache::LocalFields{Float64}
-    function GraphIsingSKGauss(J::Vec2; check::Bool = true)
+    function GraphSKNormal(J::Vec2; check::Bool = true)
         N = length(J)
         if check
             all(Jx->length(Jx) == N, J) || throw(ArgumentError("invalid J inner length, expected $N, given: $(unique(map(length,J)))"))
@@ -195,9 +208,18 @@ type GraphIsingSKGauss <: SimpleGraph{Float64}
     end
 end
 
-GraphIsingSKGauss(N::Integer) = GraphIsingSKGauss(gen_J_gauss(N), check=false)
+"""
+    GraphSK(N::Integer) <: SimpleGraph{Float64}
 
-function energy(X::GraphIsingSKGauss, C::Config)
+A `SimpleGraph` implementing a Sherrington-Kirkpatrick fully-connected Ising model
+with `N` spins and random interactions extracted from a normal distribution with
+zero mean and \$1/N\$ variance, and no external fields.
+
+Same as [`GraphSK`](@ref), but with Gaussian interactions.
+"""
+GraphSKNormal(N::Integer) = GraphSKNormal(gen_J_gauss(N), check=false)
+
+function energy(X::GraphSKNormal, C::Config)
     @assert X.N == C.N
     @extract C : s
     @extract X : N J cache
@@ -211,7 +233,7 @@ function energy(X::GraphIsingSKGauss, C::Config)
         for j = 1:N
             # j == i && continue # avoid branching
             #n -= (2s[j] - 1) * (2s[i] - 1) * Ji[j]
-            lf += (1 - 2 * (si $ s[j])) * Ji[j]
+            lf += (1 - 2 * (si ⊻ s[j])) * Ji[j]
         end
         lfields[i] = 2lf
         n -= lf
@@ -224,7 +246,7 @@ function energy(X::GraphIsingSKGauss, C::Config)
     return n
 end
 
-function update_cache!(X::GraphIsingSKGauss, C::Config, move::Int)
+function update_cache!(X::GraphSKNormal, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -243,7 +265,7 @@ function update_cache!(X::GraphIsingSKGauss, C::Config, move::Int)
         lfm = lfields[move]
         @simd for j = 1:N
             # note: we don't check move ≠ j to avoid branching
-            Jσij = (1 - 2 * (si $ s[j])) * Ji[j]
+            Jσij = (1 - 2 * (si ⊻ s[j])) * Ji[j]
             lfj = lfields[j]
             lfields_last[j] = lfj
             lfields[j] = lfj + 4 * Jσij
@@ -263,7 +285,7 @@ function update_cache!(X::GraphIsingSKGauss, C::Config, move::Int)
     return
 end
 
-function delta_energy(X::GraphIsingSKGauss, C::Config, move::Int)
+function delta_energy(X::GraphSKNormal, C::Config, move::Int)
     @extract X : cache
     @extract cache : lfields
 
@@ -271,17 +293,17 @@ function delta_energy(X::GraphIsingSKGauss, C::Config, move::Int)
     return Δ
 end
 
-function check_delta(X::GraphIsingSKGauss, C::Config, move::Int)
+function check_delta(X::GraphSKNormal, C::Config, move::Int)
     @extract C : s
     delta = delta_energy(X, C, move)
-    s[move] $= 1
+    s[move] = s[move] ⊻ 1
     e1 = energy(X, C)
-    s[move] $= 1
+    s[move] = s[move] ⊻ 1
     e0 = energy(X, C)
 
     abs((e1-e0) - delta) < 1e-10 || (@show e1,e0,delta,e1-e0; error())
 end
 
-neighbors(X::GraphIsingSKGauss, i::Int) = FCNeighbors(X.N, i)
+neighbors(X::GraphSKNormal, i::Int) = FCNeighbors(X.N, i)
 
 end

@@ -1,6 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module EA
 
 using ExtractMacro
+using Compat
 using ..Interface
 using ..Common
 using ..DFloats
@@ -9,7 +12,7 @@ if isdefined(Main, :Documenter)
 using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
 end
 
-export GraphEA, GraphEACont, GraphEAContSimple
+export GraphEA, GraphEANormalDiscretized, GraphEANormal
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, update_cache_residual!
@@ -173,8 +176,10 @@ end
 
 An Edwards-Anderson `DiscrGraph`: spins are arranged on a square lattice of size `L`
 in `D` dimensions (i.e. there are \$L^D\$ total spins), with periodic boundary
-conditions. The interactions are extracted at random from `LEV`, which must be
-a `Tuple` of `Real`s. No external fields.
+conditions.
+
+The interactions are extracted at random from `LEV`, which must be a `Tuple` of `Real`s.
+No external fields.
 """
 function GraphEA{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}})
     A = gen_EA(L, D)
@@ -248,7 +253,7 @@ function update_cache!{ET}(X::GraphEA{ET}, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfields[y] = discr(ET, lfields[y] - 4 * σxy * Jxy)
         end
@@ -306,14 +311,14 @@ neighbors(X::GraphEA, i::Int) = return X.uA[i]
     return Expr(:tuple, deltas...)
 end
 
-type GraphEACont{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
+type GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphEA{ET,LEV,twoD}
     A::Vector{NTuple{twoD,Int}}
     rJ::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    function GraphEACont(L::Integer)
+    function GraphEANormalDiscretized(L::Integer)
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -337,22 +342,24 @@ type GraphEACont{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
 end
 
 """
-    GraphEACont(L::Integer, D::Integer, LEV) <: DoubleGraph{DiscrGraph,Float64}
+    GraphEANormalDiscretized(L::Integer, D::Integer, LEV) <: DoubleGraph{DiscrGraph,Float64}
 
 An Edwards-Anderson `DoubleGraph`: spins are arranged on a square lattice of size `L`
 in `D` dimensions (i.e. there are \$L^D\$ total spins), with periodic boundary
-conditions. The interactions are extracted at random from a normal distribution
+conditions.
+
+The interactions are extracted at random from a normal distribution
 with unit variance, and are then discretized using the values in `LEV`,
 which must be a `Tuple` of `Real`s. No external fields.
 
-Same as [`GraphEAContSimple`](@ref), but works differently when used with [`rrrMC`](@ref).
+Same as [`GraphEANormal`](@ref), but works differently when used with [`rrrMC`](@ref).
 """
-GraphEACont{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphEACont{ET,LEV,2D}(L)
-GraphEACont(L::Integer, D::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphEACont(L, D, promote(LEV...))
+GraphEANormalDiscretized{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphEANormalDiscretized{ET,LEV,2D}(L)
+GraphEANormalDiscretized(L::Integer, D::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphEANormalDiscretized(L, D, promote(LEV...))
 
-GraphEACont(L::Integer, D::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphEACont{DFloat64,map(DFloat64,LEV),2D}(L)
+GraphEANormalDiscretized(L::Integer, D::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphEANormalDiscretized{DFloat64,map(DFloat64,LEV),2D}(L)
 
-function energy(X::GraphEACont, C::Config)
+function energy(X::GraphEANormalDiscretized, C::Config)
     @assert X.N == C.N
     @extract X : X0 A J=rJ cache
     @extract C : N s
@@ -383,7 +390,7 @@ function energy(X::GraphEACont, C::Config)
     return convert(Float64, E0 + E1)
 end
 
-function update_cache!{ET}(X::GraphEACont{ET}, C::Config, move::Int)
+function update_cache!{ET}(X::GraphEANormalDiscretized{ET}, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
 
@@ -427,7 +434,7 @@ function update_cache!{ET}(X::GraphEACont{ET}, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
 
             Jxy0 = Jx0[k]
             lfields0[y] = discr(ET, lfields0[y] - 4 * σxy * Jxy0)
@@ -449,7 +456,7 @@ function update_cache!{ET}(X::GraphEACont{ET}, C::Config, move::Int)
     return
 end
 
-function update_cache_residual!(X::GraphEACont, C::Config, move::Int)
+function update_cache_residual!(X::GraphEANormalDiscretized, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -478,7 +485,7 @@ function update_cache_residual!(X::GraphEACont, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfields[y] -= 4 * σxy * Jxy
         end
@@ -491,7 +498,7 @@ function update_cache_residual!(X::GraphEACont, C::Config, move::Int)
     return
 end
 
-function delta_energy_residual(X::GraphEACont, C::Config, move::Int)
+function delta_energy_residual(X::GraphEANormalDiscretized, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -516,20 +523,24 @@ function delta_energy_residual(X::GraphEACont, C::Config, move::Int)
     # return Δ
 end
 
-function delta_energy(X::GraphEACont, C::Config, move::Int)
+function delta_energy(X::GraphEANormalDiscretized, C::Config, move::Int)
     ΔE0 = delta_energy(X.X0, C, move)
     ΔE1 = delta_energy_residual(X, C, move)
     return convert(Float64, ΔE0 + ΔE1)
 end
 
+neighbors(X::GraphEANormalDiscretized, i::Int) = return X.uA[i]
 
-type GraphEAContSimple{twoD} <: SimpleGraph{Float64}
+
+## GraphEANormal
+
+type GraphEANormal{twoD} <: SimpleGraph{Float64}
     N::Int
     A::Vector{NTuple{twoD,Int}}
     J::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    function GraphEAContSimple(L::Integer, A, J)
+    function GraphEANormal(L::Integer, A, J)
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -545,34 +556,35 @@ type GraphEAContSimple{twoD} <: SimpleGraph{Float64}
 end
 
 """
-    GraphEAContSimple(L::Integer, D::Integer) <: SimpleGraph{Float64}
+    GraphEANormal(L::Integer, D::Integer) <: SimpleGraph{Float64}
 
 An Edwards-Anderson `SimpleGraph`: spins are arranged on a square lattice of size `L`
 in `D` dimensions (i.e. there are \$L^D\$ total spins), with periodic boundary
-conditions. The interactions are extracted at random from a normal distribution
-with unit variance.
+conditions.
 
-Same as [`GraphEACont`](@ref), but it's more efficient when used with [`standardMC`](@ref).
+Same as [`GraphEA`](@ref), but the interactions are extracted from a normal distribution
+with unit variance.
 """
-function GraphEAContSimple(L::Integer, D::Integer; genJf=randn)
+function GraphEANormal(L::Integer, D::Integer; genJf=randn)
     D ≥ 1 || throw(ArgumentError("D must be ≥ 0, given: $D"))
     A = gen_EA(L, D)
+    N = length(A)
     J = gen_J(Float64, N, A) do
         genJf()
     end
 
-    return GraphEAContSimple{2D}(L, A, J)
+    return GraphEANormal{2D}(L, A, J)
 end
 
-function GraphEAContSimple(fname::AbstractString)
+function GraphEANormal(fname::AbstractString)
     L, D, A, J = EA.gen_AJ(fname)
     N = length(A)
     @assert N == L^D
-    return GraphEAContSimple{2D}(L, A, J)
+    return GraphEANormal{2D}(L, A, J)
 end
 
 
-function energy(X::GraphEAContSimple, C::Config)
+function energy(X::GraphEANormal, C::Config)
     @assert X.N == C.N
     @extract X : A J cache
     @extract C : N s
@@ -601,7 +613,7 @@ function energy(X::GraphEAContSimple, C::Config)
     return E1
 end
 
-function update_cache!(X::GraphEAContSimple, C::Config, move::Int)
+function update_cache!(X::GraphEANormal, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -630,7 +642,7 @@ function update_cache!(X::GraphEAContSimple, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfields[y] -= 4 * σxy * Jxy
         end
@@ -643,7 +655,7 @@ function update_cache!(X::GraphEAContSimple, C::Config, move::Int)
     return
 end
 
-function delta_energy(X::GraphEAContSimple, C::Config, move::Int)
+function delta_energy(X::GraphEANormal, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -668,6 +680,6 @@ function delta_energy(X::GraphEAContSimple, C::Config, move::Int)
     # return Δ
 end
 
-neighbors(X::GraphEAContSimple, i::Int) = return X.uA[i]
+neighbors(X::GraphEANormal, i::Int) = return X.uA[i]
 
 end

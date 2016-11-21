@@ -1,10 +1,12 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module Fields
 
 using ExtractMacro
 using ..Interface
 using ..Common
 
-export GraphFields, GraphFieldsCont
+export GraphFields, GraphFieldsNormalDiscretized
 
 import ..Interface: energy, delta_energy, neighbors, allΔE, delta_energy_residual
 
@@ -79,11 +81,11 @@ neighbors(X::GraphFields, i::Int) = return ()
 end
 
 
-type GraphFieldsCont{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
+type GraphFieldsNormalDiscretized{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphFields{ET,LEV}
     rfields::Vec
-    function GraphFieldsCont(N::Integer)
+    function GraphFieldsNormalDiscretized(N::Integer)
         cfields = randn(N)
         fields, rfields = discretize(cfields, LEV)
         X0 = GraphFields{ET,LEV}(fields)
@@ -92,7 +94,7 @@ type GraphFieldsCont{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
 end
 
 """
-    GraphFieldsCont(N::Integer, LEV::Tuple) <: DoubleGraph{Float64,GraphFields}
+    GraphFieldsNormalDiscretized(N::Integer, LEV::Tuple) <: DoubleGraph{Float64,GraphFields}
 
 A simple `DoubleGraph` type with `N` non-interacting variables, each of which is
 subject to a local field. The fields are extracted independently from a normal
@@ -101,9 +103,9 @@ must be a `Tuple` of `Real`s.
 
 Mostly useful for testing/debugging purposes.
 """
-GraphFieldsCont{ET<:Real}(N::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphFieldsCont{ET,LEV}(N)
+GraphFieldsNormalDiscretized{ET<:Real}(N::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphFieldsNormalDiscretized{ET,LEV}(N)
 
-function energy(X::GraphFieldsCont, C::Config)
+function energy(X::GraphFieldsNormalDiscretized, C::Config)
     @assert X.N == C.N
     @extract X : X0 rfields
     @extract C : N s
@@ -118,7 +120,7 @@ function energy(X::GraphFieldsCont, C::Config)
     return convert(Float64, E0 + E1)
 end
 
-function delta_energy_residual(X::GraphFieldsCont, C::Config, move::Int)
+function delta_energy_residual(X::GraphFieldsNormalDiscretized, C::Config, move::Int)
     @assert 1 ≤ move ≤ C.N
     @assert X.N == C.N
     @extract X : rfields
@@ -127,10 +129,12 @@ function delta_energy_residual(X::GraphFieldsCont, C::Config, move::Int)
     return 2 * rfields[move] * (2s[move] - 1)
 end
 
-function delta_energy(X::GraphFieldsCont, C::Config, move::Int)
+function delta_energy(X::GraphFieldsNormalDiscretized, C::Config, move::Int)
     ΔE0 = delta_energy(X.X0, C, move)
     ΔE1 = delta_energy_residual(X, C, move)
     return convert(Float64, ΔE0 + ΔE1)
 end
+
+neighbors(X::GraphFieldsNormalDiscretized, i::Int) = return ()
 
 end # module

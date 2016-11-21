@@ -11,7 +11,7 @@ At the top of the hierarchy, there is `AbstractGraph`:
 AbstractGraph
 ```
 
-There are currently three abstract subclasses, which determine which sampling algorithms can be used:
+There are currently three abstract subclasses and an alias, which determine how the sampling algorithms can be used:
 
 ```@docs
 SimpleGraph
@@ -19,6 +19,10 @@ SimpleGraph
 
 ```@docs
 DiscrGraph
+```
+
+```@docs
+SingleGraph
 ```
 
 ```@docs

@@ -1,6 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module PercNaive
 
 using ExtractMacro
+using Compat
 using ..Interface
 using ..Common
 
@@ -54,6 +57,16 @@ type GraphPercNaive <: SimpleGraph{Int}
     end
 end
 
+"""
+    GraphPercNaive(N::Integer, P::Integer) <: SimpleGraph{Int}
+
+A `SimpleGraph` implementing a single-layer binary perceptron with `N` binary (\$±1\$) synapses,
+trained on `P` random i.i.d. \$±1\$ patterns.
+
+The energy of the model is computed as the number of misclassified patterns.
+
+See also [`GraphPerc`](@ref).
+"""
 GraphPercNaive(N::Integer, P::Integer) = GraphPercNaive(gen_ξ(N, P)...)
 
 function Base.empty!(stab::Stabilities)
@@ -76,7 +89,7 @@ function energy(X::GraphPercNaive, C::Config)
     tmps = BitArray(N)
 
     for a = 1:P
-        map!($, tmps, s, ξv[a])
+        map!(⊻, tmps, s, ξv[a])
         Δ = N - 2 * sum(tmps)
         Δs[a] = Δ
         if Δ == 1
@@ -101,7 +114,7 @@ function update_cache!(X::GraphPercNaive, C::Config, move::Int)
     last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
-    # @assert ξsi == ξ[:,move] $ si
+    # @assert ξsi == ξ[:,move] ⊻ si
     @inbounds for a = 1:P
         oldΔ = Δs[a]
         newΔ = oldΔ + (2 - 4 * ξsi[a])
@@ -148,7 +161,7 @@ function delta_energy(X::GraphPercNaive, C::Config, move::Int)
     last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
-    # @assert ξsi == ξ[:,move] $ si
+    # @assert ξsi == ξ[:,move] ⊻ si
     ΔE = 0
     @inbounds for a in p
         ΔE += ~ξsi[a]

@@ -14,7 +14,7 @@ julia> X = RRRMC.GraphRRG(10, 3)
 Note that for models which involve randomness in the constructor you may want to set the random seed with `srand`
 before calling the constructor, for reproducibility purposes.
 
-## Spin glass models
+## Basic spin glass models
 
 ### Random regular graphs
 
@@ -23,11 +23,11 @@ GraphRRG
 ```
 
 ```@docs
-GraphRRGCont
+GraphRRGNormal
 ```
 
 ```@docs
-GraphRRGContSimple
+GraphRRGNormalDiscretized
 ```
 
 ### Edwards-Anderson graphs
@@ -38,11 +38,11 @@ GraphEA
 ```
 
 ```@docs
-GraphEACont
+GraphEANormal
 ```
 
 ```@docs
-GraphEAContSimple
+GraphEANormalDiscretized
 ```
 
 ### p-spin
@@ -50,13 +50,40 @@ GraphEAContSimple
 ```@docs
 GraphPSpin3
 ```
-### Quantum models with transverse fields
+
+### Sherrington-Kirkpatrick graphs
 
 ```@docs
-GraphQIsingT
+GraphSK
+```
+
+```@docs
+GraphSKNormal
+```
+
+## Quantum models with transverse fields
+
+```@docs
+GraphQuant
+```
+
+## Robust Ensemble models
+
+```@docs
+GraphRobustEnsemble
+```
+
+## Local Entropy models
+
+```@docs
+GraphLocalEntropy
 ```
 
 ## Trivial models used for testing and debugging
+
+```@docs
+GraphEmpty
+```
 
 ```@docs
 GraphTwoSpin
@@ -71,15 +98,9 @@ GraphFields
 ```
 
 ```@docs
-GraphFieldsCont
+GraphFieldsNormalDiscretized
 ```
 
 ```@docs
 GraphIsing1D
 ```
-
-```@docs
-GraphQ0T
-```
-
-

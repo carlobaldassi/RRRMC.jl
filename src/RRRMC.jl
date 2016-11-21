@@ -1,9 +1,11 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 """
     module RRRMC
 
 This module implements methods for reduced-rejection-rate Monte Carlo on Ising spin models.
 
-See [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref).
+See [`standardMC`](@ref), [`rrrMC`](@ref), [`bklMC`](@ref) and [`wtmMC`](@ref).
 """
 module RRRMC
 
@@ -56,7 +58,7 @@ Possible keyord arguments are:
 * `hook`: a function to be executed after every `step` number of iterations (see above). It must take five arguments: the current iteration, the graph `X`,
   the current configuration, the number of accepted moves so far, and the current energy. Useful to collect data other than the energy, write to files ecc;
   you'd probably want to use a closure, see the example below. The return value must be a `Bool`: return `false` to interrupt the simulation, `true` otherwise.
-  The default is a no-op and just returns `true`.
+  The default does nothing and just returns `true`.
 
 Basic example:
 
@@ -123,11 +125,11 @@ end
 """
     rrrMC(X::AbstractGraph, β::Real, iters::Integer; keywords...)
 
-Same as [`standardMC`](@ref), but uses the reduced-rejection-rate method. Each iteration takes moretime, but has a higher chance of being accepted,
+Same as [`standardMC`](@ref), but uses the reduced-rejection-rate method. Each iteration takes more time, but has a higher chance of being accepted,
 so fewer iterations overall should be needed normally. Whether this trade-off is convenient depends on the parameters and the details of the model.
+This function has specialized versions for [`DiscrGraph`](@ref) and [`DoubleGraph`](@ref) models.
 
-The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
-that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`](@ref) models.
+The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 """
 function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = NaN, staged_thr_fact::Real = 5.0)
@@ -255,30 +257,19 @@ end
 
 ### Begin BKL-related functions
 
-function step_bkl(X::DiscrGraph, C::Config, ΔEcache)
-    skip = rand_skip(ΔEcache)
-    move, ΔE = rand_move(ΔEcache)
-    apply_move!(X, C, move, ΔEcache)
-    #check_consistency(ΔEcache)
-    return ΔE, skip
-end
-
-function step_bkl(X::AbstractGraph, C::Config, ΔEcache)
-    skip = rand_skip(ΔEcache)
-    move, ΔE = rand_move(ΔEcache)
+apply_step_bkl!(X::AbstractGraph, C::Config, move::Int, ΔEcache) =
     apply_move!(X, C, move, ΔEcache, Val{false})
-    #check_consistency(ΔEcache)
-    return ΔE, skip
-end
+
+apply_step_bkl!(X::DiscrGraph, C::Config, move::Int, ΔEcache) =
+    apply_move!(X, C, move, ΔEcache)
 
 """
-    bklMC(X::DiscrGraph, β::Real, iters::Integer; keywords...)
+    bklMC(X::AbstractGraph, β::Real, iters::Integer; keywords...)
 
-Same as [`standardMC`](@ref), but uses the rejection-free method by Bortz, Kalos and Lebowitz. Each step takes more, but rejected moves
-are essentially free, since they are skipped entirely.
+Same as [`standardMC`](@ref), but uses the rejection-free method by Bortz, Kalos and Lebowitz. Each step takes more time, but rejected moves
+are almost free, since they are skipped entirely. This function has a specialized version for [`DiscrGraph`](@ref) models.
 
-The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
-that this function can only be used with [`DiscrGraph`](@ref) models.
+The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
@@ -302,7 +293,8 @@ function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432
         #@assert E == energy(X, C)
         #check_consistency(ΔEcache)
 
-        ΔE, skip = step_bkl(X, C, ΔEcache)
+        skip = rand_skip(ΔEcache)
+        move, ΔE = rand_move(ΔEcache)
 
         while it + skip + 1 ≥ nextstep
             push!(Es, E)
@@ -310,6 +302,8 @@ function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432
             nextstep += step
             nextstep > iters && @goto out
         end
+
+        apply_step_bkl!(X, C, move, ΔEcache)
         it += skip + 1
         E += ΔE
         accepted += 1
@@ -322,47 +316,21 @@ function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432
     return Es, C
 end
 
-# function step_wtm!(X::AbstractGraph, C::Config, ΔEcache::THeap, β::Real, t0::Float64)
-#     t, move = pick_next(ΔEcache)
-#     δt = t - t0
-#     ΔE = update_heap!(ΔEcache, X, C, β, move, t)
-#     return ΔE, t, δt
-# end
+"""
+    wtmMC(X::AbstractGraph, β::Real, samples::Integer; keywords...)
 
-## function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
-##     srand(seed)
-##     Es = empty!(Array(ET, min(10^8, iters ÷ step)))
-##
-##     N = getN(X)
-##     C::Config = C0 ≡ nothing ? Config(N) : C0
-##     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
-##     E = energy(X, C)
-##     theap = THeap(X, C, β)
-##     #check_consistency(ΔEcache)
-##
-##     it = 0
-##     t = 0.0
-##     nextstep = step
-##     while it < iters
-##         #@assert E == energy(X, C)
-##
-##         it += 1
-##         t′, move = pick_next(theap)
-##         δt = t′ - t
-##         if (it % step == 0)
-##             push!(Es, E)
-##             hook(it, X, C, t, δt, E) || break
-##         end
-##         t = t′
-##         ΔE = update_heap!(theap, X, C, β, move, t)
-##         E += ΔE
-##     end
-##     println("global time = ", t)
-##     println("ratio = ", t / it)
-##     return Es, C
-## end
+Same as [`standardMC`](@ref), but uses the rejection-free waiting-time method by Dall and Sibani. It is similar to [`bklMC`](@ref).
 
-# TODO: document!
+The return values and the keyword arguments are *almost* the same as [`standardMC`](@ref), see the usage examples for that function.
+However, the waiting time method uses an internal "global time" variable, which takes the place of the "iterations" counter of [`standardMC`](ref)
+and of [`bklMC`](@ref). Thus, this function has two differences with respect to the other samplers in the module:
+
+* the function takes a `samples` integer argument, with the maximum number of samples which will be collected.
+* the `step` keyword argument is of type `Float64` instead of integer (default value = `1.0`; you'll probably want to change this).
+  The `step` is measured in terms of the global time variable and is scaled with the size of the problem `N`.
+
+The total number of samples actually collected can still be less than `samples` if the `hook` function from the keyword arguments returns `false` earlier.
+"""
 function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
     Es = empty!(Array(ET, min(10^8, samples)))
