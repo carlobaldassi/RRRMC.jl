@@ -6,11 +6,10 @@ using ..RE
 using ..Empty
 using ..SK
 using ..EA
-using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export Graph0RE, GraphSKRE, GraphEARE, GraphPercRE, GraphPercNaiveRE, GraphPercOldRE
+export Graph0RE, GraphSKRE, GraphEARE, GraphPercRE, GraphPercNaiveRE
 
 typealias Graph0RE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -67,22 +66,6 @@ function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
-end
-
-typealias GraphPercOldRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPercOld}
-
-# """
-#     GraphPercOldRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
-#
-# TODO
-# """
-function GraphPercOldRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ = PercOld.gen_ξ(N, P)
-    GraphRobustEnsemble(N, M, γ, β, GraphPercOld, ξ)
-end
-
-function GraphPercOldRE(X::GraphPercOld, M::Integer, γ::Float64, β::Float64)
-    GraphRobustEnsemble(X.N, M, γ, β, GraphPercOld, X.ξ)
 end
 
 typealias GraphPercRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPerc}

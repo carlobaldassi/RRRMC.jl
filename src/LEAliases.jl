@@ -6,11 +6,10 @@ using ..LE
 using ..Empty
 using ..SK
 using ..EA
-using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export Graph0LE, GraphSKLE, GraphEALE, GraphPercLE, GraphPercNaiveLE, GraphPercOldLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphPercLE, GraphPercNaiveLE
 
 typealias Graph0LE{M,γT} GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -67,22 +66,6 @@ function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
-end
-
-typealias GraphPercOldLE{M,γT} GraphLocalEntropy{M,γT,GraphPercOld}
-
-# """
-#     GraphPercOldLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
-#
-# TODO
-# """
-function GraphPercOldLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ = PercOld.gen_ξ(N, P)
-    GraphLocalEntropy(N, M, γ, β, GraphPercOld, ξ)
-end
-
-function GraphPercOldLE(X::GraphPercOld, M::Integer, γ::Float64, β::Float64)
-    GraphLocalEntropy(X.N, M, γ, β, GraphPercOld, X.ξ)
 end
 
 typealias GraphPercLE{M,γT} GraphLocalEntropy{M,γT,GraphPerc}

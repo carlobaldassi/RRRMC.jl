@@ -6,11 +6,10 @@ using ..QT
 using ..Empty
 using ..SK
 using ..EA
-using ..PercOld
 using ..Perc
 using ..PercNaive
 
-export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercT, GraphQPercNaiveT, GraphQPercOldT
+export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercT, GraphQPercNaiveT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
@@ -76,22 +75,6 @@ function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphQuant(N, M, Γ, β, GraphEANormal{twoD}, L, X.A, X.J)
-end
-
-typealias GraphQPercOldT{fourK} GraphQuant{fourK,GraphPercOld}
-
-# """
-#     GraphQPercOldT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
-#
-# TODO
-# """
-function GraphQPercOldT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
-    ξ = PercOld.gen_ξ(N, P)
-    GraphQuant(N, M, Γ, β, GraphPercOld, ξ)
-end
-
-function GraphQPercOldT(X::GraphPercOld, M::Integer, Γ::Float64, β::Float64)
-    GraphQuant(X.N, M, Γ, β, GraphPercOld, X.ξ)
 end
 
 typealias GraphQPercT{fourK} GraphQuant{fourK,GraphPerc}
