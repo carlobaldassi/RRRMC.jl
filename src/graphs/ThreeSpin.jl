@@ -1,3 +1,5 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module ThreeSpin
 
 using ExtractMacro
@@ -11,7 +13,7 @@ type GraphThreeSpin <: DiscrGraph{Int}
 end
 
 @doc """
-    GraphThreeSpin() <: DiscrGraph
+    GraphThreeSpin() <: DiscrGraph{Int}
 
 A trivial `DiscrGraph` type with 3 spins, ferromagnetic interactions
 (\$J=1\$), no fields, and periodic boundary conditions.
@@ -43,8 +45,5 @@ end
 #neighbors(X::GraphThreeSpin, i::Int) = return i == 1 ? (2,) : i == 2 ? (1, 3) : (2,)
 neighbors(X::GraphThreeSpin, i::Int) = return (mod1(i-1, 3), mod1(i+1,3))
 allΔE(::Type{GraphThreeSpin}) = (0, 4)
-
-
-
 
 end

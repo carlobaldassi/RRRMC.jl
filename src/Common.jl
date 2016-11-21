@@ -1,16 +1,22 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module Common
 
-export Vec, IVec, unsafe_bitflip!, discretize,
+using Compat
+
+export Vec, Vec2, IVec, unsafe_bitflip!, discretize,
        LocalFields
 
-typealias Vec Vector{Float64}
+typealias Vec  Vector{Float64}
+typealias Vec2 Vector{Vec}
 typealias IVec Vector{Int}
 
 @inline function unsafe_bitflip!(Bc::Array{UInt64}, i::Int)
     i1, i2 = Base.get_chunks_id(i)
     u = UInt64(1) << i2
     @inbounds begin
-        Bc[i1] $= u
+        #Bc[i1] ⊻= u
+        Bc[i1] = Bc[i1] ⊻ u
     end
 end
 @inline unsafe_bitflip!(B::BitArray, i::Int) = unsafe_bitflip!(B.chunks, i)

@@ -1,6 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module RRG
 
 using ExtractMacro
+using Compat
 using ..Interface
 using ..Common
 using ..DFloats
@@ -10,7 +13,7 @@ if isdefined(Main, :Documenter)
 using ...RRRMC
 end
 
-export GraphRRG, GraphRRGCont, GraphRRGContSimple
+export GraphRRG, GraphRRGNormalDiscretized, GraphRRGNormal
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     delta_energy_residual, update_cache!, update_cache_residual!
@@ -118,6 +121,7 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
     N::Int
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,ET}}
+    uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
     function GraphRRG(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}})
         isa(K, Integer) || throw(ArgumentError("K must be integer, given a: $(typeof(K))"))
@@ -130,9 +134,11 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
         length(J) == N || throw(ArgumentError("incompatible lengths of A and J: $(length(A)), $(length(J))"))
         #all(j->length(j) == K, J) || throw(ArgumentError("invalid J inner length, expected $K, given: $(unique(map(length,J)))"))
 
+        uA = [collect(A[x][find(J[x])]) for x = 1:N]
+
         cache = LocalFields{ET}(N)
 
-        return new(N, A, J, cache)
+        return new(N, A, J, uA, cache)
     end
 end
 
@@ -140,8 +146,9 @@ end
     GraphRRG(N::Integer, K::Integer, LEV = (-1,1)) <: DiscrGraph
 
 A `DiscGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
+*Note:* `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
+
 The interactions are extracted at random from `LEV`, which must be a `Tuple` of `Real`s.
 No external fields.
 """
@@ -211,7 +218,7 @@ function update_cache!{ET}(X::GraphRRG{ET}, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfy = lfields[y]
             lfields_last[y] = lfy
@@ -255,7 +262,7 @@ function delta_energy{ET}(X::GraphRRG{ET}, C::Config, move::Int)
     # return discr(ET, Δ)
 end
 
-neighbors(X::GraphRRG, i::Int) = return X.A[i]
+neighbors(X::GraphRRG, i::Int) = return X.uA[i]
 @generated _allΔE{K}(::Type{GraphRRG{Int,(-1,1),K}}) =
     iseven(K) ? Expr(:tuple, ntuple(d->4*(d-1), K÷2+1)...) :
                 Expr(:tuple, ntuple(d->2*(2d-1), (K+1)÷2)...)
@@ -279,13 +286,13 @@ end
 
 ## continous weights
 
-type GraphRRGCont{ET,LEV,K} <: DoubleGraph{Float64}
+type GraphRRGNormalDiscretized{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphRRG{ET,LEV,K}
     A::Vector{NTuple{K,Int}}
     rJ::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    function GraphRRGCont(N::Integer)
+    function GraphRRGNormalDiscretized(N::Integer)
         A = gen_RRG(N, K)
         cJ = gen_J(Float64, N, A) do
             randn()
@@ -304,26 +311,27 @@ type GraphRRGCont{ET,LEV,K} <: DoubleGraph{Float64}
 end
 
 """
-    GraphRRGCont(N::Integer, K::Integer, LEV) <: DoubleGraph{Float64}
+    GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV) <: DoubleGraph{DiscrGraph,Float64}
 
 A `DoubleGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
+*Note:* `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
+
 The interactions are extracted from a normal distribution with unit variance, and are then
 discretized using the values in `LEV`, which must be a `Tuple` of `Real`s. No external fields.
 
-Same as [`GraphRRGContSimple`](@ref), but it can be used with [`rrrMC`](@ref).
+Same as [`GraphRRGNormal`](@ref), but it works differently when used with [`rrrMC`](@ref).
 """
-GraphRRGCont{ET<:Real}(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphRRGCont{ET,LEV,K}(N)
-GraphRRGCont(N::Integer, K::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphRRGCont(N, K, promote(LEV...))
+GraphRRGNormalDiscretized{ET<:Real}(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphRRGNormalDiscretized{ET,LEV,K}(N)
+GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphRRGNormalDiscretized(N, K, promote(LEV...))
 
-GraphRRGCont(N::Integer, K::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphRRGCont{DFloat64,map(DFloat64,LEV),K}(N)
+GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphRRGNormalDiscretized{DFloat64,map(DFloat64,LEV),K}(N)
 
-function energy(X::GraphRRGCont, C::Config)
+function energy(X::GraphRRGNormalDiscretized, C::Config)
     @assert X.N == C.N
     @extract X : X0 A J=rJ cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E0 = energy(X0, C)
 
@@ -344,11 +352,13 @@ function energy(X::GraphRRGCont, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return convert(Float64, E0 + E1)
 end
 
-function update_cache!{ET}(X::GraphRRGCont{ET}, C::Config, move::Int)
+function update_cache!{ET}(X::GraphRRGNormalDiscretized{ET}, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
 
@@ -388,7 +398,7 @@ function update_cache!{ET}(X::GraphRRGCont{ET}, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
 
             Jxy0 = Jx0[k]
             lfy0 = lfields0[y]
@@ -418,7 +428,7 @@ function update_cache!{ET}(X::GraphRRGCont{ET}, C::Config, move::Int)
     return
 end
 
-function update_cache_residual!(X::GraphRRGCont, C::Config, move::Int)
+function update_cache_residual!(X::GraphRRGNormalDiscretized, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -444,7 +454,7 @@ function update_cache_residual!(X::GraphRRGCont, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfy = lfields[y]
             lfields_last[y] = lfy
@@ -459,7 +469,7 @@ function update_cache_residual!(X::GraphRRGCont, C::Config, move::Int)
     return
 end
 
-function delta_energy_residual(X::GraphRRGCont, C::Config, move::Int)
+function delta_energy_residual(X::GraphRRGNormalDiscretized, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -484,19 +494,23 @@ function delta_energy_residual(X::GraphRRGCont, C::Config, move::Int)
     # return Δ
 end
 
-function delta_energy(X::GraphRRGCont, C::Config, move::Int)
+function delta_energy(X::GraphRRGNormalDiscretized, C::Config, move::Int)
     ΔE0 = delta_energy(X.X0, C, move)
     ΔE1 = delta_energy_residual(X, C, move)
     return convert(Float64, ΔE0 + ΔE1)
 end
 
+neighbors(X::GraphRRGNormalDiscretized, i::Int) = return X.A[i]
 
-type GraphRRGContSimple{K} <: SimpleGraph{Float64}
+
+## GraphRRGNormal
+
+type GraphRRGNormal{K} <: SimpleGraph{Float64}
     N::Int
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    function GraphRRGContSimple(N::Integer)
+    function GraphRRGNormal(N::Integer)
         A = gen_RRG(N, K)
         J = gen_J(Float64, N, A) do
             randn()
@@ -508,22 +522,22 @@ type GraphRRGContSimple{K} <: SimpleGraph{Float64}
 end
 
 """
-    GraphRRGContSimple(N::Integer, K::Integer) <: SimpleGraph{Flaot64}
+    GraphRRGNormal(N::Integer, K::Integer) <: SimpleGraph{Float64}
 
 A `SimpleGraph` implementing a random regular graph with `N` spins and connectivity `K`.
-*Note*: `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
+*Note:* `N*K` must be even. Also, the graph generator uses the pairing model method by Bollobás,
 with a cutoff on the number of restarts, and thus it may occasionally fail if `K` is large.
-The interactions are extracted from a normal distribution with unit variance.
 
-Same as [`GraphRRGCont`](@ref), but it's more efficient when used with [`standardMC`](@ref).
+Same as [`GraphRRG`](@ref), but the interactions are extracted from a normal distribution with
+unit variance.
 """
-GraphRRGContSimple(N::Integer, K::Integer) = GraphRRGContSimple{K}(N)
+GraphRRGNormal(N::Integer, K::Integer) = GraphRRGNormal{K}(N)
 
-function energy(X::GraphRRGContSimple, C::Config)
+function energy(X::GraphRRGNormal, C::Config)
     @assert X.N == C.N
     @extract X : A J cache
     @extract C : N s
-    @extract cache : lfields
+    @extract cache : lfields lfields_last
 
     E1 = 0.0
     for x = 1:length(A)
@@ -542,11 +556,13 @@ function energy(X::GraphRRGContSimple, C::Config)
         lfields[x] = 2lf
     end
     E1 /= 2
+    cache.move_last = 0
+    fill!(lfields_last, 0.0)
 
     return E1
 end
 
-function update_cache!(X::GraphRRGContSimple, C::Config, move::Int)
+function update_cache!(X::GraphRRGNormal, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -572,7 +588,7 @@ function update_cache!(X::GraphRRGContSimple, C::Config, move::Int)
         Ax = A[move]
         for k = 1:length(Ax)
             y = Ax[k]
-            σxy = 1 - 2 * (sx $ s[y])
+            σxy = 1 - 2 * (sx ⊻ s[y])
             Jxy = Jx[k]
             lfy = lfields[y]
             lfields_last[y] = lfy
@@ -587,7 +603,7 @@ function update_cache!(X::GraphRRGContSimple, C::Config, move::Int)
     return
 end
 
-function delta_energy(X::GraphRRGContSimple, C::Config, move::Int)
+function delta_energy(X::GraphRRGNormal, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -611,5 +627,7 @@ function delta_energy(X::GraphRRGContSimple, C::Config, move::Int)
     # end
     # return Δ
 end
+
+neighbors(X::GraphRRGNormal, i::Int) = return X.A[i]
 
 end

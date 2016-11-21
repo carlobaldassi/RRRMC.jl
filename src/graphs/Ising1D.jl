@@ -1,3 +1,5 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module Ising1D
 
 using ExtractMacro
@@ -21,7 +23,7 @@ type GraphIsing1D <: DiscrGraph{Int}
 end
 
 @doc """
-    GraphIsing1D(N::Integer) <: DiscrGraph
+    GraphIsing1D(N::Integer) <: DiscrGraph{Int}
 
 A simple 1-dimensional `DiscrGraph` type with `N` spins, antiferromagnetic interactions
 (\$J=-1\$), no fields, and periodic boundary conditions.
@@ -61,9 +63,9 @@ function delta_energy(X::GraphIsing1D, C::Config, move::Int)
     @extract X : J
 
     #=oldn = energy(X, C)
-    s[move] $= 1
+    s[move] ⊻= 1
     newn = energy(X, C)
-    s[move] $= 1
+    s[move] ⊻= 1
     Δn0 = newn - oldn=#
 
     Δn = 0

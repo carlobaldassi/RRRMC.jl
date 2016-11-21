@@ -2,7 +2,7 @@ using Documenter, RRRMC
 
 makedocs(
     modules  = [RRRMC],
-    format   = Documenter.Formats.HTML,
+    format   = :html,
     sitename = "RRRMC.jl",
     pages    = Any[
         "Home" => "index.md",
@@ -18,5 +18,5 @@ deploydocs(
     target = "build",
     deps = nothing,
     make = nothing,
-    julia  = "nightly"
+    julia  = "0.5"
 )

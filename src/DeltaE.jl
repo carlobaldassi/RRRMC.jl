@@ -1,3 +1,8 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# This implements the functions needed by the BKL and RRR methods
+# for the choice of the next move
+
 module DeltaE
 
 using ExtractMacro
@@ -9,9 +14,12 @@ using .ArraySets
 
 import .ArraySets: check_consistency
 
-export DeltaECache, check_consistency, compute_staged!, apply_staged!,
+include("DynamicSamplers.jl")
+using .DynamicSamplers
+
+export DeltaECache, gen_ΔEcache, check_consistency, compute_staged!, apply_staged!,
        compute_reverse_probabilities!, rand_move, rand_skip, apply_move!,
-       get_class_f
+       get_class_f, get_z
 
 findk(ΔElist, dE) = findfirst(ΔElist, abs(dE))
 
@@ -34,6 +42,7 @@ type DeltaECache{ET,L}
         for i = 1:N
             ΔE = delta_energy(X, C, i)
             aki = findk(ΔElist, ΔE)
+            #@assert aki > 0 (ΔE, ΔElist)
             upi = ΔE > 0 || (ΔE == 0 && C.s[i] == 1)
             ki = aki + L * upi
             pos[i] = ki
@@ -61,6 +70,10 @@ end
     ΔElist = allΔE(X)
     Expr(:call, Expr(:curly, :DeltaECache, ET, length(ΔElist)), :X, :C, ΔElist, :β, :rrr)
 end
+
+gen_ΔEcache(X::DiscrGraph, C::Config, β::Float64, rrr::Bool = true) = DeltaECache(X, C, β, rrr)
+
+get_z(ΔEcache::DeltaECache) = ΔEcache.z
 
 function check_consistency{ET,L}(ΔEcache::DeltaECache{ET,L})
     @extract ΔEcache : ΔElist ascache pos
@@ -96,6 +109,9 @@ function rand_move{ET,L}(ΔEcache::DeltaECache{ET,L})
     for k = 1:2L
         cT += T[k]
         r < cT && break
+    end
+    r < cT || while T[k] == 0
+        k -= 1
     end
 
     if k ≤ L
@@ -171,7 +187,7 @@ function compute_staged!{ET,L}(X::DiscrGraph{ET}, C::Config, i::Int, ΔEcache::D
     spinflip!(X, C, i)
 end
 
-function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move::Int, ΔEcache::DeltaECache{ET,L})
+function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph{DiscrGraph{ET}}}, C::Config, move::Int, ΔEcache::DeltaECache{ET,L})
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -184,7 +200,7 @@ function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move
 
     spinflip!(X, C, move)
 
-    X0 = discr_graph(X)
+    X0 = inner_graph(X)
 
     z′ = z
     @inbounds begin
@@ -232,6 +248,117 @@ function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph}, C::Config, move
 
     c = z / z′
     ΔEcache.z = z′
+    return c
+end
+
+prior(x) = x > 0 ? exp(-x) : 1.0
+
+type DeltaECacheCont{ET}
+    dynsmp::DynamicSampler
+    ΔEs::Vector{ET}
+    β::Float64
+    staged::Vector{Tuple{Int,ET,Float64}}
+    function DeltaECacheCont(X::AbstractGraph, C::Config, β::Float64)
+        N = getN(X)
+        @assert C.N == N
+        ΔEs = [delta_energy(X, C, i) for i = 1:N]
+        dynsmp = DynamicSampler(prior(β * ΔE) for ΔE in ΔEs)
+        staged = empty!(Array(Tuple{Int,ET,Float64}, N))
+        return new(dynsmp, ΔEs, β, staged)
+    end
+end
+
+# the rrr argument here is just for consistency but it's unused
+gen_ΔEcache{ET}(X::AbstractGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
+
+get_z(ΔEcache::DeltaECacheCont) = ΔEcache.dynsmp.z
+
+function rand_skip(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : dynsmp
+    @extract dynsmp : z N
+    return floor(Int, Base.log1p(-rand()) / Base.log1p(-z / N))
+end
+
+function rand_move(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache: dynsmp ΔEs
+
+    move = rand(dynsmp)
+    ΔE = ΔEs[move]
+    return move, ΔE
+end
+
+function apply_staged!(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : dynsmp ΔEs staged
+
+    @inbounds for (j,ΔE,p) in staged
+        ΔEs[j] = ΔE
+        dynsmp[j] = p
+    end
+    return ΔEcache
+end
+
+function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
+    @extract ΔEcache : dynsmp staged
+
+    z = dynsmp.z
+    @inbounds for (j,_,p) in staged
+        z += p - dynsmp[j]
+    end
+
+    return z
+end
+
+function compute_staged!{ET}(X::AbstractGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET})
+    @extract C : N s
+    @extract ΔEcache : β staged
+
+    spinflip!(X, C, i)
+    empty!(staged)
+
+    ΔE = delta_energy(X, C, i)
+    p = prior(β * ΔE)
+    push!(staged, (i,ΔE,p))
+    for j in neighbors(X, i)
+        ΔE = delta_energy(X, C, j)
+        p = prior(β * ΔE)
+        push!(staged, (j,ΔE,p))
+    end
+
+    spinflip!(X, C, i)
+end
+
+get_inner(X, ::Type{Val{true}}) = inner_graph(X)
+get_inner(X, ::Type{Val{false}}) = X
+
+function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET}, inner = Val{true})
+    ## equivalent to:
+    #
+    # compute_staged!(X, C, move, ΔEcache)
+    # compute_reverse_probabilities!(ΔEcache)
+    # spinflip!(X, C, move)
+    # apply_staged!(ΔEcache)
+
+    @extract C : s
+    @extract ΔEcache : dynsmp ΔEs β
+
+    spinflip!(X, C, move)
+
+    X0 = get_inner(X, inner)
+
+    z = dynsmp.z
+    @inbounds begin
+        ΔE = delta_energy(X0, C, move)
+        ΔEs[move] = ΔE
+        dynsmp[move] = prior(β * ΔE)
+
+        for j in neighbors(X0, move)
+            ΔE = delta_energy(X0, C, j)
+            ΔEs[j] = ΔE
+            dynsmp[j] = prior(β * ΔE)
+        end
+    end
+    z′ = dynsmp.z
+    c = z / z′
     return c
 end
 

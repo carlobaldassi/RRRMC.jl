@@ -1,3 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# This implements an unsorted set which allows for
+# fast insertion-deletion and randomly choosing one
+# element.
+
 module ArraySets
 
 using ExtractMacro
@@ -5,7 +11,8 @@ using ..Common
 
 export ArraySet, check_consistency
 
-import Base: push!, delete!, rand, length
+import Base: push!, delete!, rand, length, empty!,
+             start, next, done
 
 type ArraySet
     N::Int
@@ -61,6 +68,22 @@ function rand(r::AbstractRNG, aset::ArraySet)
     @extract aset : v t
     @inbounds i = v[rand(r, 1:t)]
     return i
+end
+
+function empty!(aset::ArraySet)
+    @extract aset : pos t
+    fill!(pos, 0)
+    aset.t = 0
+    return aset
+end
+
+start(aset::ArraySet) = 1
+done(aset::ArraySet, i) = i == aset.t + 1
+@inline function next(aset::ArraySet, i)
+    @extract aset : v
+    @boundscheck 1 ≤ i ≤ aset.t
+    @inbounds x = v[i]
+    return (x, i + 1)
 end
 
 end # module

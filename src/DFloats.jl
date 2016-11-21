@@ -1,3 +1,9 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
+# A Real type which is actually an integer in disguise.
+# Similar to FixedPoint floats, but more efficient for
+# the purposes of this code.
+
 module DFloats
 
 export DFloat64, MAXDIGITS
@@ -45,11 +51,11 @@ abs(x::DFloat64) = i2d(abs(d2i(x)))
 
 show(io::IO, x::DFloat64) = show(io, Float64(x))
 
+# used for hashing
 function decompose(x::DFloat64)
     i = d2i(x)
     m = gcd(i, dfact)
     return i ÷ m, 1, dfact ÷ m
 end
 
-end
-
+end # module

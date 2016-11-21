@@ -1,13 +1,15 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 """
     module RRRMC
 
 This module implements methods for reduced-rejection-rate Monte Carlo on Ising spin models.
 
-See [`standardMC`](@ref), [`rrrMC`](@ref) and [`bklMC`](@ref).
+See [`standardMC`](@ref), [`rrrMC`](@ref), [`bklMC`](@ref) and [`wtmMC`](@ref).
 """
 module RRRMC
 
-export standardMC, rrrMC, bklMC
+export standardMC, rrrMC, bklMC, wtmMC
 
 using ExtractMacro
 
@@ -15,12 +17,21 @@ include("DFloats.jl")
 include("Common.jl")
 include("Interface.jl")
 include("DeltaE.jl")
+include("WaitingTimes.jl")
 
 using .Common
 using .Interface
 using .DeltaE
+using .WaitingTimes
 
 include("load_graphs.jl")
+
+include("QAliases.jl")
+include("REAliases.jl")
+include("LEAliases.jl")
+using .QAliases
+using .REAliases
+using .LEAliases
 
 @inline accept(x) = x ≥ 0 || rand() < exp(x)
 @inline function accept(c, x)
@@ -46,7 +57,8 @@ Possible keyord arguments are:
   Passing the result of a previous run can be useful e.g. when implementing a simulated annealing protocol, or if the system has not equilibrated yet.
 * `hook`: a function to be executed after every `step` number of iterations (see above). It must take five arguments: the current iteration, the graph `X`,
   the current configuration, the number of accepted moves so far, and the current energy. Useful to collect data other than the energy, write to files ecc;
-  you'd probably want to use a closure, see the example below. The default is a no-op.
+  you'd probably want to use a closure, see the example below. The return value must be a `Bool`: return `false` to interrupt the simulation, `true` otherwise.
+  The default does nothing and just returns `true`.
 
 Basic example:
 
@@ -59,26 +71,33 @@ Example of using the `hook` for collecting samples as the columns of a `BitMatri
 
 ```
 julia> iters = 100_000; step = 1_000; l = iters ÷ step; N = RRRMC.getN(X);
-julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s);
+julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; true);
 julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
-function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing)
-    srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing, pp = nothing)
+    seed > 0 && srand(seed)
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
     accepted = 0
-    for it = 1:iters
+    # pp ≡ nothing && (pp = randperm(N))
+    # j = 0
+    it = 0
+    while it < iters
+        it += 1
         #println("it=$it")
-        #@assert abs(E - energy(X, C)) < 1e-10 (E, energy(X, C))
+        #@assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
+        # j += 1
+        # j > N && (j -= N)
+        # i = pp[j]
         i = rand(1:N)
         ΔE = delta_energy(X, C, i)
         accept(-β * ΔE) || continue
@@ -86,14 +105,16 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
         E += ΔE
         accepted += 1
     end
-    println("accept rate = ", accepted / iters)
+    println("samples = ", length(Es))
+    println("iters = ", it)
+    println("accept rate = ", accepted / it)
     return Es, C
 end
 
 ### Begin RRR-related functions
 
-function step_rrr(X::DiscrGraph, C::Config, ΔEcache::DeltaECache)
-    @extract ΔEcache : z
+function step_rrr(X, C::Config, ΔEcache)
+    z = get_z(ΔEcache)
     move, ΔE = rand_move(ΔEcache)
     compute_staged!(X, C, move, ΔEcache)
     z′ = compute_reverse_probabilities!(ΔEcache)
@@ -104,23 +125,28 @@ end
 """
     rrrMC(X::AbstractGraph, β::Real, iters::Integer; keywords...)
 
-Same as [`standardMC`](@ref), but uses the reduced-rejection-rate method. Each iteration takes moretime, but has a higher chance of being accepted,
+Same as [`standardMC`](@ref), but uses the reduced-rejection-rate method. Each iteration takes more time, but has a higher chance of being accepted,
 so fewer iterations overall should be needed normally. Whether this trade-off is convenient depends on the parameters and the details of the model.
+This function has specialized versions for [`DiscrGraph`](@ref) and [`DoubleGraph`](@ref) models.
 
-The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
-that this function can only be used with [`DiscrGraph`](@ref) or [`DoubleGraph`](@ref) models.
+The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 """
-function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing,
-                   staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
+function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
+                   staged_thr::Real = NaN, staged_thr_fact::Real = 5.0)
+
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    seed > 0 && srand(seed)
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+
+    if staged_thr ≡ NaN
+        staged_thr = isa(X, SimpleGraph) ? 0.8 : 0.5
+    end
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    ΔEcache = DeltaECache(X, C, β)
+    ΔEcache = gen_ΔEcache(X, C, β)
     #check_consistency(ΔEcache)
 
     λ = staged_thr_fact / N
@@ -135,7 +161,7 @@ function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
         it += 1
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
         acc = false
         if acc_rate < staged_thr
@@ -161,23 +187,25 @@ function rrrMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / it)
     println("frac. staged iters = ", staged_its / it)
     return Es, C
 end
 
-function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing,
+function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+    seed > 0 && srand(seed)
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    X0 = discr_graph(X)
-    ΔEcache = DeltaECache(X0, C, β)
+    X0 = inner_graph(X)
+    ΔEcache = gen_ΔEcache(X0, C, β)
     #check_consistency(ΔEcache)
 
     λ = staged_thr_fact / N
@@ -187,12 +215,12 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
     accepted = 0
     acc_rate = 0.5
     while it < iters
-        #@assert E == energy(X, C) (E, energy(X, C))
+        #@assert abs(E - energy(X, C)) < 1e-10 (E, energy(X, C), abs(E - energy(X,C)))
         #DeltaE.check_consistency(ΔEcache)
         it += 1
         if (it % step == 0)
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(it, X, C, accepted, E) || break
         end
         acc = false
         if acc_rate < staged_thr
@@ -220,6 +248,8 @@ function rrrMC{ET}(X::DoubleGraph{ET}, β::Real, iters::Integer; seed = 16743277
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / it)
     println("frac. staged iters = ", staged_its / it)
     return Es, C
@@ -227,58 +257,117 @@ end
 
 ### Begin BKL-related functions
 
-function step_bkl(X::DiscrGraph, C::Config, ΔEcache::DeltaECache)
-    skip = rand_skip(ΔEcache)
-    move, ΔE = rand_move(ΔEcache)
+apply_step_bkl!(X::AbstractGraph, C::Config, move::Int, ΔEcache) =
+    apply_move!(X, C, move, ΔEcache, Val{false})
+
+apply_step_bkl!(X::DiscrGraph, C::Config, move::Int, ΔEcache) =
     apply_move!(X, C, move, ΔEcache)
-    #check_consistency(ΔEcache)
-    return ΔE, skip
-end
 
 """
-    bklMC(X::DiscrGraph, β::Real, iters::Integer; keywords...)
+    bklMC(X::AbstractGraph, β::Real, iters::Integer; keywords...)
 
-Same as [`standardMC`](@ref), but uses the rejection-free method by Bortz, Kalos and Lebowitz. Each step takes more, but rejected moves
-are essentially free, since they are skipped entirely.
+Same as [`standardMC`](@ref), but uses the rejection-free method by Bortz, Kalos and Lebowitz. Each step takes more time, but rejected moves
+are almost free, since they are skipped entirely. This function has a specialized version for [`DiscrGraph`](@ref) models.
 
-The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function. Note however
-that this function can only be used with [`DiscrGraph`](@ref) models.
+The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::DiscrGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->nothing, C0::Union{Config,Void} = nothing)
-    srand(seed)
-    Es = empty!(Array(ET, iters ÷ step))
+function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+    seed > 0 && srand(seed)
+    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
-    ΔEcache = DeltaECache(X, C, β, false)
+    ΔEcache = gen_ΔEcache(X, C, β, false)
     #check_consistency(ΔEcache)
 
     it = 0
     accepted = 0
     nextstep = step
+    stop = false
     while it < iters
         #@assert E == energy(X, C)
         #check_consistency(ΔEcache)
 
-        ΔE, skip = step_bkl(X, C, ΔEcache)
+        skip = rand_skip(ΔEcache)
+        move, ΔE = rand_move(ΔEcache)
 
         while it + skip + 1 ≥ nextstep
             push!(Es, E)
-            hook(it, X, C, accepted, E)
+            hook(nextstep, X, C, accepted, E) || @goto out
             nextstep += step
-            nextstep > iters && break
+            nextstep > iters && @goto out
         end
+
+        apply_step_bkl!(X, C, move, ΔEcache)
         it += skip + 1
         E += ΔE
         accepted += 1
     end
+    @label out
+    println("samples = ", length(Es))
+    println("iters = ", it)
     println("accept rate = ", accepted / iters)
     println("true it = ", accepted)
+    return Es, C
+end
+
+"""
+    wtmMC(X::AbstractGraph, β::Real, samples::Integer; keywords...)
+
+Same as [`standardMC`](@ref), but uses the rejection-free waiting-time method by Dall and Sibani. It is similar to [`bklMC`](@ref).
+
+The return values and the keyword arguments are *almost* the same as [`standardMC`](@ref), see the usage examples for that function.
+However, the waiting time method uses an internal "global time" variable, which takes the place of the "iterations" counter of [`standardMC`](ref)
+and of [`bklMC`](@ref). Thus, this function has two differences with respect to the other samplers in the module:
+
+* the function takes a `samples` integer argument, with the maximum number of samples which will be collected.
+* the `step` keyword argument is of type `Float64` instead of integer (default value = `1.0`; you'll probably want to change this).
+  The `step` is measured in terms of the global time variable and is scaled with the size of the problem `N`.
+
+The total number of samples actually collected can still be less than `samples` if the `hook` function from the keyword arguments returns `false` earlier.
+"""
+function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+    seed > 0 && srand(seed)
+    Es = empty!(Array(ET, min(10^8, samples)))
+
+    N = getN(X)
+    C::Config = C0 ≡ nothing ? Config(N) : C0
+    C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
+    E = energy(X, C)
+    theap = THeap(X, C, β)
+
+    step /= N
+
+    num_moves = 0
+    tmax = step * samples
+    t = 0.0
+    nextstep = step
+    while t < tmax
+        #@assert abs(E - energy(X, C)) < 1e-10 E-energy(X,C)
+
+        t′, move = pick_next(theap)
+        while t′ ≥ nextstep
+            push!(Es, E)
+            hook(nextstep, X, C, num_moves, E) || @goto out
+            nextstep += step
+            nextstep > tmax + 1e-10 && @goto out
+        end
+        t = t′
+        ΔE = update_heap!(theap, X, C, β, move, t)
+        E += ΔE
+
+        num_moves += 1
+    end
+    @label out
+    println("samples = ", length(Es))
+    println("num_moves = ", num_moves)
+    println("global time = ", t)
+    println("ratio = ", t / num_moves)
     return Es, C
 end
 
@@ -410,7 +499,7 @@ function second_eigenvalue_rrr(X::DiscrGraph, β::Float64)
         C.s.chunks[1] = ks - 1
 
         energy(X, C)
-        ΔEcache = DeltaECache(X, C, β)
+        ΔEcache = gen_ΔEcache(X, C, β)
         #DeltaE.check_consistency(ΔEcache)
 
         pchg = 0.0

@@ -1,3 +1,5 @@
+# This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
+
 module TwoSpin
 
 using ExtractMacro
@@ -11,7 +13,7 @@ type GraphTwoSpin <: DiscrGraph{Int}
 end
 
 @doc """
-    GraphTwoSpin() <: DiscrGraph
+    GraphTwoSpin() <: DiscrGraph{Int}
 
 A trivial `DiscrGraph` type with 2 spins inteacting ferromagnetically
 (\$J=1\$), without fields.
