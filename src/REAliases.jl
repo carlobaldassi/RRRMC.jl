@@ -6,10 +6,10 @@ using ..RE
 using ..Empty
 using ..SK
 using ..EA
-using ..Perc
-using ..PercNaive
+using ..PercLinear
+using ..PercStep
 
-export Graph0RE, GraphSKRE, GraphEARE, GraphPercRE, GraphPercNaiveRE
+export Graph0RE, GraphSKRE, GraphEARE, GraphPercLinearRE, GraphPercStepRE
 
 typealias Graph0RE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -68,36 +68,36 @@ function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-typealias GraphPercRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPerc}
+typealias GraphPercLinearRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPercLinear}
 
 # """
-#     GraphPercRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#     GraphPercLinearRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphPercRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = Perc.gen_ξ(N, P)
-    GraphRobustEnsemble(N, M, γ, β, GraphPerc, ξ, ξv)
+function GraphPercLinearRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphRobustEnsemble(N, M, γ, β, GraphPercLinear, ξ, ξv)
 end
 
-function GraphPercRE(X::GraphPerc, M::Integer, γ::Float64, β::Float64)
-    GraphRobustEnsemble(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
+function GraphPercLinearRE(X::GraphPercLinear, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-typealias GraphPercNaiveRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPercNaive}
+typealias GraphPercStepRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphPercStep}
 
 # """
-#     GraphPercNaiveRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#     GraphPercStepRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphPercNaiveRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = PercNaive.gen_ξ(N, P)
-    GraphRobustEnsemble(N, M, γ, β, GraphPercNaive, ξ, ξv)
+function GraphPercStepRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphRobustEnsemble(N, M, γ, β, GraphPercStep, ξ, ξv)
 end
 
-function GraphPercNaiveRE(X::GraphPercNaive, M::Integer, γ::Float64, β::Float64)
-    GraphRobustEnsemble(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
+function GraphPercStepRE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
 end # module

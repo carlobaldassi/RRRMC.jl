@@ -6,10 +6,10 @@ using ..QT
 using ..Empty
 using ..SK
 using ..EA
-using ..Perc
-using ..PercNaive
+using ..PercLinear
+using ..PercStep
 
-export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercT, GraphQPercNaiveT
+export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercLinearT, GraphQPercStepT
 
 typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
 
@@ -77,36 +77,36 @@ function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Fl
     GraphQuant(N, M, Γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-typealias GraphQPercT{fourK} GraphQuant{fourK,GraphPerc}
+typealias GraphQPercLinearT{fourK} GraphQuant{fourK,GraphPercLinear}
 
 # """
-#     GraphQPercT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#     GraphQPercLinearT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphQPercT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
-    ξ, ξv = Perc.gen_ξ(N, P)
-    GraphQuant(N, M, Γ, β, GraphPerc, ξ, ξv)
+function GraphQPercLinearT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphQuant(N, M, Γ, β, GraphPercLinear, ξ, ξv)
 end
 
-function GraphQPercT(X::GraphPerc, M::Integer, Γ::Float64, β::Float64)
-    GraphQuant(X.N, M, Γ, β, GraphPerc, X.ξ, X.ξv)
+function GraphQPercLinearT(X::GraphPercLinear, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-typealias GraphQPercNaiveT{fourK} GraphQuant{fourK,GraphPercNaive}
+typealias GraphQPercStepT{fourK} GraphQuant{fourK,GraphPercStep}
 
 # """
-#     GraphQPercNaiveT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#     GraphQPercStepT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphQPercNaiveT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
-    ξ, ξv = PercNaive.gen_ξ(N, P)
-    GraphQuant(N, M, Γ, β, GraphPercNaive, ξ, ξv)
+function GraphQPercStepT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphQuant(N, M, Γ, β, GraphPercStep, ξ, ξv)
 end
 
-function GraphQPercNaiveT(X::GraphPercNaive, M::Integer, Γ::Float64, β::Float64)
-    GraphQuant(X.N, M, Γ, β, GraphPercNaive, X.ξ, X.ξv)
+function GraphQPercStepT(X::GraphPercStep, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
 end # module

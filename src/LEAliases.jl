@@ -6,10 +6,10 @@ using ..LE
 using ..Empty
 using ..SK
 using ..EA
-using ..Perc
-using ..PercNaive
+using ..PercLinear
+using ..PercStep
 
-export Graph0LE, GraphSKLE, GraphEALE, GraphPercLE, GraphPercNaiveLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphPercLinearLE, GraphPercStepLE
 
 typealias Graph0LE{M,γT} GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -68,36 +68,36 @@ function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-typealias GraphPercLE{M,γT} GraphLocalEntropy{M,γT,GraphPerc}
+typealias GraphPercLinearLE{M,γT} GraphLocalEntropy{M,γT,GraphPercLinear}
 
 # """
-#     GraphPercLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#     GraphPercLinearLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphPercLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = Perc.gen_ξ(N, P)
-    GraphLocalEntropy(N, M, γ, β, GraphPerc, ξ, ξv)
+function GraphPercLinearLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphLocalEntropy(N, M, γ, β, GraphPercLinear, ξ, ξv)
 end
 
-function GraphPercLE(X::GraphPerc, M::Integer, γ::Float64, β::Float64)
-    GraphLocalEntropy(X.N, M, γ, β, GraphPerc, X.ξ, X.ξv)
+function GraphPercLinearLE(X::GraphPercLinear, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-typealias GraphPercNaiveLE{M,γT} GraphLocalEntropy{M,γT,GraphPercNaive}
+typealias GraphPercStepLE{M,γT} GraphLocalEntropy{M,γT,GraphPercStep}
 
 # """
-#     GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#     GraphPercStepLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
 #
 # TODO
 # """
-function GraphPercNaiveLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = PercNaive.gen_ξ(N, P)
-    GraphLocalEntropy(N, M, γ, β, GraphPercNaive, ξ, ξv)
+function GraphPercStepLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphLocalEntropy(N, M, γ, β, GraphPercStep, ξ, ξv)
 end
 
-function GraphPercNaiveLE(X::GraphPercNaive, M::Integer, γ::Float64, β::Float64)
-    GraphLocalEntropy(X.N, M, γ, β, GraphPercNaive, X.ξ, X.ξv)
+function GraphPercStepLE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
 end # module

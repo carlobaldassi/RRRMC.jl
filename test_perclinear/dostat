@@ -1,0 +1,7 @@
+#!/bin/bash
+
+gf=$1
+ef=$2
+fn=$3
+
+awk -v gf=$gf -v ef=$ef '{t[$gf]+=$ef; t2[$gf]+=$ef*$ef; n[$gf]+=1} END {for (g in t) {m=t[g]/n[g]; m2=t2[g]/n[g]; s2=m2-m*m; if(s2<0){s2=0}; print g,m,sqrt(s2)}}' "$fn" | sort -k1,1g

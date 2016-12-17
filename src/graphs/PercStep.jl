@@ -1,6 +1,6 @@
 # This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
 
-module PercNaive
+module PercStep
 
 using ExtractMacro
 using Compat
@@ -9,7 +9,7 @@ using ..Common
 
 using ..DeltaE.ArraySets
 
-export GraphPercNaive
+export GraphPercStep
 
 import ..Interface: energy, delta_energy, update_cache!
 
@@ -40,14 +40,14 @@ type Stabilities
     end
 end
 
-type GraphPercNaive <: SimpleGraph{Int}
+type GraphPercStep <: SimpleGraph{Int}
     N::Int
     P::Int
     ξ::BitMatrix
     ξv::Vector{BitVector}
     stab::Stabilities
     tmps::BitVector
-    function GraphPercNaive(ξ::BitMatrix, ξv::Vector{BitVector})
+    function GraphPercStep(ξ::BitMatrix, ξv::Vector{BitVector})
         P, N = size(ξ)
         #TODO: check
         isodd(N) || throw(ArgumentError("N must be odd, given: $N"))
@@ -58,7 +58,7 @@ type GraphPercNaive <: SimpleGraph{Int}
 end
 
 """
-    GraphPercNaive(N::Integer, P::Integer) <: SimpleGraph{Int}
+    GraphPercStep(N::Integer, P::Integer) <: SimpleGraph{Int}
 
 A `SimpleGraph` implementing a single-layer binary perceptron with `N` binary (\$±1\$) synapses,
 trained on `P` random i.i.d. \$±1\$ patterns.
@@ -67,7 +67,7 @@ The energy of the model is computed as the number of misclassified patterns.
 
 See also [`GraphPerc`](@ref).
 """
-GraphPercNaive(N::Integer, P::Integer) = GraphPercNaive(gen_ξ(N, P)...)
+GraphPercStep(N::Integer, P::Integer) = GraphPercStep(gen_ξ(N, P)...)
 
 function Base.empty!(stab::Stabilities)
     @extract stab : p m Δs ξsi
@@ -78,7 +78,7 @@ function Base.empty!(stab::Stabilities)
     return stab
 end
 
-function energy(X::GraphPercNaive, C::Config)
+function energy(X::GraphPercStep, C::Config)
     @assert X.N == C.N
     @extract C : s
     @extract X : N P ξv stab tmps
@@ -103,7 +103,7 @@ function energy(X::GraphPercNaive, C::Config)
     return E
 end
 
-function update_cache!(X::GraphPercNaive, C::Config, move::Int)
+function update_cache!(X::GraphPercStep, C::Config, move::Int)
     @assert X.N == C.N
     @extract C : s
     @extract X : N P ξ stab
@@ -137,7 +137,7 @@ function update_cache!(X::GraphPercNaive, C::Config, move::Int)
     return
 end
 
-function delta_energy_naive(X::GraphPercNaive, C::Config, move::Int)
+function delta_energy_naive(X::GraphPercStep, C::Config, move::Int)
     @assert C.N == X.N
     @extract C : s
     @extract X : N P ξ stab
@@ -150,7 +150,7 @@ function delta_energy_naive(X::GraphPercNaive, C::Config, move::Int)
     return E1 - E0
 end
 
-function delta_energy(X::GraphPercNaive, C::Config, move::Int)
+function delta_energy(X::GraphPercStep, C::Config, move::Int)
     @assert C.N == X.N
     @extract C : s
     @extract X : N P ξ stab
@@ -176,7 +176,7 @@ function delta_energy(X::GraphPercNaive, C::Config, move::Int)
     return ΔE
 end
 
-function check_delta(X::GraphPercNaive, C::Config, move::Int)
+function check_delta(X::GraphPercStep, C::Config, move::Int)
     delta = delta_energy(X, C, move)
     e0 = energy(X, s)
     spinflip!(C, move)
