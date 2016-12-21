@@ -1,11 +1,11 @@
 # RRRMC.jl
 
-| **Documentation**                       | **Build Status**                                                                                |
-|:---------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] |
+| **Documentation**                       | **Build Status**                                                                                | **Releases**                     |
+|:---------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
+| [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
-["A method to reduce the rejection rate in Monte Carlo Markov Chains on Ising spin models"][RRRpaper] by C. Baldassi.
+["A method to reduce the rejection rate in Monte Carlo Markov Chains"][RRRpaper] by C. Baldassi.
 
 It also provides:
 * a standard Metropolis-Hastings sampler
@@ -47,3 +47,6 @@ Dependencies will be installed automatically.
 
 [codecov-img]: https://codecov.io/gh/carlobaldassi/RRRMC.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/carlobaldassi/RRRMC.jl
+
+[zenodo-img]: https://zenodo.org/badge/66179142.svg
+[zenodo-url]: https://zenodo.org/badge/latestdoi/66179142

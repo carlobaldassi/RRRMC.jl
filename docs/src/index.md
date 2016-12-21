@@ -5,7 +5,7 @@ CurrentModule = RRRMC
 ```
 
 This package implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
-["A method to reduce the rejection rate in Monte Carlo Markov Chains on Ising spin models"](http://arxiv.org/abs/1608.05899) by C. Baldassi.
+["A method to reduce the rejection rate in Monte Carlo Markov Chains"](http://arxiv.org/abs/1608.05899) by C. Baldassi.
 
 It also provides:
 * a standard Metropolis-Hastings sampler
