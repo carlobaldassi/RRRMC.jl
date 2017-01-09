@@ -40,8 +40,9 @@ type Stabilities
     end
 end
 
-type GraphPercLinear <: SimpleGraph{Int}
+type GraphPercLinear <: SimpleGraph{Float64}
     N::Int
+    sN::Float64
     P::Int
     ξ::BitMatrix
     ξv::Vector{BitVector}
@@ -53,12 +54,12 @@ type GraphPercLinear <: SimpleGraph{Int}
         isodd(N) || throw(ArgumentError("N must be odd, given: $N"))
         stab = Stabilities(P)
         tmps = BitVector(N)
-        return new(N, P, ξ, ξv, stab, tmps)
+        return new(N, √N, P, ξ, ξv, stab, tmps)
     end
 end
 
 """
-    GraphPercLinear(N::Integer, P::Integer) <: SimpleGraph{Int}
+    GraphPercLinear(N::Integer, P::Integer) <: SimpleGraph{Float64}
 
 A `SimpleGraph` implementing a single-layer binary perceptron with `N` binary (\$±1\$) synapses,
 trained on `P` random i.i.d. \$±1\$ patterns.
@@ -82,7 +83,7 @@ end
 function energy(X::GraphPercLinear, C::Config)
     @assert X.N == C.N
     @extract C : s
-    @extract X : N P ξv stab tmps
+    @extract X : N sN P ξv stab tmps
     @extract stab : p m Δs
 
     E = 0
@@ -104,7 +105,7 @@ function energy(X::GraphPercLinear, C::Config)
         end
     end
 
-    return E
+    return 2E / sN
 end
 
 function update_cache!(X::GraphPercLinear, C::Config, move::Int)
@@ -155,7 +156,7 @@ end
 function delta_energy(X::GraphPercLinear, C::Config, move::Int)
     @assert C.N == X.N
     @extract C : s
-    @extract X : N P ξ stab
+    @extract X : N sN P ξ stab
     @extract stab : p m ξsi last_move
     @assert 1 ≤ move ≤ N
 
@@ -175,7 +176,7 @@ function delta_energy(X::GraphPercLinear, C::Config, move::Int)
     # td = delta_energy_naive(X, s, stab, move)
     # ΔE == td || @show ΔE, td
     # @assert ΔE == td
-    return ΔE
+    return 2ΔE / sN
 end
 
 function check_delta(X::GraphPercLinear, C::Config, move::Int)
