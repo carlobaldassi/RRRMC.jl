@@ -3,6 +3,7 @@ module Test1
 using RRRMC
 include("Newton.jl")
 using .Newton
+using JLD
 #using Gaston
 #set_terminal("qt")
 
@@ -10,21 +11,31 @@ using Interpolations
 
 #include("aux_plot_stuff.jl")
 
-function test1(;N = 1001, α = 0.6)
-    P = round(Int, α * N)
-    X = RRRMC.GraphPercStep(N, P)
+# function test1(;N = 1001, α = 0.6)
+#     P = round(Int, α * N)
+#     X = RRRMC.GraphPercStep(N, P)
+#
+#     optE = RRRMC.energy(X, optC) / N
+#     #optE = Float64(Float32(RRRMC.energy(X, optC)) / Float32(N))
+#     mag = 2 * (sum(optC.s) / N) - 1
+#
+#     @show optE
+#     @show mag
+#
+#     return X
+# end
 
-    optE = RRRMC.energy(X, optC) / N
-    #optE = Float64(Float32(RRRMC.energy(X, optC)) / Float32(N))
-    mag = 2 * (sum(optC.s) / N) - 1
-
-    @show optE
-    @show mag
-
-    return X
+function to_mat(Cv::Vector{BitVector})
+    samples = length(Cv)
+    N = length(Cv[1])
+    Cs = BitMatrix(N, samples)
+    for i = 1:samples
+        Cs[:,i] = Cv[i]
+    end
+    return Cs
 end
 
-function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = nothing, N = 1001, α = 0.6)
+function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = nothing, N = 1001, α = 0.6, writeout = true)
     srand(seed + 96238575648268956374)
     P = round(Int, α * N)
     X = RRRMC.GraphPercStep(N, P)
@@ -38,30 +49,53 @@ function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = not
 
     sseed = seed
 
+    dirname = "output_SA_tau$(τ)_seed$(seed)"
+
+    if writeout
+        isdir(dirname) || mkdir(dirname)
+        Pfn = joinpath(dirname, "X.jld")
+        save(Pfn, Dict("X"=>X.ξ))
+    end
+
+    function save_Cv(Cv, it0)
+        writeout || return
+        Cs = to_mat(Cv)
+        Cfn = joinpath(dirname, "Cs_it$(it0).jld")
+        save(Cfn, Dict("Cs"=>Cs))
+        return
+    end
+
     force = true
-    function gen_hook(tag, β, fst, t0, it0)
-        #isdir(dirname) || mkdir(dirname)
-        #fn = gen_fname(tag, seed)
-        fn = "test_SA_$(tag)_tau$(τ)_seed$(seed).txt"
-        if fst
-            !force && isfile(fn) && error("file $fn exists")
-            f = open(fn, "w")
-            println(f, "#it acc E time β")
-            t0 = time()
+    function gen_hook(β, fst, t0, it0)
+        if writeout
+            fn = joinpath(dirname, "results.txt")
+            if fst
+                !force && isfile(fn) && error("file $fn exists")
+                f = open(fn, "w")
+                println(f, "#it acc E time β")
+                t0 = time()
+            else
+                isfile(fn) || error("file $fn not found")
+                f = open(fn, "a")
+            end
+            Cv = Vector{BitVector}()
+            hook = (it, X, C, acc, E) -> begin
+                t = time() - t0
+                push!(Cv, copy(C.s))
+                #@assert abs(E - RRRMC.energy(X, C)) < 1e-10
+                println(f, "$(it+it0) $acc $(E/N) $t $β")
+                return true
+            end
+            cleanup = () -> begin
+                close(f)
+            end
         else
-            isfile(fn) || error("file $fn not found")
-            f = open(fn, "a")
+            hook = (x...) -> nothing
+            cleanup = () -> nothing
+            t0 = 0.0
+            Cv = Vector{BitVector}()
         end
-        hook = (it, X, C, acc, E) -> begin
-            t = time() - t0
-            #@assert abs(E - RRRMC.energy(X, C)) < 1e-10
-            println(f, "$(it+it0) $acc $(E/N) $t $β")
-            return true
-        end
-        cleanup = () -> begin
-            close(f)
-        end
-        return hook, cleanup, t0
+        return hook, cleanup, t0, Cv
     end
 
     fst = true; t0 = 0.0; C = C0; it0 = 0
@@ -70,12 +104,13 @@ function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = not
     for T = linspace(T0, T1, num_steps)
         β = 1 / T
         info("β=$β")
-        hook, cleanup, t0 = gen_hook("met", β, fst, t0, it0)
+        hook, cleanup, t0, Cv = gen_hook(β, fst, t0, it0)
         try
             @time E, C = RRRMC.standardMC(X, β, iters, seed=sseed, step=itst, hook=hook, C0=C, pp=pp)
         finally
             cleanup()
         end
+        save_Cv(Cv, it0)
         fst = false
         it0 += iters
         #sseed += 624234
@@ -83,7 +118,7 @@ function test_SA(;seed = 888, τ::Integer = 10^2, T0 = 3.0, T1 = 1e-15, C0 = not
         sseed = 0
     end
 
-    @show RRRMC.energy(X, C)
+    C ≢ nothing && @show RRRMC.energy(X, C)
 
     return C, X
 end
@@ -127,11 +162,25 @@ function test_SA_equivβ(;seed = 7001, τ::Integer = 10^2, C0 = nothing, N = 100
 
     sseed = seed
 
+    dirname = "output_SAequivbeta_N$(N)_alpha$(α)_tau$(τ)_betaQ$(βQ)_seed$(seed)$(tag)"
+    isdir(dirname) || mkdir(dirname)
+
+    Pfn = joinpath(dirname, "X.jld")
+    save(Pfn, Dict("X"=>X.ξ))
+
+    function save_Cv(Cv, it0)
+        Cs = to_mat(Cv)
+        Cfn = joinpath(dirname, "Cs_it$(it0).jld")
+        save(Cfn, Dict("Cs"=>Cs))
+        return
+    end
+
     force = true
-    function gen_hook(alg, tag, β, Γ, fst, t0, it0)
+    function gen_hook(alg, β, Γ, fst, t0, it0)
         #isdir(dirname) || mkdir(dirname)
         #fn = gen_fname(alg, seed)
-        fn = "test_SAequivbeta_$(alg)_tau$(τ)_seed$(seed)$(tag).txt"
+        # fn = "test_SAequivbeta_$(alg)_tau$(τ)_seed$(seed).txt"
+        fn = joinpath(dirname, "results.txt")
         if fst
             !force && isfile(fn) && error("file $fn exists")
             f = open(fn, "w")
@@ -141,8 +190,10 @@ function test_SA_equivβ(;seed = 7001, τ::Integer = 10^2, C0 = nothing, N = 100
             isfile(fn) || error("file $fn not found")
             f = open(fn, "a")
         end
+        Cv = Vector{BitVector}()
         hook = (it, X, C, acc, E) -> begin
             t = time() - t0
+            push!(Cv, copy(C.s))
             #@assert abs(E - RRRMC.energy(X, C)) < 1e-10
             println(f, "$(it+it0) $acc $(E/N) $t $β $Γ")
             return true
@@ -150,7 +201,7 @@ function test_SA_equivβ(;seed = 7001, τ::Integer = 10^2, C0 = nothing, N = 100
         cleanup = () -> begin
             close(f)
         end
-        return hook, cleanup, t0
+        return hook, cleanup, t0, Cv
     end
 
     Γs = linspace(Γ0, Γ1, num_steps)
@@ -162,20 +213,22 @@ function test_SA_equivβ(;seed = 7001, τ::Integer = 10^2, C0 = nothing, N = 100
         info("β=$β (Γ=$Γ)")
         islast = abs(Γ / Γ1 - 1) < 1e-10
         sc = islast ? 2 : 1
-        hook, cleanup, t0 = gen_hook("met", tag, β, Γ, fst, t0, it0)
+        hook, cleanup, t0, Cv = gen_hook("met", β, Γ, fst, t0, it0)
         try
             @time E, C = RRRMC.standardMC(X, β, iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C)
         finally
             cleanup()
         end
+        save_Cv(Cv, it0)
         if islast
             it0 += iters ÷ sc
-            hook, cleanup, t0 = gen_hook("met", tag, βQ, 0.0, fst, t0, it0)
+            hook, cleanup, t0, Cv = gen_hook("met", βQ, 0.0, fst, t0, it0)
             try
                 @time E, C = RRRMC.standardMC(X, β, iters - iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C)
             finally
                 cleanup()
             end
+            save_Cv(Cv, it0)
             it0 += iters - iters ÷ sc
         else
             it0 += iters
@@ -224,10 +277,10 @@ function C1_from_C(C::RRRMC.Config, M::Integer)
 end
 
 function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rrr, τ::Integer = 10^2, seed = 78821000027346, tag::AbstractString = "", num_steps = 30,
-                  β::Float64 = 32.0, β1::Float64 = NaN, precool::Bool = true, Γ0::Float64 = 2.5, Γ1::Float64 = 1e-2)
+                  β::Float64 = 32.0, β1::Float64 = NaN, precool::Bool = false, Γ0::Float64 = 2.5, Γ1::Float64 = 1e-2)
     isnan(β1) && (β1 = β)
 
-    C1, Xs = test_SA(T0 = 3.0, T1 = 1/β, τ = 100, N = N, α = α, seed = seed + 78123472837432554)
+    C1, Xs = test_SA(T0 = 3.0, T1 = (precool ? 1/β : 3.0), τ = (precool ? 100 : 0), N = N, α = α, seed = seed + 78123472837432554)
     N = RRRMC.getN(Xs)
     P = Xs.P
 
@@ -239,11 +292,23 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
 
     sseed = seed
 
+    dirname = "output_QSA_N$(N)_alpha$(α)_beta$(β)_M$(M)_tau$(τ)_seed$(seed)$(tag)"
+    isdir(dirname) || mkdir(dirname)
+
+    Pfn = joinpath(dirname, "X.jld")
+    save(Pfn, Dict("X"=>Xs.ξ))
+
+    function save_Cv(Cv, it0)
+        Cs = to_mat(Cv)
+        Cfn = joinpath(dirname, "Cs_it$(it0).jld")
+        save(Cfn, Dict("Cs"=>Cs, "M"=>M))
+        return
+    end
+
     force = true
-    function gen_hook(alg, tag, β, Γ, fst, t0, it0)
+    function gen_hook(alg, β, Γ, fst, t0, it0)
         #isdir(dirname) || mkdir(dirname)
-        #fn = gen_fname(alg, seed)
-        fn = "test_QSA_$(alg)_tau$(τ)_seed$(seed)$(tag).txt"
+        fn = joinpath(dirname, "results.txt")
         if fst
             !force && isfile(fn) && error("file $fn exists")
             f = open(fn, "w")
@@ -253,6 +318,7 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
             isfile(fn) || error("file $fn not found")
             f = open(fn, "a")
         end
+        Cv = Vector{BitVector}()
         hook = (it, X, C, acc, E) -> begin
             if isa(X, RRRMC.GraphQuant)
                 Es = RRRMC.Renergies(X)
@@ -261,11 +327,13 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
 
                 QE = RRRMC.Qenergy(X, C)
                 q1 = RRRMC.overlaps(X)
+                push!(Cv, C.s)
             else
                 mE = E
                 aE = E
                 QE = E
                 q1 = ones(M÷2)
+                push!(Cv, C_from_C1(C, M).s)
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $(aE/N) $t $QE $β $Γ | ", join(map(string, q1), " "))
@@ -274,7 +342,7 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
         cleanup = () -> begin
             close(f)
         end
-        return hook, cleanup, t0
+        return hook, cleanup, t0, Cv
     end
 
     fst = true; t0 = 0.0; C = nothing; it0 = 0
@@ -285,23 +353,25 @@ function test_QSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
         islast = abs(Γ / Γ1 - 1) < 1e-10
         sc = islast ? 2 : 1
         sMC = alg == :rrr ? RRRMC.rrrMC : RRRMC.standardMC
-        hook, cleanup, t0 = gen_hook(string(alg), tag, β, Γ, fst, t0, it0)
+        hook, cleanup, t0, Cv = gen_hook(string(alg), β, Γ, fst, t0, it0)
         try
             X = RRRMC.GraphQPercStepT(Xs, M, Γ, β)
             @time E, C = sMC(X, β, iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C)
         finally
             cleanup()
         end
+        save_Cv(Cv, it0)
         if islast
             it0 += iters ÷ sc
             C1 = C1_from_C(C, M)
-            hook, cleanup, t0 = gen_hook(string(alg), tag, β, 0.0, fst, t0, it0)
+            hook, cleanup, t0, Cv = gen_hook(string(alg), β, 0.0, fst, t0, it0)
             try
                 @time E, C1 = RRRMC.standardMC(Xs, β, iters - iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C1)
             finally
                 cleanup()
             end
             C = C_from_C1(C1, M)
+            save_Cv(Cv, it0)
             it0 += iters - iters ÷ sc
         else
             it0 += iters
@@ -512,12 +582,12 @@ function C1_from_C_tr(C::RRRMC.Config, M::Integer, X::RRRMC.GraphRobustEnsemble)
 end
 
 function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rrr, τ::Integer = 10^2, seed = 78821000027346, tag::AbstractString = "", num_steps::Integer = 30,
-                  β::Float64 = 1.0, β1::Float64 = 0.1, βsched = :additive, precool::Bool = true,
+                  β::Float64 = 1.0, β1::Float64 = 20.0, βsched = :additive, precool::Bool = false,
                   γ0::Float64 = 0.1, γ1::Float64 = 1e5)
 
     @assert βsched ∈ [:additive, :multiplicative]
 
-    C1, Xs = test_SA(T0 = 3.0, T1 = 1/β, τ = 100, N = N, α = α, seed = seed + 78123472837432554)
+    C1, Xs = test_SA(T0 = 3.0, T1 = (precool ? 1/β : 3.0), τ = (precool ? 100 : 0), N = N, α = α, seed = seed + 78123472837432554)
     N = RRRMC.getN(Xs)
     P = Xs.P
 
@@ -533,15 +603,28 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
         βf = (β1/β)^(1/(num_steps-1))
     end
 
-    g0 = -Float64(log(tanh(M/β1 * big(γ0))))
-    g1 = -Float64(log(tanh(M/β1 * big(γ1))))
+    # g0 = -Float64(log(tanh(M/β1 * big(γ0))))
+    # g1 = -Float64(log(tanh(M/β1 * big(γ1))))
 
     sseed = seed
 
+    dirname = "output_RSA_N$(N)_alpha$(α)_M$(M)_tau$(τ)_seed$(seed)$(tag)"
+    isdir(dirname) || mkdir(dirname)
+
+    Pfn = joinpath(dirname, "X.jld")
+    save(Pfn, Dict("X"=>Xs.ξ))
+
+    function save_Cv(Cv, it0)
+        Cs = to_mat(Cv)
+        Cfn = joinpath(dirname, "Cs_it$(it0).jld")
+        save(Cfn, Dict("Cs"=>Cs, "M"=>M))
+        return
+    end
+
     force = true
-    function gen_hook(alg, tag, β, γ, fst, t0, it0)
+    function gen_hook(alg, β, γ, fst, t0, it0)
         #isdir(dirname) || mkdir(dirname)
-        fn = "test_RSA_$(alg)_tau$(τ)_seed$(seed)$(tag).txt"
+        fn = joinpath(dirname, "results.txt")
         if fst
             !force && isfile(fn) && error("file $fn exists")
             f = open(fn, "w")
@@ -551,13 +634,16 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
             isfile(fn) || error("file $fn not found")
             f = open(fn, "a")
         end
+        Cv = Vector{BitVector}()
         hook = (it, X, C, acc, E) -> begin
             if isa(X, RRRMC.GraphRobustEnsemble)
                 Es = RRRMC.REenergies(X)
                 mE, ME = extrema(Es)
                 aE, sE = mean(Es), std(Es)
+                push!(Cv, C.s)
             else
                 mE, ME, aE, sE = E, E, E, 0.0
+                push!(Cv, C_from_C1_tr(C, M).s)
             end
             t = time() - t0
             println(f, "$(it+it0) $acc $(mE/N) $(ME/N) $(aE/N) $(sE/N) $t $β $γ")
@@ -566,7 +652,7 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
         cleanup = () -> begin
             close(f)
         end
-        return hook, cleanup, t0
+        return hook, cleanup, t0, Cv
     end
 
     userrr = true
@@ -574,30 +660,37 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
     fst = true; t0 = 0.0; C = nothing; it0 = 0
     precool && (C = C_from_C1_tr(C1, M))
     local X
-    for g = linspace(g0, g1, num_steps)
+    # for g = linspace(g0, g1, num_steps)
+    for γ = linspace(γ0, γ1, num_steps)
         #γ = exp(g)
-        γ = min(γ1, Float64(atanh(exp(-big(g))) * β1/M))
-        info("g=$(g) γ=$(γ) β=$β useRRR=$userrr")
-        islast = abs(g / g1 - 1) < 1e-10
+        # γ = min(γ1, Float64(atanh(exp(-big(g))) * β1/M))
+        # info("g=$(g) γ=$(γ) β=$β useRRR=$userrr")
+        info("γ=$(γ) β=$β useRRR=$userrr")
+        # islast = abs(g / g1 - 1) < 1e-10
+        islast = abs(γ / γ1 - 1) < 1e-10
         sc = islast ? 2 : 1
         sMC = alg == :rrr ? RRRMC.rrrMC : RRRMC.standardMC
-        hook, cleanup, t0 = gen_hook(string(alg), tag, β, γ, fst, t0, it0)
+        hook, cleanup, t0, Cv = gen_hook(string(alg), β, γ, fst, t0, it0)
         try
             X = RRRMC.GraphPercStepRE(Xs, M, γ, β)
             @time E, C = sMC(X, β, iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C)
         finally
             cleanup()
         end
+        println("center E = ", RRRMC.energy(Xs, C1_from_C_tr(C, M)))
+        save_Cv(Cv, it0)
         if islast
             it0 += iters ÷ sc
             C1 = C1_from_C_tr(C, M, X)
-            hook, cleanup, t0 = gen_hook(string(alg), tag, 20.0, 0.0, fst, t0, it0)
+            hook, cleanup, t0, Cv = gen_hook(string(alg), 20.0, Inf, fst, t0, it0)
             try
                 @time E, C1 = RRRMC.standardMC(Xs, 20.0, iters - iters ÷ sc, seed=sseed, step=itst, hook=hook, C0=C1)
+                println("final E = ", RRRMC.energy(Xs, C1))
             finally
                 cleanup()
             end
             C = C_from_C1_tr(C1, M)
+            save_Cv(Cv, it0)
             it0 += iters - iters ÷ sc
         else
             it0 += iters
@@ -617,7 +710,7 @@ function test_RSA(;N::Integer = 1001, α::Real = 0.6, M::Integer = 32, alg = :rr
     @show mean(Es), std(Es)
     @show maximum(Es)
     @show minimum(Es)
-    @show RRRMC.energy(Xs, C1)
+
 
     return C, Xs, X
 end
