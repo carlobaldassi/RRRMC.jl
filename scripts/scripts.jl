@@ -1,6 +1,5 @@
 ## The scripts used to produce the results in the paper
-## "A method to reduce the rejection rate in Monte Carlo Markov Chains
-## on Ising spin models"
+## "A method to reduce the rejection rate in Monte Carlo Markov Chains"
 
 module Scripts
 
