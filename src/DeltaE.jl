@@ -49,7 +49,7 @@ type DeltaECache{ET,L}
             push!(ascache[ki], i)
             #check_consistency(ascache[ki])
         end
-        staged = empty!(Array(NTuple{3,Int}, N))
+        staged = empty!(Array{NTuple{3,Int}}(N))
 
         ft = Float64[exp(-β * ΔE) for ΔE in allΔE(X)]
         T = zeros(2L)
@@ -66,9 +66,14 @@ type DeltaECache{ET,L}
     end
 end
 
-@generated function DeltaECache{ET}(X::DiscrGraph{ET}, C::Config, β::Float64, rrr::Bool = true)
+# @generated function DeltaECache{ET}(X::DiscrGraph{ET}, C::Config, β::Float64, rrr::Bool = true)
+#     ΔElist = allΔE(X)
+#     Expr(:call, Expr(:curly, :DeltaECache, ET, length(ΔElist)), :X, :C, ΔElist, :β, :rrr)
+# end
+
+function DeltaECache{ET}(X::DiscrGraph{ET}, C::Config, β::Float64, rrr::Bool = true)
     ΔElist = allΔE(X)
-    Expr(:call, Expr(:curly, :DeltaECache, ET, length(ΔElist)), :X, :C, ΔElist, :β, :rrr)
+    DeltaECache{ET,length(ΔElist)}(X, C, ΔElist, β, rrr)
 end
 
 gen_ΔEcache(X::DiscrGraph, C::Config, β::Float64, rrr::Bool = true) = DeltaECache(X, C, β, rrr)
@@ -263,7 +268,7 @@ type DeltaECacheCont{ET}
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]
         dynsmp = DynamicSampler(prior(β * ΔE) for ΔE in ΔEs)
-        staged = empty!(Array(Tuple{Int,ET,Float64}, N))
+        staged = empty!(Array{Tuple{Int,ET,Float64}}(N))
         return new(dynsmp, ΔEs, β, staged)
     end
 end

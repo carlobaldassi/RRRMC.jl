@@ -77,7 +77,7 @@ julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 """
 function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing, pp = nothing)
     seed > 0 && srand(seed)
-    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -136,7 +136,7 @@ function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 16743277
 
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
-    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
     if staged_thr ≡ NaN
         staged_thr = isa(X, SimpleGraph) ? 0.8 : 0.5
@@ -198,7 +198,7 @@ function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer; seed = 16
                    staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
-    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -276,7 +276,7 @@ means that increasing `β` at fixed `iters` will result in fewer steps being act
 """
 function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
-    Es = empty!(Array(ET, min(10^8, iters ÷ step)))
+    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -333,7 +333,7 @@ The total number of samples actually collected can still be less than `samples` 
 """
 function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
     seed > 0 && srand(seed)
-    Es = empty!(Array(ET, min(10^8, samples)))
+    Es = empty!(Array{ET}(min(10^8, samples)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -533,8 +533,8 @@ function second_eigenvalue_stats(;seed::Integer = 86823, graph = GraphRRG, args 
         srand(seed + j)
         println("seed = $(seed + j)")
         X = graph(args...)
-        τ = Array(Float64, length(βr), 3)
-        rr = Array(Float64, length(βr), 3)
+        τ = Array{Float64}(length(βr), 3)
+        rr = Array{Float64}(length(βr), 3)
         for (l,β) in enumerate(βr)
             println("  β=$β")
             p = truep(X, β);

@@ -53,8 +53,8 @@ end
 function buildtable(levs::Int)
     N2 = 2^levs
 
-    tinds = Array(Int, N2+1)
-    tpos = empty!(Array(Int, N2 * levs))
+    tinds = Array{Int}(N2+1)
+    tpos = empty!(Array{Int}(N2 * levs))
 
     j0 = 1
     for i = 1:N2

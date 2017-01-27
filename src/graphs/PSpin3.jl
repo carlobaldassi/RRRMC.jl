@@ -24,7 +24,7 @@ type GraphPSpin3{K} <: DiscrGraph{Int}
         N % 3 == 0 || throw(ArgumentError("N must be divisible by 3, given: $N"))
         A = Vector{Int}[zeros(Int, 2*K) for i = 1:N]
         #allA = zeros(Int, 2 * K * N)
-        #A = Array(Vector{Int}, N)
+        #A = Array{Vector{Int}}(N)
         #for i = 1:N
             #A[i] = pointer_to_array(pointer(allA, (i-1) * 2K + 1), 2K)
         #end

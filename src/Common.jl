@@ -47,8 +47,8 @@ end
 
 function discretize{T<:Real,S<:Real}(cvec::Vector{T}, LEV::Tuple{S,Vararg{S}})
     N = length(cvec)
-    fields = Array(S, N)
-    rfields = Array(T, N)
+    fields = Array{S}(N)
+    rfields = Array{T}(N)
     for (i,x) in enumerate(cvec)
         d, r = discretize(x, LEV)
         fields[i] = d
@@ -58,8 +58,8 @@ function discretize{T<:Real,S<:Real}(cvec::Vector{T}, LEV::Tuple{S,Vararg{S}})
 end
 
 function discretize{N,T<:Real,S<:Real}(cvec::NTuple{N,T}, LEV::Tuple{S,Vararg{S}})
-    fields = Array(S, N)
-    rfields = Array(T, N)
+    fields = Array{S}(N)
+    rfields = Array{T}(N)
     for (i,x) in enumerate(cvec)
         d, r = discretize(x, LEV)
         fields[i] = d

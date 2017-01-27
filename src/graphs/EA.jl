@@ -40,7 +40,7 @@ function gen_EA(L::Integer, D::Integer)
             push!(A[y], x)
         end
     end
-    map!(sort!, A)
+    map!(sort!, A, A)
     tA = NTuple{2D,Int}[tuple(Ax...) for Ax in A]
     return tA
 end
@@ -124,7 +124,7 @@ function get_vLEV(LEV, ET::Type)
     isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
     length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
 
-    vLEV = Array(ET, length(LEV))
+    vLEV = Array{ET}(length(LEV))
     try
         for i = 1:length(LEV)
             vLEV[i] = LEV[i]
@@ -307,7 +307,7 @@ neighbors(X::GraphEA, i::Int) = return X.uA[i]
         end
         es = newes
     end
-    deltas = sort!(unique(map!(x->2 * abs(x), collect(es))))
+    deltas = sort!(unique((x->2 * abs(x)).(collect(es))))
     return Expr(:tuple, deltas...)
 end
 
@@ -329,8 +329,8 @@ type GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64
             randn()
         end
 
-        dJ = Array(NTuple{twoD,ET}, N)
-        rJ = Array(NTuple{twoD,Float64}, N)
+        dJ = Array{NTuple{twoD,ET}}(N)
+        rJ = Array{NTuple{twoD,Float64}}(N)
         for (x, cJx) in enumerate(cJ)
             dJ[x], rJ[x] = discretize(cJx, LEV)
         end

@@ -32,7 +32,7 @@ function gen_RRG(N::Integer, K::Integer)
     iseven(N * K) || throw(ArgumentError("N * K must be even, given N=$N, K=$K"))
 
     NK = N * K
-    rp = Array(Int, NK)
+    rp = Array{Int}(NK)
     B = [falses(N) for i = 1:N]
 
     maxattmpts = 100_000
@@ -103,7 +103,7 @@ function get_vLEV(LEV, ET::Type)
     isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
     length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
 
-    vLEV = Array(ET, length(LEV))
+    vLEV = Array{ET}(length(LEV))
     try
         for i = 1:length(LEV)
             vLEV[i] = LEV[i]
@@ -280,7 +280,7 @@ neighbors(X::GraphRRG, i::Int) = return X.uA[i]
         end
         es = newes
     end
-    deltas = sort!(unique(map!(x->2 * abs(x), collect(es))))
+    deltas = sort!(unique((x->2 * abs(x)).(collect(es))))
     return Expr(:tuple, deltas...)
 end
 
@@ -298,8 +298,8 @@ type GraphRRGNormalDiscretized{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
             randn()
         end
 
-        dJ = Array(NTuple{K,ET}, N)
-        rJ = Array(NTuple{K,Float64}, N)
+        dJ = Array{NTuple{K,ET}}(N)
+        rJ = Array{NTuple{K,Float64}}(N)
         for (x, cJx) in enumerate(cJ)
             dJ[x], rJ[x] = discretize(cJx, LEV)
         end

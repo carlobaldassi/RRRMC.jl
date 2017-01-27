@@ -8,8 +8,14 @@ function gen_timeout_hook(t = 1.0)
     return (it, X, C, acc, E) -> (time() ≤ t)
 end
 
+macro test_approx_eq_compat(x, y)
+    return VERSION < v"0.6-" ?
+        :(@test_approx_eq $(esc(x)) $(esc(y))) :
+        :(@test $(esc(x)) ≈ $(esc(y)))
+end
+
 function checkenergy_hook(it, X, C, acc, E)
-    @test_approx_eq E RRRMC.energy(X, C)
+    @test_approx_eq_compat E RRRMC.energy(X, C)
     return true
 end
 
