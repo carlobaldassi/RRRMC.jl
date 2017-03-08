@@ -53,7 +53,7 @@ function gen_RRG(N::Integer, K::Integer)
             v1 = mod1(rv1, N)
             v2 = mod1(rv2, N)
             if v1 == v2 || B[v1][v2]
-                #println("again!")
+                # println("again!")
                 again = true
                 break
             end

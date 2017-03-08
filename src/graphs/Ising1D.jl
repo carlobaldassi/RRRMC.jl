@@ -4,6 +4,7 @@ module Ising1D
 
 using ExtractMacro
 using ..Interface
+using Compat # for the .& in julia 0.5
 
 export GraphIsing1D
 
@@ -43,14 +44,12 @@ function energy(X::GraphIsing1D, C::Config)
     end=#
 
     s1 = rol(s, 1)
-    ## here and below:
-    ## map(&, a, b) is used instead of `a & b` (julia 0.5 syntax)
-    ## or `a .& b` (julia 0.6 syntax)
-    Js = map(&, J, s)
-    Js1 = map(&, J, s1)
-    ss1 = map(&, s, s1)
 
-    n1 = 8 * sum(map(&, Js, s1)) - 4 * sum(Js) - 4 * sum(Js1) - 4 * sum(ss1) + 2 * sJ + 4 * sum(s) - N
+    Js = J .& s
+    Js1 = J .& s1
+    ss1 = s .& s1
+
+    n1 = 8 * sum(Js .& s1) - 4 * sum(Js) - 4 * sum(Js1) - 4 * sum(ss1) + 2 * sJ + 4 * sum(s) - N
 
     n1 += N - 2 * sum(s) # !!!
 
