@@ -6,11 +6,13 @@
 
 module DFloats
 
+using Compat
+
 export DFloat64, MAXDIGITS
 
 const MAXDIGITS = 5
 
-bitstype 64 DFloat64 <: Real
+@compat primitive type DFloat64 <: Real 64 end
 const dfact = 10^MAXDIGITS
 
 import Base: convert, ==, <, *, /, +, -, round, typemin, show, promote_rule, decompose,

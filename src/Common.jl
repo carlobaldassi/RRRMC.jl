@@ -5,11 +5,48 @@ module Common
 using Compat
 
 export Vec, Vec2, IVec, unsafe_bitflip!, discretize,
-       LocalFields
+       LocalFields, @inner
 
-typealias Vec  Vector{Float64}
-typealias Vec2 Vector{Vec}
-typealias IVec Vector{Int}
+attach_curly(fn::Symbol, T::Symbol) = Expr(:curly, fn, T)
+function attach_curly(fn::Symbol, T::Expr)
+    @assert Base.Meta.isexpr(T, [:tuple, :cell1d])
+    Expr(:curly, fn, T.args...)
+end
+
+attach_where(ex, T::Symbol) = Expr(:where, ex, T)
+function attach_where(ex, T::Expr)
+    @assert Base.Meta.isexpr(T, [:tuple, :cell1d])
+    Expr(:where, ex, T.args...)
+end
+
+annotate_new!(T, ex) = ex
+function annotate_new!(T, ex::Expr)
+    if ex.head == :call && ex.args[1] == :new
+        ex.args[1] = attach_curly(:new, T)
+    end
+    map!(x->annotate_new!(T, x), ex.args, ex.args)
+    return ex
+end
+
+# horrible macro to keep compatibility with both julia 0.5 and 0.6,
+# while avoiding some even more horrible syntax
+macro inner(T, ex)
+    VERSION < v"0.6-" && return esc(ex)
+    @assert Base.Meta.isexpr(ex, [:(=), :function])
+    @assert length(ex.args) == 2
+    @assert isa(ex.args[1], Expr) && ex.args[1].head == :call
+    @assert isa(ex.args[1].args[1], Symbol)
+    fn = attach_curly(ex.args[1].args[1], T)
+    fargs = ex.args[1].args[2:end]
+    body = ex.args[2]
+    annotate_new!(T, body)
+
+    return esc(Expr(ex.head, attach_where(Expr(:call, fn, fargs...), T), body))
+end
+
+const Vec  = Vector{Float64}
+const Vec2 = Vector{Vec}
+const IVec = Vector{Int}
 
 @inline function unsafe_bitflip!(Bc::Array{UInt64}, i::Int)
     i1, i2 = Base.get_chunks_id(i)
@@ -25,7 +62,7 @@ type LocalFields{ET}
     lfields::Vector{ET}
     lfields_last::Vector{ET}
     move_last::Int
-    function LocalFields(N::Int)
+    @inner {ET} function LocalFields(N::Int)
         lfields = zeros(ET, N)
         lfields_last = zeros(ET, N)
         return new(lfields, lfields_last, 0)

@@ -13,7 +13,7 @@ import ..Interface: energy, delta_energy, neighbors, allΔE, delta_energy_residu
 type GraphFields{ET,LEV} <: DiscrGraph{ET}
     N::Int
     fields::Vector{ET}
-    function GraphFields(fields::Vector{ET})
+    @inner {ET,LEV} function GraphFields(fields::Vector{ET})
         isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
         all(f->f ∈ LEV, fields) || throw(ArgumentError("invalid field value, expected $LEV, given: $(findfirst(f->f ∉ LEV, fields))"))
         length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
@@ -85,7 +85,7 @@ type GraphFieldsNormalDiscretized{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphFields{ET,LEV}
     rfields::Vec
-    function GraphFieldsNormalDiscretized(N::Integer)
+    @inner {ET,LEV} function GraphFieldsNormalDiscretized(N::Integer)
         cfields = randn(N)
         fields, rfields = discretize(cfields, LEV)
         X0 = GraphFields{ET,LEV}(fields)

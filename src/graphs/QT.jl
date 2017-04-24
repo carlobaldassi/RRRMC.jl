@@ -46,7 +46,7 @@ type GraphQT{fourK} <: DiscrGraph{Float64}
     N::Int
     M::Int
     Nk::Int
-    function GraphQT(N::Integer, M::Integer)
+    @inner {fourK} function GraphQT(N::Integer, M::Integer)
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(fourK, Float64) || throw(ArgumentError("invalid parameter fourK, expected Float64, given: $(typeof(fourK))"))
         round(fourK, MAXDIGITS) ≠ fourK && throw(ArgumentError("up to $MAXDIGITS decimal digits supported in fourK, given: $(fourK)"))
@@ -135,7 +135,7 @@ type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float
     C1::Vector{Config}
     β::Float64
     Γ::Float64
-    function GraphQuant(N::Integer, M::Integer, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
+    @inner {fourK,G} function GraphQuant(N::Integer, M::Integer, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
         X0 = GraphQT{fourK}(N, M)
         Nk = X0.Nk
         #J = gen_J(Nk)
@@ -293,7 +293,7 @@ type QNeighbIter{T}
     tn2::Int
     off::Int
     r::T
-    QNeighbIter(tn1, tn2, off, r) = new(tn1, tn2, off, r)
+    @inner {T} QNeighbIter(tn1, tn2, off, r) = new(tn1, tn2, off, r)
 end
 
 QNeighbIter{T}(tn1::Integer, tn2::Integer, off::Integer, r::T) = QNeighbIter{T}(tn1, tn2, off, r)

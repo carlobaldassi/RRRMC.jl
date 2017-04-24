@@ -20,7 +20,7 @@ type GraphLE{M,γT} <: DiscrGraph{Float64}
     Nk::Int
     cache::LocalFields{Int}
 
-    function GraphLE(N::Integer)
+    @inner {M,γT} function GraphLE(N::Integer)
         isa(M, Int) || throw(ArgumentError("invalid parameter M, expected Int, given: $(typeof(M))"))
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(γT, Float64) || throw(ArgumentError("invalid parameter γT, expected Float64, given: $(typeof(γT))"))
@@ -189,7 +189,7 @@ type GraphLocalEntropy{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64
     X1::Vector{G}
     Cc::Config
     C1::Vector{Config}
-    function GraphLocalEntropy(N::Integer, g0::G, Gconstr, args...)
+    @inner {M,γT,G} function GraphLocalEntropy(N::Integer, g0::G, Gconstr, args...)
         X0 = GraphLE{M,γT}(N)
         Nk = X0.Nk
         X1 = Array{G}(M)

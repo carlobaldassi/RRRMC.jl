@@ -145,7 +145,7 @@ type GraphEA{ET,LEV,twoD} <: DiscrGraph{ET}
     J::Vector{NTuple{twoD,ET}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
-    function GraphEA(A::Vector{NTuple{twoD,Int}}, J::Vector{NTuple{twoD,ET}})
+    @inner {ET,LEV,twoD} function GraphEA(A::Vector{NTuple{twoD,Int}}, J::Vector{NTuple{twoD,ET}})
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -318,7 +318,7 @@ type GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64
     rJ::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    function GraphEANormalDiscretized(L::Integer)
+    @inner {ET,LEV,twoD} function GraphEANormalDiscretized(L::Integer)
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -540,7 +540,7 @@ type GraphEANormal{twoD} <: SimpleGraph{Float64}
     J::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    function GraphEANormal(L::Integer, A, J)
+    @inner {twoD} function GraphEANormal(L::Integer, A, J)
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2

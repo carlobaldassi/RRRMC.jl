@@ -2,7 +2,7 @@
 
 module Interface
 
-using ExtractMacro
+using Compat, ExtractMacro
 using ..Common
 
 if isdefined(Main, :Documenter)
@@ -50,7 +50,7 @@ functions.
 See also [`SimpleGraph`](@ref), [`DiscrGraph`](@ref), [`SingleGraph`](@ref)
 and [`DoubleGraph`](@ref).
 """
-abstract AbstractGraph{ET<:Real}
+@compat abstract type AbstractGraph{ET<:Real} end
 
 """
     update_cache!(X::AbstractGraph, C::Config, move::Int)
@@ -145,7 +145,7 @@ An abstract type representing a generic graph.
 
 The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`](@ref).
 """
-abstract SimpleGraph{ET} <: AbstractGraph{ET}
+@compat abstract type SimpleGraph{ET} <: AbstractGraph{ET} end
 
 
 """
@@ -160,7 +160,7 @@ The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`]
 
 See also [`allΔE`](@ref).
 """
-abstract DiscrGraph{ET} <: AbstractGraph{ET}
+@compat abstract type DiscrGraph{ET} <: AbstractGraph{ET} end
 
 """
     allΔE{P<:DiscrGraph}(::Type{P})
@@ -181,7 +181,7 @@ allΔE(X::DiscrGraph) = allΔE(typeof(X))
 A type alias representing either a [`SimpleGraph`](@ref) or a
 [`DiscrGraph{ET}`](@ref). See also [`DoubleGraph`](@ref).
 """
-typealias SingleGraph{ET} Union{SimpleGraph{ET},DiscrGraph{ET}}
+@compat const SingleGraph{ET} = Union{SimpleGraph{ET},DiscrGraph{ET}}
 
 """
     DoubleGraph{GT<:SingleGraph,ET} <: AbstractGraph{ET}
@@ -203,7 +203,7 @@ concrete type of the inner graph, but either `SimpleGraph{T}` or
 See also [`inner_graph`](@ref), [`delta_energy_residual`](@ref) and
 [`update_cache_residual!`](@ref).
 """
-abstract DoubleGraph{GT,ET} <: AbstractGraph{ET}
+@compat abstract type DoubleGraph{GT,ET} <: AbstractGraph{ET} end
 
 """
     inner_graph(X::DoubleGraph)

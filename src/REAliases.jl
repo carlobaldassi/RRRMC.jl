@@ -2,6 +2,8 @@
 
 module REAliases
 
+using Compat
+
 using ..RE
 using ..Empty
 using ..SK
@@ -9,7 +11,7 @@ using ..EA
 
 export Graph0RE, GraphSKRE, GraphEARE
 
-typealias Graph0RE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphEmpty}
+@compat const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
 # """
 #     Graph0RE(...)
@@ -20,7 +22,7 @@ Graph0RE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphRobustEnsembl
 
 
 
-typealias GraphSKRE{M,γ,β} GraphRobustEnsemble{M,γ,β,GraphSK}
+@compat const GraphSKRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSK}
 
 # """
 #     GraphSKRE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -32,7 +34,7 @@ GraphSKRE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphRobustEnsemb
 
 
 
-typealias GraphEARE{M,γ,β,twoD} GraphRobustEnsemble{M,γ,β,GraphEANormal{twoD}}
+@compat const GraphEARE{M,γ,β,twoD} = GraphRobustEnsemble{M,γ,β,GraphEANormal{twoD}}
 
 # """
 #     GraphEARE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph

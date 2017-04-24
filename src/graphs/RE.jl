@@ -33,7 +33,7 @@ type GraphRE{M,γ,β} <: DiscrGraph{Float64}
     μ::IVec
     cache::LocalFields{Float64}
 
-    function GraphRE(N::Integer, μ::Union{Void,IVec} = nothing)
+    @inner {M,γ,β} function GraphRE(N::Integer, μ::Union{Void,IVec} = nothing)
         isa(M, Int) || throw(ArgumentError("invalid parameter M, expected Int, given: $(typeof(M))"))
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(β, Float64) || throw(ArgumentError("invalid parameter β, expected Float64, given: $(typeof(β))"))
@@ -216,7 +216,7 @@ type GraphRobustEnsemble{M,γ,β,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Flo
     X0::GraphRE{M,γ,β}
     X1::Vector{G}
     C1::Vector{Config}
-    function GraphRobustEnsemble(N::Integer, g0::G, Gconstr, args...)
+    @inner {M,γ,β,G} function GraphRobustEnsemble(N::Integer, g0::G, Gconstr, args...)
         X0 = GraphRE{M,γ,β}(N)
         Nk = X0.Nk
         X1 = Array{G}(M)

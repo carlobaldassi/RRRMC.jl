@@ -17,7 +17,7 @@ type GraphPSpin3{K} <: DiscrGraph{Int}
     U::Vector{Vector{Int}} # unique neighbors
     #J::Vector{Vector{Int}} # currently unused (all 1)
     cache::LocalFields{Int}
-    function GraphPSpin3(N::Int)
+    @inner {K} function GraphPSpin3(N::Int)
         @assert isa(K, Integer)
         @assert K ≥ 1
 

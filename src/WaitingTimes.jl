@@ -20,7 +20,7 @@ gen_wt(τ::Float64) = begin
     return wt
 end
 
-typealias THeap MutableBinaryHeap{Float64, DataStructures.LessThan}
+const THeap = MutableBinaryHeap{Float64, DataStructures.LessThan}
 
 function THeap(X::AbstractGraph, C::Config, β::Real)
     N = getN(X)

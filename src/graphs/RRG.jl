@@ -123,7 +123,7 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
     J::Vector{NTuple{K,ET}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
-    function GraphRRG(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}})
+    @inner {ET,LEV,K} function GraphRRG(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}})
         isa(K, Integer) || throw(ArgumentError("K must be integer, given a: $(typeof(K))"))
 
         N = length(A)
@@ -292,7 +292,7 @@ type GraphRRGNormalDiscretized{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
     A::Vector{NTuple{K,Int}}
     rJ::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    function GraphRRGNormalDiscretized(N::Integer)
+    @inner {ET,LEV,K} function GraphRRGNormalDiscretized(N::Integer)
         A = gen_RRG(N, K)
         cJ = gen_J(Float64, N, A) do
             randn()
@@ -510,7 +510,7 @@ type GraphRRGNormal{K} <: SimpleGraph{Float64}
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    function GraphRRGNormal(N::Integer)
+    @inner {K} function GraphRRGNormal(N::Integer)
         A = gen_RRG(N, K)
         J = gen_J(Float64, N, A) do
             randn()

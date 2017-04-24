@@ -34,7 +34,7 @@ type DeltaECache{ET,L}
     ascache::Vector{ArraySet}
     pos::IVec
     staged::Vector{NTuple{3,Int}}
-    function DeltaECache(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, β::Float64, rrr::Bool)
+    @inner {ET,L} function DeltaECache(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, β::Float64, rrr::Bool)
         N = getN(X)
         @assert C.N == N
         ascache = [ArraySet(N) for k = 1:2L]
@@ -263,7 +263,7 @@ type DeltaECacheCont{ET}
     ΔEs::Vector{ET}
     β::Float64
     staged::Vector{Tuple{Int,ET,Float64}}
-    function DeltaECacheCont(X::AbstractGraph, C::Config, β::Float64)
+    @inner {ET} function DeltaECacheCont(X::AbstractGraph, C::Config, β::Float64)
         N = getN(X)
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]

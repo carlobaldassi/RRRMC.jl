@@ -2,6 +2,8 @@
 
 module QAliases
 
+using Compat
+
 using ..QT
 using ..Empty
 using ..SK
@@ -9,7 +11,7 @@ using ..EA
 
 export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT
 
-typealias GraphQ0T{fourK} GraphQuant{fourK,GraphEmpty}
+@compat const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
 
 """
     GraphQ0T(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -24,7 +26,7 @@ GraphQ0T(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, 
 
 
 
-typealias GraphQSKT{fourK} GraphQuant{fourK,GraphSK}
+@compat const GraphQSKT{fourK} = GraphQuant{fourK,GraphSK}
 
 """
     GraphQSKT(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -36,12 +38,12 @@ See [`GraphQuant`](@ref).
 GraphQSKT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSK, SK.gen_J(Nk))
 
 
-typealias GraphQSKNormalT{fourK} GraphQuant{fourK,GraphSKNormal}
+@compat const GraphQSKNormalT{fourK} = GraphQuant{fourK,GraphSKNormal}
 GraphQSKNormalT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSKNormal, SK.gen_J_gauss(Nk))
 
 
 
-typealias GraphQEAT{fourK,twoD} GraphQuant{fourK,GraphEANormal{twoD}}
+@compat const GraphQEAT{fourK,twoD} = GraphQuant{fourK,GraphEANormal{twoD}}
 
 # """
 #     GraphQEAT(L::Integer, D::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph

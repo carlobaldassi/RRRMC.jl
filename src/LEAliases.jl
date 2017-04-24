@@ -2,6 +2,8 @@
 
 module LEAliases
 
+using Compat
+
 using ..LE
 using ..Empty
 using ..SK
@@ -9,7 +11,7 @@ using ..EA
 
 export Graph0LE, GraphSKLE, GraphEALE
 
-typealias Graph0LE{M,γT} GraphLocalEntropy{M,γT,GraphEmpty}
+@compat const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
 # """
 #     Graph0LE(...)
@@ -20,7 +22,7 @@ Graph0LE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy(
 
 
 
-typealias GraphSKLE{M,γT} GraphLocalEntropy{M,γT,GraphSK}
+@compat const GraphSKLE{M,γT} = GraphLocalEntropy{M,γT,GraphSK}
 
 # """
 #     GraphSKLE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -32,7 +34,7 @@ GraphSKLE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy
 
 
 
-typealias GraphEALE{M,γT,twoD} GraphLocalEntropy{M,γT,GraphEANormal{twoD}}
+@compat const GraphEALE{M,γT,twoD} = GraphLocalEntropy{M,γT,GraphEANormal{twoD}}
 
 # """
 #     GraphEALE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
