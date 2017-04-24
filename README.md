@@ -5,7 +5,8 @@
 | [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
-["A method to reduce the rejection rate in Monte Carlo Markov Chains"][RRRpaper] by C. Baldassi.
+*"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
+J. Stat. Mech. Theor. Exp., (2017) 3, 033301 [doi:10.1088/1742-5468/aa5335][RRRpaper] ([arXiv][RRRarXiv]).
 
 It also provides:
 * a standard Metropolis-Hastings sampler
@@ -31,8 +32,9 @@ Dependencies will be installed automatically.
 
 - [**LATEST**][docs-latest-url] &mdash; *in-development version of the documentation.*
 
-[Julia]: http://julialang.org
-[RRRpaper]: http://arxiv.org/abs/1608.05899
+[Julia]: https://julialang.org
+[RRRpaper]: https://doi.org/10.1088/1742-5468/aa5335
+[RRRarXiv]: http://arxiv.org/abs/1608.05899
 [BKLpaper]: http://www.sciencedirect.com/science/article/pii/0021999175900601
 [WTMpaper]: http://www.sciencedirect.com/science/article/pii/S001046550100412X
 
