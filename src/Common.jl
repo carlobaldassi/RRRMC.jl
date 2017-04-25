@@ -7,16 +7,10 @@ using Compat
 export Vec, Vec2, IVec, unsafe_bitflip!, discretize,
        LocalFields, @inner
 
-attach_curly(fn::Symbol, T::Symbol) = Expr(:curly, fn, T)
-function attach_curly(fn::Symbol, T::Expr)
+wrapin(head::Symbol, fn, T::Symbol) = Expr(:curly, fn, T)
+function wrapin(head::Symbol, fn, T::Expr)
     @assert Base.Meta.isexpr(T, [:tuple, :cell1d])
-    Expr(:curly, fn, T.args...)
-end
-
-attach_where(ex, T::Symbol) = Expr(:where, ex, T)
-function attach_where(ex, T::Expr)
-    @assert Base.Meta.isexpr(T, [:tuple, :cell1d])
-    Expr(:where, ex, T.args...)
+    Expr(head, fn, T.args...)
 end
 
 # horrible macro to keep compatibility with both julia 0.5 and 0.6,
@@ -27,11 +21,11 @@ macro inner(T, ex)
     @assert length(ex.args) == 2
     @assert isa(ex.args[1], Expr) && ex.args[1].head == :call
     @assert isa(ex.args[1].args[1], Symbol)
-    fn = attach_curly(ex.args[1].args[1], T)
+    fn = wrapin(:curly, ex.args[1].args[1], T)
     fargs = ex.args[1].args[2:end]
     body = ex.args[2]
 
-    return esc(Expr(ex.head, attach_where(Expr(:call, fn, fargs...), T), body))
+    return esc(Expr(ex.head, wrapin(:where, Expr(:call, fn, fargs...), T), body))
 end
 
 const Vec  = Vector{Float64}
