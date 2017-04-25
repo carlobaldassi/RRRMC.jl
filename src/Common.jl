@@ -19,15 +19,6 @@ function attach_where(ex, T::Expr)
     Expr(:where, ex, T.args...)
 end
 
-annotate_new!(T, ex) = ex
-function annotate_new!(T, ex::Expr)
-    if ex.head == :call && ex.args[1] == :new
-        ex.args[1] = attach_curly(:new, T)
-    end
-    map!(x->annotate_new!(T, x), ex.args, ex.args)
-    return ex
-end
-
 # horrible macro to keep compatibility with both julia 0.5 and 0.6,
 # while avoiding some even more horrible syntax
 macro inner(T, ex)
@@ -39,7 +30,6 @@ macro inner(T, ex)
     fn = attach_curly(ex.args[1].args[1], T)
     fargs = ex.args[1].args[2:end]
     body = ex.args[2]
-    annotate_new!(T, body)
 
     return esc(Expr(ex.head, attach_where(Expr(:call, fn, fargs...), T), body))
 end
