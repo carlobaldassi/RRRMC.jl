@@ -31,7 +31,7 @@ end
 # horrible macro to keep compatibility with both julia 0.5 and 0.6,
 # while avoiding some even more horrible syntax
 macro inner(T, ex)
-    VERSION < v"0.6-" && return esc(ex)
+    VERSION < v"0.6.0-dev.2643" && return esc(ex)
     @assert Base.Meta.isexpr(ex, [:(=), :function])
     @assert length(ex.args) == 2
     @assert isa(ex.args[1], Expr) && ex.args[1].head == :call
