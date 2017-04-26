@@ -13,7 +13,7 @@ script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia --check-bounds=yes --inline=no -e 'Pkg.clone(pwd()); Pkg.build("RRRMC"); Pkg.test("RRRMC"; coverage=true)'
 after_success:
-  - julia -e 'Pkg.add("Documenter", v"0.6.0")'
+  - julia -e 'Pkg.add("Documenter", v"0.9.0")'
   - julia -e 'cd(Pkg.dir("RRRMC")); include(joinpath("docs", "make.jl"))'
   - julia -e 'Pkg.add("Coverage", v"0.3")'
   - julia -e 'cd(Pkg.dir("RRRMC")); include(joinpath("docs", "coverage.jl"))'
