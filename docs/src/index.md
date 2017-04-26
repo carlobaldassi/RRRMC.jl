@@ -6,8 +6,8 @@ CurrentModule = RRRMC
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
 *"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
-J. Stat. Mech. Theor. Exp., (2017) 3, 033301 [doi:10.1088/1742-5468/aa5335][https://doi.org/10.1088/1742-5468/aa5335]
-([arXiv][http://arxiv.org/abs/1608.05899]).
+J. Stat. Mech. Theor. Exp., (2017) 3, 033301 [doi:10.1088/1742-5468/aa5335](https://doi.org/10.1088/1742-5468/aa5335)
+([arXiv](http://arxiv.org/abs/1608.05899)).
 
 It also provides:
 * a standard Metropolis-Hastings sampler
