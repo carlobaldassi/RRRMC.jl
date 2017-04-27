@@ -17,14 +17,14 @@ It also provides:
 * an implementation of the Waiting time method described in the paper
   ["Faster Monte Carlo simulations at low temperatures. The waiting time method"](http://www.sciencedirect.com/science/article/pii/S001046550100412X) by J. Dall and P. Sibani.
 
-The code is written in [Julia](http://julialang.org), and tested against Julia `0.5` and *current* `0.6-dev` on Linux, OS X, and Windows.
+The code is written in [Julia](http://julialang.org), and tested against Julia `0.5` and *current* `0.6-pre` on Linux, OS X, and Windows.
 
 ## Installation
 
-To install the module, use this command from within Julia:
+To install the module, use Julia's package manager:
 
 ```
-julia> Pkg.clone("https://github.com/carlobaldassi/RRRMC.jl")
+julia> Pkg.add("RRRMC")
 ```
 
 Dependencies will be installed automatically.

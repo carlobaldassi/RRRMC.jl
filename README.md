@@ -1,8 +1,8 @@
 # RRRMC.jl
 
-| **Documentation**                       | **Build Status**                                                                                | **Releases**                     |
-|:---------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
-| [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
+| **Documentation**                       | **PackageEvaluator**                                    | **Build Status**                                                                                | **Releases**                     |
+|:---------------------------------------:|:-------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
+| [![][docs-latest-img]][docs-latest-url] | [![][pkg-0.5-img]][pkg-url] [![][pkg-0.6-img]][pkg-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
 *"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
@@ -20,16 +20,17 @@ The code is written in [Julia], and tested against Julia `0.5` and *current* `0.
 
 ### Installation
 
-To install the module, use this command from within Julia:
+To install the module, use Julia's package manager:
 
 ```
-julia> Pkg.clone("https://github.com/carlobaldassi/RRRMC.jl")
+julia> Pkg.add("RRRMC")
 ```
 
 Dependencies will be installed automatically.
 
 ### Documentation
 
+- [**STABLE**][docs-stable-url] &mdash; stable version of the documentation
 - [**LATEST**][docs-latest-url] &mdash; *in-development version of the documentation.*
 
 [Julia]: https://julialang.org
@@ -38,11 +39,17 @@ Dependencies will be installed automatically.
 [BKLpaper]: http://www.sciencedirect.com/science/article/pii/0021999175900601
 [WTMpaper]: http://www.sciencedirect.com/science/article/pii/S001046550100412X
 
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://carlobaldassi.github.io/RRRMC.jl/stable
 [docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
 [docs-latest-url]: https://carlobaldassi.github.io/RRRMC.jl/latest
 
 [travis-img]: https://travis-ci.org/carlobaldassi/RRRMC.jl.svg?branch=master
 [travis-url]: https://travis-ci.org/carlobaldassi/RRRMC.jl
+
+[pkg-0.5-img]: http://pkg.julialang.org/badges/RRRMC_0.5.svg
+[pkg-0.6-img]: http://pkg.julialang.org/badges/RRRMC_0.6.svg
+[pkg-url]: http://pkg.julialang.org/?pkg=RRRMC
 
 [appveyor-img]: https://ci.appveyor.com/api/projects/status/bq8jj4u0dx6x6xm1/branch/master?svg=true
 [appveyor-url]: https://ci.appveyor.com/project/carlobaldassi/rrrmc-jl/branch/master
