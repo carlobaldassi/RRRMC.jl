@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "RRRMC.jl documentation",
     "category": "section",
-    "text": "CurrentModule = RRRMCThis code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper \"A method to reduce the rejection rate in Monte Carlo Markov Chains\" by C. Baldassi, J. Stat. Mech. Theor. Exp., (2017) 3, 033301 doi:10.1088/1742-5468/aa5335 (arXiv).It also provides:a standard Metropolis-Hastings sampler\na generalized implementation of the BKL method described in the paper \"A new algorithm for Monte Carlo simulation of Ising spin systems\" by A.B. Bortz, M.H. Kalos and J.L. Lebowitz. The generalization consists in not requiring that the energy shifts are discrete.\nan implementation of the Waiting time method described in the paper \"Faster Monte Carlo simulations at low temperatures. The waiting time method\" by J. Dall and P. Sibani.The code is written in Julia, and tested against Julia 0.5 and current 0.6-dev on Linux, OS X, and Windows."
+    "text": "CurrentModule = RRRMCThis code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper \"A method to reduce the rejection rate in Monte Carlo Markov Chains\" by C. Baldassi, J. Stat. Mech. Theor. Exp., (2017) 3, 033301 doi:10.1088/1742-5468/aa5335 (arXiv).It also provides:a standard Metropolis-Hastings sampler\na generalized implementation of the BKL method described in the paper \"A new algorithm for Monte Carlo simulation of Ising spin systems\" by A.B. Bortz, M.H. Kalos and J.L. Lebowitz. The generalization consists in not requiring that the energy shifts are discrete.\nan implementation of the Waiting time method described in the paper \"Faster Monte Carlo simulations at low temperatures. The waiting time method\" by J. Dall and P. Sibani.The code is written in Julia, and tested against Julia 0.5 and current 0.6-pre on Linux, OS X, and Windows."
 },
 
 {
@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "To install the module, use this command from within Julia:julia> Pkg.clone(\"https://github.com/carlobaldassi/RRRMC.jl\")Dependencies will be installed automatically."
+    "text": "To install the module, use Julia's package manager:julia> Pkg.add(\"RRRMC\")Dependencies will be installed automatically."
 },
 
 {
