@@ -75,7 +75,13 @@ julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; tr
 julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
-function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing, pp = nothing)
+function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
+                        seed = 167432777111,
+                        step::Integer = 1,
+                        hook = (x...)->true,
+                        C0::Union{Config,Void} = nothing,
+                        pp = nothing
+                       )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
@@ -89,8 +95,8 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 1
     it = 0
     while it < iters
         it += 1
-        #println("it=$it")
-        #@assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
+        # println("it=$it")
+        # @assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
         if (it % step == 0)
             push!(Es, E)
             hook(it, X, C, accepted, E) || break
@@ -131,8 +137,14 @@ This function has specialized versions for [`DiscrGraph`](@ref) and [`DoubleGrap
 
 The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 """
-function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
-                   staged_thr::Real = NaN, staged_thr_fact::Real = 5.0)
+function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer;
+                   seed = 167432777111,
+                   step::Integer = 1,
+                   hook = (x...)->true,
+                   C0::Union{Config,Void} = nothing,
+                   staged_thr::Real = NaN,
+                   staged_thr_fact::Real = 5.0
+                  )
 
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
@@ -194,8 +206,14 @@ function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer; seed = 16743277
     return Es, C
 end
 
-function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing,
-                   staged_thr::Real = 0.5, staged_thr_fact::Real = 5.0)
+function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
+                      seed = 167432777111,
+                      step::Integer = 1,
+                      hook = (x...)->true,
+                      C0::Union{Config,Void} = nothing,
+                      staged_thr::Real = 0.5,
+                      staged_thr_fact::Real = 5.0
+                     )
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
@@ -274,7 +292,12 @@ The return values and the keyword arguments are the same as [`standardMC`](@ref)
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer; seed = 167432777111, step::Integer = 1, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
+                   seed = 167432777111,
+                   step::Integer = 1,
+                   hook = (x...)->true,
+                   C0::Union{Config,Void} = nothing
+                  )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
 
@@ -331,7 +354,12 @@ and of [`bklMC`](@ref). Thus, this function has two differences with respect to 
 
 The total number of samples actually collected can still be less than `samples` if the `hook` function from the keyword arguments returns `false` earlier.
 """
-function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer; seed = 167432777111, step::Float64 = 1.0, hook = (x...)->true, C0::Union{Config,Void} = nothing)
+function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer;
+                   seed = 167432777111,
+                   step::Float64 = 1.0,
+                   hook = (x...)->true,
+                   C0::Union{Config,Void} = nothing
+                  )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, samples)))
 
