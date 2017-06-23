@@ -492,7 +492,7 @@ function extremal_opt{ET}(X::AbstractGraph{ET}, τ::Real, iters::Integer;
 
         if (it % step == 0)
             hook(it, X, C, E, Emin) || break
-            E = energy(X, C)
+            # E = energy(X, C)
         end
 
         move, ΔE = rand_move(ΔEcache)
