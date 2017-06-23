@@ -15,6 +15,8 @@ It also provides:
   The generalization consists in not requiring that the energy shifts are discrete.
 * an implementation of the Waiting time method described in the paper
   ["Faster Monte Carlo simulations at low temperatures. The waiting time method"][WTMpaper] by J. Dall and P. Sibani.
+* an implementation of the "τ-Extremal Optimization" heuristic technique described in the paper
+  ["Optimization with Extremal Dynamics"][EOpaper] by S. Boettcher and A. G. Percus.
 
 The code is written in [Julia], and tested against Julia `0.5`, `0.6` and *current* (at the time of writing) `0.7-DEV` on
 Linux, OS X, and Windows.
@@ -39,6 +41,7 @@ Dependencies will be installed automatically.
 [RRRarXiv]: http://arxiv.org/abs/1608.05899
 [BKLpaper]: https://doi.org/10.1016/0021-9991(75)90060-1
 [WTMpaper]: https://doi.org/10.1016/S0010-4655(01)00412-X
+[EOpaper]: https://doi.org/10.1103/PhysRevLett.86.5211
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://carlobaldassi.github.io/RRRMC.jl/stable

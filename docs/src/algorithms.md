@@ -21,6 +21,10 @@ wtmMC
 ```
 
 ```@docs
+extremal_opt
+```
+
+```@docs
 Config
 ```
 

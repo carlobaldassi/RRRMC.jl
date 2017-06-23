@@ -16,6 +16,8 @@ It also provides:
   The generalization consists in not requiring that the energy shifts are discrete.
 * an implementation of the Waiting time method described in the paper
   ["Faster Monte Carlo simulations at low temperatures. The waiting time method"](https://doi.org/10.1016/S0010-4655(01)00412-X) by J. Dall and P. Sibani.
+* an implementation of the "τ-Extremal Optimization" heuristic technique described in the paper
+  ["Optimization with Extremal Dynamics"](https://doi.org/10.1103/PhysRevLett.86.5211) by S. Boettcher and A. G. Percus.
 
 The code is written in [Julia](http://julialang.org), and tested against Julia `0.5`, `0.6` and *current* (at the time of writing) `0.7-DEV` on Linux,
 OS X, and Windows.
@@ -50,9 +52,13 @@ is essentially identical: they take as arguments a graph, an inverse temperature
 Monte Carlo iterations to perform (or, for `wtmMC`, of samples to collect). However, the sampling methodology changes
 based on the type of model, see the [Graph types](@ref graphtype) page.
 
-These functions allow accessing the internal state during the iteration at regular intervals, via the `hook` keyword
+The module also provides the function [`extremal_opt`](@ref), which implements the τ-Extremal Optimization heuristic
+technique, used to seek the ground state of a model. The interface for this function is similar, but not identical,
+to the others, due to its different purpose.
+
+All of the above functions allow accessing the internal state during the iteration at regular intervals, via the `hook` keyword
 argument. They also return the final configuration of the system, which is stored in an object of type
-[`Config`](@ref).
+[`Config`](@ref). (The `extremal_opt` function also returns the best configuration found.)
 
 The code comes with some [built-in graphs](@ref builtin), but provides an [interface](@ref interface) to write
 user-defined models.
