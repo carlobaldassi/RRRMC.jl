@@ -80,7 +80,8 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
                         step::Integer = 1,
                         hook = (x...)->true,
                         C0::Union{Config,Void} = nothing,
-                        pp = nothing
+                        pp = nothing,
+                        quiet::Bool = false
                        )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
@@ -111,9 +112,11 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
         E += ΔE
         accepted += 1
     end
-    println("samples = ", length(Es))
-    println("iters = ", it)
-    println("accept rate = ", accepted / it)
+    if !quiet
+        println("samples = ", length(Es))
+        println("iters = ", it)
+        println("accept rate = ", accepted / it)
+    end
     return Es, C
 end
 
@@ -143,7 +146,8 @@ function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer;
                    hook = (x...)->true,
                    C0::Union{Config,Void} = nothing,
                    staged_thr::Real = NaN,
-                   staged_thr_fact::Real = 5.0
+                   staged_thr_fact::Real = 5.0,
+                   quiet::Bool = false
                   )
 
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
@@ -199,10 +203,12 @@ function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer;
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
-    println("samples = ", length(Es))
-    println("iters = ", it)
-    println("accept rate = ", accepted / it)
-    println("frac. staged iters = ", staged_its / it)
+    if !quiet
+        println("samples = ", length(Es))
+        println("iters = ", it)
+        println("accept rate = ", accepted / it)
+        println("frac. staged iters = ", staged_its / it)
+    end
     return Es, C
 end
 
@@ -212,7 +218,8 @@ function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
                       hook = (x...)->true,
                       C0::Union{Config,Void} = nothing,
                       staged_thr::Real = 0.5,
-                      staged_thr_fact::Real = 5.0
+                      staged_thr_fact::Real = 5.0,
+                      quiet::Bool = false
                      )
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
     seed > 0 && srand(seed)
@@ -266,10 +273,12 @@ function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
         end
         acc_rate = acc_rate * (1 - λ) + acc * λ
     end
-    println("samples = ", length(Es))
-    println("iters = ", it)
-    println("accept rate = ", accepted / it)
-    println("frac. staged iters = ", staged_its / it)
+    if !quiet
+        println("samples = ", length(Es))
+        println("iters = ", it)
+        println("accept rate = ", accepted / it)
+        println("frac. staged iters = ", staged_its / it)
+    end
     return Es, C
 end
 
@@ -296,7 +305,8 @@ function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
                    seed = 167432777111,
                    step::Integer = 1,
                    hook = (x...)->true,
-                   C0::Union{Config,Void} = nothing
+                   C0::Union{Config,Void} = nothing,
+                   quiet::Bool = false
                   )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
@@ -332,10 +342,12 @@ function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
         accepted += 1
     end
     @label out
-    println("samples = ", length(Es))
-    println("iters = ", it)
-    println("accept rate = ", accepted / iters)
-    println("true it = ", accepted)
+    if !quiet
+        println("samples = ", length(Es))
+        println("iters = ", it)
+        println("accept rate = ", accepted / iters)
+        println("true it = ", accepted)
+    end
     return Es, C
 end
 
@@ -358,7 +370,8 @@ function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer;
                    seed = 167432777111,
                    step::Float64 = 1.0,
                    hook = (x...)->true,
-                   C0::Union{Config,Void} = nothing
+                   C0::Union{Config,Void} = nothing,
+                   quiet::Bool = false
                   )
     seed > 0 && srand(seed)
     Es = empty!(Array{ET}(min(10^8, samples)))
@@ -392,10 +405,12 @@ function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer;
         num_moves += 1
     end
     @label out
-    println("samples = ", length(Es))
-    println("num_moves = ", num_moves)
-    println("global time = ", t)
-    println("ratio = ", t / num_moves)
+    if !quiet
+        println("samples = ", length(Es))
+        println("num_moves = ", num_moves)
+        println("global time = ", t)
+        println("ratio = ", t / num_moves)
+    end
     return Es, C
 end
 
