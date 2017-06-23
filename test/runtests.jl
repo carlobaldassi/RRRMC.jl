@@ -81,49 +81,50 @@ function test()
     iters = 10_000
     st = 100
     samples = iters ÷ st
+    quiet = true
 
     for X in graphs
-        E, C = standardMC(X, β, iters, step=st)
-        E, C = standardMC(X, β, iters, step=st, C0=C, hook=checkenergy_hook)
-        E, C = standardMC(X, β, iters, step=st, C0=C, hook=gen_timeout_hook())
+        E, C = standardMC(X, β, iters, step=st, quiet=quiet)
+        E, C = standardMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
+        E, C = standardMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())
 
-        E, C = bklMC(X, β, iters, step=st)
-        E, C = bklMC(X, β, iters, step=st, C0=C, hook=checkenergy_hook)
-        E, C = bklMC(X, β, iters, step=st, C0=C, hook=gen_timeout_hook())
+        E, C = bklMC(X, β, iters, step=st, quiet=quiet)
+        E, C = bklMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
+        E, C = bklMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())
 
-        E, C = wtmMC(X, β, samples, step=Float64(st))
-        E, C = wtmMC(X, β, samples, step=Float64(st), C0=C, hook=checkenergy_hook)
-        E, C = wtmMC(X, β, samples, step=Float64(st), C0=C, hook=gen_timeout_hook())
+        E, C = wtmMC(X, β, samples, step=Float64(st), quiet=quiet)
+        E, C = wtmMC(X, β, samples, step=Float64(st), quiet=quiet, C0=C, hook=checkenergy_hook)
+        E, C = wtmMC(X, β, samples, step=Float64(st), quiet=quiet, C0=C, hook=gen_timeout_hook())
 
-        E, C = rrrMC(X, β, iters, step=st)
-        E, C = rrrMC(X, β, iters, step=st, C0=C, hook=checkenergy_hook)
-        E, C = rrrMC(X, β, iters, step=st, C0=C, hook=gen_timeout_hook())
-        E, C = rrrMC(X, β, iters, step=st, staged_thr=0.0, hook=checkenergy_hook)
-        E, C = rrrMC(X, β, iters, step=st, C0=C, staged_thr=0.0)
-        E, C = rrrMC(X, β, iters, step=st, staged_thr=1.0, hook=checkenergy_hook)
-        E, C = rrrMC(X, β, iters, step=st, C0=C, staged_thr=1.0)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, staged_thr=0.0, hook=checkenergy_hook)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, staged_thr=0.0)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, staged_thr=1.0, hook=checkenergy_hook)
+        E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, staged_thr=1.0)
 
         if isa(X, RRRMC.DoubleGraph)
             X0 = RRRMC.inner_graph(X)
-            E, C = bklMC(X0, β, iters, step=st)
-            E, C = bklMC(X0, β, iters, step=st, C0=C, hook=checkenergy_hook)
+            E, C = bklMC(X0, β, iters, step=st, quiet=quiet)
+            E, C = bklMC(X0, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
 
-            E, C = rrrMC(X, β, iters, step=st)
-            E, C = rrrMC(X, β, iters, step=st, C0=C, hook=checkenergy_hook)
-            E, C = rrrMC(X, β, iters, step=st, C0=C, hook=gen_timeout_hook())
-            E, C = rrrMC(X, β, iters, step=st, staged_thr=0.0, hook=checkenergy_hook)
-            E, C = rrrMC(X, β, iters, step=st, C0=C, staged_thr=0.0)
-            E, C = rrrMC(X, β, iters, step=st, staged_thr=1.0, hook=checkenergy_hook)
-            E, C = rrrMC(X, β, iters, step=st, C0=C, staged_thr=1.0)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, staged_thr=0.0, hook=checkenergy_hook)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, staged_thr=0.0)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, staged_thr=1.0, hook=checkenergy_hook)
+            E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, staged_thr=1.0)
 
 
-            E, C = rrrMC(X0, β, iters, step=st)
-            E, C = rrrMC(X0, β, iters, step=st, C0=C, hook=checkenergy_hook)
-            E, C = rrrMC(X0, β, iters, step=st, C0=C, hook=gen_timeout_hook())
-            E, C = rrrMC(X0, β, iters, step=st, staged_thr=0.0, hook=checkenergy_hook)
-            E, C = rrrMC(X0, β, iters, step=st, C0=C, staged_thr=0.0)
-            E, C = rrrMC(X0, β, iters, step=st, staged_thr=1.0, hook=checkenergy_hook)
-            E, C = rrrMC(X0, β, iters, step=st, C0=C, staged_thr=1.0)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, staged_thr=0.0, hook=checkenergy_hook)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, staged_thr=0.0)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, staged_thr=1.0, hook=checkenergy_hook)
+            E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, staged_thr=1.0)
         end
     end
 end
