@@ -22,6 +22,8 @@ end
 
 function test()
 
+    srand(8426732438942) # get reproducible results...
+
     graphs = [
         RRRMC.GraphTwoSpin(),
         RRRMC.GraphThreeSpin(),
