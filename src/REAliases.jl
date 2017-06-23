@@ -9,8 +9,11 @@ using ..Empty
 using ..SK
 using ..EA
 using ..SAT
+using ..PercLinear
+using ..PercStep
+using ..CommStep
 
-export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE
+export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE, GraphPercLinearRE, GraphPercStepRE, GraphCommStepRE
 
 @compat const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -69,7 +72,6 @@ function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-
 @compat const GraphSATRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSAT}
 
 # """
@@ -85,6 +87,55 @@ end
 function GraphSATRE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
     N = X.N
     GraphRobustEnsemble(N, M, γ, β, GraphSAT, N, X.A, X.J)
+end
+
+@compat const GraphPercLinearRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercLinear}
+
+# """
+#     GraphPercLinearRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercLinearRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphRobustEnsemble(N, M, γ, β, GraphPercLinear, ξ, ξv)
+end
+
+function GraphPercLinearRE(X::GraphPercLinear, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
+end
+
+@compat const GraphPercStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercStep}
+
+# """
+#     GraphPercStepRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercStepRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphRobustEnsemble(N, M, γ, β, GraphPercStep, ξ, ξv)
+end
+
+function GraphPercStepRE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
+end
+
+@compat const GraphCommStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphCommStep}
+
+# """
+#     GraphCommStepRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphCommStepRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = CommStep.gen_ξ(K1, P)
+    N = K1 * K2
+    GraphRobustEnsemble(N, M, γ, β, GraphCommStep, K2, ξ, ξv)
+end
+
+function GraphCommStepRE(X::GraphCommStep, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphCommStep, X.K2, X.ξ, X.ξv)
 end
 
 end # module

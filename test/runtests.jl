@@ -67,18 +67,30 @@ function test()
         RRRMC.GraphSK(10),
         RRRMC.GraphSKNormal(10),
         RRRMC.GraphSAT(10, 3, 4.2),
+        RRRMC.GraphPercLinear(101, 30),
+        RRRMC.GraphPercStep(101, 30),
+        RRRMC.GraphCommStep(21, 5, 30),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphQuant(3, 8, 0.5, 2.0, RRRMC.GraphThreeSpin),
+        RRRMC.GraphQPercLinearT(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphQPercStepT(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphQCommStepT(21, 5, 30, 5, 0.5, 2.0),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphRobustEnsemble(3, 8, 1.5, 2.0, RRRMC.GraphThreeSpin),
+        RRRMC.GraphPercLinearRE(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphPercStepRE(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepRE(21, 5, 30, 5, 0.5, 2.0),
         RRRMC.GraphLocalEntropy(10, 8, 1.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphLocalEntropy(10, 8, 1.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphLocalEntropy(3, 8, 1.5, 2.0, RRRMC.GraphThreeSpin),
         RRRMC.GraphRobustEnsemble(20, 4, 1.5, 2.0, RRRMC.GraphQuant, 5, 4, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(5)),
+        RRRMC.GraphPercLinearLE(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphPercStepLE(101, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepLE(21, 5, 30, 5, 0.5, 2.0),
        ]
 
     β = 2.0
@@ -89,6 +101,7 @@ function test()
     quiet = true
 
     for X in graphs
+        # @show X
         E, C = standardMC(X, β, iters, step=st, quiet=quiet)
         E, C = standardMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
         E, C = standardMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=gen_timeout_hook())

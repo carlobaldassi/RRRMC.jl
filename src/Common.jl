@@ -5,7 +5,7 @@ module Common
 using Compat
 
 export Vec, Vec2, IVec, IVec2, unsafe_bitflip!, discretize,
-       LocalFields, @inner
+       LocalFields, @inner, AllButOne
 
 wrapin(head::Symbol, fn, T::Symbol) = Expr(:curly, fn, T)
 function wrapin(head::Symbol, fn, T::Expr)
@@ -89,5 +89,24 @@ function discretize{N,T<:Real,S<:Real}(cvec::NTuple{N,T}, LEV::Tuple{S,Vararg{S}
     end
     return tuple(fields...), tuple(rfields...)
 end
+
+
+# iterate over 1:N except i, i.e.
+#   1, 2, 3, ..., i-1, i+1, ..., N-1, N
+# useful for fully-connected models
+type AllButOne
+    N::Int
+    i::Int
+    function AllButOne(N::Integer, i::Integer)
+        N ≥ 1 || throw(ArgumentError("N must me larger than 1, given: $N"))
+        1 ≤ i ≤ N || throw(ArgumentError("expected 1 ≤ i ≤ N, given i=$i N=$N"))
+        return new(N, i)
+    end
+end
+
+Base.start(n::AllButOne) = 1 + (n.i == 1)
+Base.done(n::AllButOne, j::Int) = j == n.N+1
+Base.next(n::AllButOne, j::Int) = j, j + 1 + (j == n.i - 1)
+Base.length(n::AllButOne) = n.N - 1
 
 end # module

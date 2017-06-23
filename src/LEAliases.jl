@@ -9,8 +9,11 @@ using ..Empty
 using ..SK
 using ..EA
 using ..SAT
+using ..PercLinear
+using ..PercStep
+using ..CommStep
 
-export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE, GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE
 
 @compat const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -69,8 +72,6 @@ function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-
-
 @compat const GraphSATLE{M,γT} = GraphLocalEntropy{M,γT,GraphSAT}
 
 # """
@@ -86,6 +87,55 @@ end
 function GraphSATLE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
     N = X.N
     GraphLocalEntropy(N, M, γ, β, GraphSAT, N, X.A, X.J)
+end
+
+@compat const GraphPercLinearLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercLinear}
+
+# """
+#     GraphPercLinearLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercLinearLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphLocalEntropy(N, M, γ, β, GraphPercLinear, ξ, ξv)
+end
+
+function GraphPercLinearLE(X::GraphPercLinear, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
+end
+
+@compat const GraphPercStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercStep}
+
+# """
+#     GraphPercStepLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphPercStepLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphLocalEntropy(N, M, γ, β, GraphPercStep, ξ, ξv)
+end
+
+function GraphPercStepLE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
+end
+
+@compat const GraphCommStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphCommStep}
+
+# """
+#     GraphCommStepLE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphCommStepLE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
+    ξ, ξv = CommStep.gen_ξ(K1, P)
+    N = K1 * K2
+    GraphLocalEntropy(N, M, γ, β, GraphCommStep, K2, ξ, ξv)
+end
+
+function GraphCommStepLE(X::GraphCommStep, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphCommStep, X.K2, X.ξ, X.ξv)
 end
 
 end # module

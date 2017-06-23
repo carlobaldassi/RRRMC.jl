@@ -8,8 +8,11 @@ using ..QT
 using ..Empty
 using ..SK
 using ..EA
+using ..PercLinear
+using ..PercStep
+using ..CommStep
 
-export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT
+export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT
 
 @compat const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
 
@@ -75,6 +78,55 @@ function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphQuant(N, M, Γ, β, GraphEANormal{twoD}, L, X.A, X.J)
+end
+
+@compat const GraphQPercLinearT{fourK} = GraphQuant{fourK,GraphPercLinear}
+
+# """
+#     GraphQPercLinearT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphQPercLinearT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = PercLinear.gen_ξ(N, P)
+    GraphQuant(N, M, Γ, β, GraphPercLinear, ξ, ξv)
+end
+
+function GraphQPercLinearT(X::GraphPercLinear, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphPercLinear, X.ξ, X.ξv)
+end
+
+@compat const GraphQPercStepT{fourK} = GraphQuant{fourK,GraphPercStep}
+
+# """
+#     GraphQPercStepT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphQPercStepT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = PercStep.gen_ξ(N, P)
+    GraphQuant(N, M, Γ, β, GraphPercStep, ξ, ξv)
+end
+
+function GraphQPercStepT(X::GraphPercStep, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphPercStep, X.ξ, X.ξv)
+end
+
+@compat const GraphQCommStepT{fourK} = GraphQuant{fourK,GraphCommStep}
+
+# """
+#     GraphQCommStepT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphQCommStepT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
+    ξ, ξv = CommStep.gen_ξ(K1, P)
+    N = K1 * K2
+    GraphQuant(N, M, Γ, β, GraphCommStep, K2, ξ, ξv)
+end
+
+function GraphQCommStepT(X::GraphCommStep, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphCommStep, X.K2, X.ξ, X.ξv)
 end
 
 end # module
