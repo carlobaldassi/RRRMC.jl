@@ -14,7 +14,7 @@ export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
        spinflip!, energy, delta_energy, neighbors, getN, allΔE, inner_graph,
        delta_energy_residual, update_cache!, update_cache_residual!
 
-import Base: length
+import Base: length, copy!, copy, ==
 
 immutable Config
     N::Int
@@ -39,6 +39,16 @@ length(C::Config) = C.N
 
 #spinflip!(C::Config, move::Int) = (C.s[move] $= 1)
 spinflip!(C::Config, move::Int) = unsafe_bitflip!(C.s, move)
+
+function copy!(dst::Config, src::Config)
+    length(dst) == length(src) || throw(ArgumentError("Incompatible Config lengths, dst=$(length(dst)) src=$(length(src))"))
+    copy!(dst.s, src.s)
+    return dst
+end
+
+copy(C::Config) = copy!(Config(length(C), init=false), C)
+
+(==)(C1::Config, C2::Config) = length(C1) == length(C2) && C1.s == C2.s
 
 """
     AbstractGraph{ET<:Real}
