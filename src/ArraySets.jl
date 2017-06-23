@@ -12,7 +12,7 @@ using ..Common
 export ArraySet, check_consistency
 
 import Base: push!, delete!, rand, length, empty!,
-             start, next, done
+             start, next, done, in, show
 
 type ArraySet
     N::Int
@@ -40,6 +40,18 @@ function check_consistency(aset::ArraySet)
 end
 
 length(aset::ArraySet) = aset.t
+
+in(aset::ArraySet, i) = pos[i] ≠ 0
+
+function show(io::IO, aset::ArraySet)
+    @extract aset : v t
+    print(io, "ArraySet(")
+    for i = 1:(t-1)
+        print(io, v[i], ',')
+    end
+    t > 0 && print(io, v[t])
+    print(io, ')')
+end
 
 function push!(aset::ArraySet, i::Integer)
     @extract aset : v pos t
