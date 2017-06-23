@@ -281,7 +281,8 @@ get_z(ΔEcache::DeltaECacheCont) = ΔEcache.dynsmp.z
 function rand_skip(ΔEcache::DeltaECacheCont)
     @extract ΔEcache : dynsmp
     @extract dynsmp : z N
-    return floor(Int, Base.log1p(-rand()) / Base.log1p(-z / N))
+    b = clamp(z / N, realmin(Float64), 1.0)
+    return floor(Int, Base.log1p(-rand()) / Base.log1p(-b))
 end
 
 function rand_move(ΔEcache::DeltaECacheCont)
@@ -304,11 +305,12 @@ end
 
 function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
     @extract ΔEcache : dynsmp staged
+    @extract dynsmp : z N
 
-    z = dynsmp.z
     @inbounds for (j,_,p) in staged
         z += p - dynsmp[j]
     end
+    z = clamp(z, realmin(Float64), N)
 
     return z
 end
