@@ -16,7 +16,8 @@ It also provides:
 * an implementation of the Waiting time method described in the paper
   ["Faster Monte Carlo simulations at low temperatures. The waiting time method"][WTMpaper] by J. Dall and P. Sibani.
 
-The code is written in [Julia], and tested against Julia `0.5` and *current* `0.6-pre` on Linux, OS X, and Windows.
+The code is written in [Julia], and tested against Julia `0.5`, `0.6` and *current* (at the time of writing) `0.7-DEV` on
+Linux, OS X, and Windows.
 
 ### Installation
 
@@ -36,8 +37,8 @@ Dependencies will be installed automatically.
 [Julia]: https://julialang.org
 [RRRpaper]: https://doi.org/10.1088/1742-5468/aa5335
 [RRRarXiv]: http://arxiv.org/abs/1608.05899
-[BKLpaper]: http://www.sciencedirect.com/science/article/pii/0021999175900601
-[WTMpaper]: http://www.sciencedirect.com/science/article/pii/S001046550100412X
+[BKLpaper]: https://doi.org/10.1016/0021-9991(75)90060-1
+[WTMpaper]: https://doi.org/10.1016/S0010-4655(01)00412-X
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://carlobaldassi.github.io/RRRMC.jl/stable
