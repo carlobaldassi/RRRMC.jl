@@ -5,7 +5,7 @@ using Base.Test
 
 function gen_timeout_hook(t = 1.0)
     t += time()
-    return (it, X, C, acc, E) -> (time() ≤ t)
+    return (args...) -> (time() ≤ t)
 end
 
 macro test_approx_eq_compat(x, y)
@@ -15,6 +15,11 @@ macro test_approx_eq_compat(x, y)
 end
 
 function checkenergy_hook(it, X, C, acc, E)
+    @test_approx_eq_compat E RRRMC.energy(X, C)
+    return true
+end
+
+function checkenergy_hook_EO(it, X, C, E, Emin)
     @test_approx_eq_compat E RRRMC.energy(X, C)
     return true
 end
@@ -80,6 +85,7 @@ function test()
     β = 2.0
     iters = 10_000
     st = 100
+    τ = 1.3
     samples = iters ÷ st
     quiet = true
 
@@ -104,6 +110,11 @@ function test()
         E, C = rrrMC(X, β, iters, step=st, quiet=quiet, staged_thr=1.0, hook=checkenergy_hook)
         E, C = rrrMC(X, β, iters, step=st, quiet=quiet, C0=C, staged_thr=1.0)
 
+        C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet)
+        C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, C0=C)
+        C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=checkenergy_hook_EO)
+        C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=gen_timeout_hook())
+
         if isa(X, RRRMC.DoubleGraph)
             X0 = RRRMC.inner_graph(X)
             E, C = bklMC(X0, β, iters, step=st, quiet=quiet)
@@ -125,6 +136,11 @@ function test()
             E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, staged_thr=0.0)
             E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, staged_thr=1.0, hook=checkenergy_hook)
             E, C = rrrMC(X0, β, iters, step=st, quiet=quiet, C0=C, staged_thr=1.0)
+
+            C, Emin, Cmin, itmin = extremal_opt(X0, τ, iters, step=st, quiet=quiet)
+            C, Emin, Cmin, itmin = extremal_opt(X0, τ, iters, step=st, quiet=quiet, C0=C)
+            C, Emin, Cmin, itmin = extremal_opt(X0, τ, iters, step=st, quiet=quiet, hook=checkenergy_hook_EO)
+            C, Emin, Cmin, itmin = extremal_opt(X0, τ, iters, step=st, quiet=quiet, hook=gen_timeout_hook())
         end
     end
 end

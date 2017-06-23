@@ -9,7 +9,7 @@ See [`standardMC`](@ref), [`rrrMC`](@ref), [`bklMC`](@ref) and [`wtmMC`](@ref).
 """
 module RRRMC
 
-export standardMC, rrrMC, bklMC, wtmMC
+export standardMC, rrrMC, bklMC, wtmMC, extremal_opt
 
 using ExtractMacro
 
@@ -412,6 +412,64 @@ function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer;
         println("ratio = ", t / num_moves)
     end
     return Es, C
+end
+
+
+
+# τ-Extremal Optimization
+
+"""
+    extremal_opt(X::AbstractGraph, τ::Real, iters::Integer; keywords...)
+
+Extremal optimization. Documentation todo...
+"""
+function extremal_opt{ET}(X::AbstractGraph{ET}, τ::Real, iters::Integer;
+                         seed = 167432777111,
+                         step::Integer = 1,
+                         hook = (x...)->true,
+                         C0::Union{Config,Void} = nothing,
+                         quiet::Bool = false
+                        )
+    seed > 0 && srand(seed)
+
+    N = getN(X)
+    C::Config = C0 ≡ nothing ? Config(N) : C0
+    C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
+    E = energy(X, C)
+    Emin = E
+    Cmin = copy(C)
+    itmin = 0
+    ΔEcache = gen_EOcache(X, C, τ)
+    # check_consistency(ΔEcache)
+
+    it = 0
+    stop = false
+    while it < iters
+        it += 1
+        # @assert E == energy(X, C)
+        # check_consistency(ΔEcache)
+
+        if (it % step == 0)
+            hook(it, X, C, E, Emin) || break
+            E = energy(X, C)
+        end
+
+        move, ΔE = rand_move(ΔEcache)
+        apply_move!(X, C, move, ΔEcache)
+        E += ΔE
+
+        if E < Emin
+            Emin = E
+            copy!(Cmin, C)
+            itmin = it
+        end
+    end
+    if !quiet
+        # println("samples = ", length(Es))
+        println("iters = ", it)
+        println("min [it = $itmin] = $Emin")
+    end
+    return C, Emin, Cmin, itmin
 end
 
 ### auxiliary/miscellanaous/ugly stuff. Hic sunt leones.

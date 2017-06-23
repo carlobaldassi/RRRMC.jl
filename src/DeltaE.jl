@@ -19,7 +19,7 @@ using .DynamicSamplers
 
 export DeltaECache, gen_ΔEcache, check_consistency, compute_staged!, apply_staged!,
        compute_reverse_probabilities!, rand_move, rand_skip, apply_move!,
-       get_class_f, get_z
+       get_class_f, get_z, gen_EOcache
 
 findk(ΔElist, dE) = findfirst(ΔElist, abs(dE))
 
@@ -365,6 +365,230 @@ function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::D
     z′ = dynsmp.z
     c = z / z′
     return c
+end
+
+
+function findks(ΔElist, ΔE, L, has_zero)
+    ak = findk(ΔElist, ΔE)
+    #@assert aki > 0 (ΔE, ΔElist)
+    if ΔE ≥ 0
+        k = ak + L - has_zero
+    else
+        k = L + 1 - ak
+    end
+    return k
+end
+
+type EOCache{ET,L}
+    N::Int
+    ΔElist::NTuple{L,ET}
+    has_zero::Bool
+    fτ::Vec
+    z::Float64
+    ascache::Vector{ArraySet}
+    pos::IVec
+    @inner {ET,L} function EOCache(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, τ::Float64)
+        N = getN(X)
+        @assert C.N == N
+        has_zero = zero(ET) ∈ ΔElist
+        K = 2L - has_zero
+        ascache = [ArraySet(N) for k = 1:K]
+        pos = zeros(Int, N)
+        for i = 1:N
+            ΔE = delta_energy(X, C, i)
+            ki = findks(ΔElist, ΔE, L, has_zero)
+            pos[i] = ki
+            push!(ascache[ki], i)
+            #check_consistency(ascache[ki])
+        end
+
+        fτ = cumsum([j^(-τ) for j = 1:N])
+        z = fτ[end]
+
+        new(N, ΔElist, has_zero, fτ, z, ascache, pos)
+    end
+end
+
+# @generated function EOCache{ET}(X::DiscrGraph{ET}, C::Config, τ::Float64)
+#     ΔElist = allΔE(X)
+#     Expr(:call, Expr(:curly, :EOCache, ET, length(ΔElist)), :X, :C, ΔElist, :τ)
+# end
+
+function EOCache{ET}(X::DiscrGraph{ET}, C::Config, τ::Float64)
+    ΔElist = allΔE(X)
+    EOCache{ET,length(ΔElist)}(X, C, ΔElist, τ)
+end
+
+gen_EOcache(X::DiscrGraph, C::Config, τ::Float64) = EOCache(X, C, τ)
+
+function check_consistency{ET,L}(ΔEcache::EOCache{ET,L})
+    @extract ΔEcache : ΔElist has_zero ascache pos
+    for as in ascache
+        check_consistency(as)
+    end
+    K = 2L - has_zero
+    for (i,k) in enumerate(pos)
+        @assert 1 ≤ k ≤ K
+        as = ascache[k]
+        p = as.pos[i]
+        @assert 1 ≤ p ≤ length(as)
+        for k1 = 1:K
+            k1 == k && continue
+            as1 = ascache[k1]
+            @assert as1.pos[i] == 0
+        end
+    end
+end
+
+function rand_move{ET,L}(ΔEcache::EOCache{ET,L})
+    @extract ΔEcache: N ΔElist has_zero ascache pos fτ z
+    K = 2L - has_zero
+    r = (1 - rand()) * z
+
+    i = searchsortedfirst(fτ, r)
+    # @show i, map(length, ascache)
+    @assert 1 ≤ i ≤ N
+
+    # i = 0
+    # c = 0.0
+    # for i = 1:N
+    #     c += fτ[i]
+    #     r < c && break
+    # end
+    # r < c || while fτ[i] == 0
+    #     i -= 1
+    # end
+
+    k = 0
+    t = 0
+    while i > t
+        k += 1
+        t += length(ascache[k])
+    end
+
+    if k ≤ L
+        ΔE = -ΔElist[L + 1 - k]
+    else
+        ΔE = ΔElist[k - L + has_zero]
+    end
+    move = rand(ascache[k])
+
+    return move, ΔE
+end
+
+function apply_move!{ET,L}(X::DiscrGraph{ET}, C::Config, move::Int, ΔEcache::EOCache{ET,L})
+    @extract C : s
+    @extract ΔEcache : ΔElist has_zero ascache pos fτ z
+
+    spinflip!(X, C, move)
+
+    @inbounds begin
+        for j in neighbors(X, move)
+            k0 = pos[j]
+            dE1 = delta_energy(X, C, j)
+            k1 = findks(ΔElist, dE1, L, has_zero)
+
+            k0 == k1 && continue
+
+            as0 = ascache[k0]
+            as1 = ascache[k1]
+            delete!(as0, j)
+            push!(as1, j)
+            pos[j] = k1
+        end
+        k0 = pos[move]
+        dE1 = delta_energy(X, C, move)
+        k1 = findks(ΔElist, dE1, L, has_zero)
+
+        if k0 ≠ k1
+            as0 = ascache[k0]
+            as1 = ascache[k1]
+            delete!(as0, move)
+            push!(as1, move)
+            pos[move] = k1
+        end
+    end
+end
+
+# WARNING: very sub-optimal...
+type EOCacheCont{ET}
+    N::Int
+    ΔEs::Vector{ET}
+    rank::IVec
+    fτ::Vec
+    z::Float64
+    @inner {ET} function EOCacheCont(X::AbstractGraph, C::Config, τ::Float64)
+        N = getN(X)
+        @assert C.N == N
+        ΔEs = [delta_energy(X, C, i) for i = 1:N]
+        rank = sortperm(ΔEs)
+
+        fτ = cumsum([j^(-τ) for j = 1:N])
+        z = fτ[end]
+
+        new(N, ΔEs, rank, fτ, z)
+    end
+end
+
+gen_EOcache{ET}(X::AbstractGraph{ET}, C::Config, τ::Float64) = EOCacheCont{ET}(X, C, τ)
+
+function rand_move{ET}(ΔEcache::EOCacheCont{ET})
+    @extract ΔEcache: N ΔEs rank fτ z
+    r = (1 - rand()) * z
+
+    i = searchsortedfirst(fτ, r)
+    # @show i, map(length, ascache)
+    @assert 1 ≤ i ≤ N
+
+    move = rank[i]
+    ΔE = ΔEs[move]
+
+    return move, ΔE
+end
+
+function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::EOCacheCont{ET})
+    @extract C : s
+    @extract ΔEcache : ΔEs rank fτ z
+
+    spinflip!(X, C, move)
+
+    @inbounds begin
+        ΔE = delta_energy(X, C, move)
+        ΔEs[move] = ΔE
+
+        for j in neighbors(X, move)
+            ΔE = delta_energy(X, C, j)
+            ΔEs[j] = ΔE
+        end
+
+        sortperm!(rank, ΔEs, initialized=true)
+        rankshuffle!(rank, ΔEs)
+    end
+end
+
+function rankshuffle!(rank, ΔEs)
+    N = length(rank)
+    @assert length(ΔEs) == N
+    # @assert isperm(rank)
+    # @assert issorted(ΔEs[rank])
+    i0, i1 = 1, 2
+    while i0 < N
+        ΔE = ΔEs[rank[i0]]
+        while i1 ≤ N && ΔEs[rank[i1]] == ΔE
+            i1 += 1
+        end
+        if (i1-1) > i0
+            rank[i0:(i1-1)] = shuffle!(rank[i0:i1-1])
+        end
+        i0 = i1
+        i1 += 1
+    end
+    if (i1-1) > i0
+        rank[i0:(i1-1)] = shuffle!(rank[i0:i1-1])
+    end
+    # @assert isperm(rank)
+    # @assert issorted(ΔEs[rank])
+    return rank
 end
 
 end # module
