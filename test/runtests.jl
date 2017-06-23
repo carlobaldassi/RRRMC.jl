@@ -8,19 +8,15 @@ function gen_timeout_hook(t = 1.0)
     return (args...) -> (time() ≤ t)
 end
 
-macro test_approx_eq_compat(x, y)
-    return VERSION < v"0.6-" ?
-        :(@test_approx_eq $(esc(x)) $(esc(y))) :
-        :(@test $(esc(x)) ≈ $(esc(y)))
-end
-
 function checkenergy_hook(it, X, C, acc, E)
-    @test_approx_eq_compat E RRRMC.energy(X, C)
+    @test ≈(E, RRRMC.energy(X, C), atol=1e-12)
+    # @test E ≈ RRRMC.energy(X, C) atol=1e-12 # change to this when julia v0.5 support is dropped
     return true
 end
 
 function checkenergy_hook_EO(it, X, C, E, Emin)
-    @test_approx_eq_compat E RRRMC.energy(X, C)
+    @test ≈(E, RRRMC.energy(X, C), atol=1e-12)
+    # @test E ≈ RRRMC.energy(X, C) atol=1e-12 # change to this when julia v0.5 support is dropped
     return true
 end
 
