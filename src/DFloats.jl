@@ -15,7 +15,7 @@ const MAXDIGITS = 5
 @compat primitive type DFloat64 <: Real 64 end
 const dfact = 10^MAXDIGITS
 
-import Base: convert, ==, <, *, /, +, -, round, typemin, show, promote_rule, decompose,
+import Base: convert, ==, <, <=, *, /, +, -, round, typemin, show, promote_rule, decompose,
              zero, signbit, abs
 
 i2d(x::Int64) = reinterpret(DFloat64, x)
@@ -37,6 +37,7 @@ convert(::Type{DFloat64}, x::Integer) = i2d(Int64(x * dfact))
 /(a::DFloat64, b::Integer) = i2d(d2i(a) ÷ Int64(b))
 ==(a::DFloat64, b::DFloat64) = d2i(a) == d2i(b)
 <(a::DFloat64, b::DFloat64) = d2i(a) < d2i(b)
+<=(a::DFloat64, b::DFloat64) = d2i(a) <= d2i(b)
 
 zero(::Type{DFloat64}) = i2d(Int64(0))
 
