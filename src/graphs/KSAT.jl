@@ -61,8 +61,8 @@ end
 type ClauseCache
     M::Int
     K::Int
-    S::IVec
-    I::IVec2
+    S::IVec  # S[a] = how many vars satisfy clause a
+    I::IVec2 # I[a] = indices of the vars in S[a]
     ClauseCache(M::Integer, K::Integer) = new(M, K, zeros(Int, M), IVec[zeros(Int, K) for a = 1:M])
 end
 
@@ -85,6 +85,7 @@ type GraphKSAT <: DiscrGraph{Int}
     neighb::IVec2
     max_conn::Int
     cache::ClauseCache
+    lfcache::LocalFields{Int}
     function GraphKSAT(N::Integer, K::Integer, A::IVec2, J::Vector{BitVector})
         M = length(A)
         length(J) == M || throw(ArgumentError("Incompatible lengths of A and J: $M vs $(length(J))"))
@@ -109,7 +110,8 @@ type GraphKSAT <: DiscrGraph{Int}
         # TODO: more input consistency checks?
         max_conn = maximum(map(length, T))
         cache = ClauseCache(M, K)
-        return new(N, M, K, A, J, T, neighb, max_conn, cache)
+        lfcache = LocalFields{Int}(N)
+        return new(N, M, K, A, J, T, neighb, max_conn, cache, lfcache)
     end
 end
 
@@ -186,9 +188,10 @@ end
 function energy(X::GraphKSAT, C::Config)
     length(C) == X.N || throw(ArgumentError("different N: $(length(C)) $(X.N)"))
     @extract C : s
-    @extract X : M K A J cache
+    @extract X : N M K A J T cache lfcache
     clear!(cache)
     @extract cache : S I
+    @extract lfcache : lfields lfields_last
 
     n = 0
     @inbounds for a = 1:M
@@ -205,60 +208,113 @@ function energy(X::GraphKSAT, C::Config)
         S[a] = sat
         sat == 0 && (n += 1)
     end
+
+    for i = 1:N
+        Δ = 0
+        @inbounds for a in T[i]
+            Sa = S[a]
+            Ia = I[a]
+            if Sa == 1 && (Ia[1] == i)
+                Δ += 1
+            elseif S[a] == 0
+                Δ -= 1
+            end
+        end
+        lfields[i] = -Δ
+    end
+
+    lfcache.move_last = 0
+    fill!(lfields_last, 0)
+
     return n
 end
 
 function delta_energy(X::GraphKSAT, C::Config, move::Int)
-    @extract C : s
-    @extract X : T cache
-    @extract cache : S I
+    @assert X.N == C.N
+    @assert 1 ≤ move ≤ C.N
+    #@extract C : s
+    @extract X : lfcache
+    @extract lfcache : lfields
 
-    Δ = 0
-    @inbounds for a in T[move]
-        Sa = S[a]
-        Ia = I[a]
-        if Sa == 1 && (Ia[1] == move)
-            Δ += 1
-        elseif S[a] == 0
-            Δ -= 1
-        end
-    end
+    @inbounds Δ = -lfields[move]
     return Δ
+
+    # @inbounds begin
+    #     Δ = 0.0
+    #     Jx = J[move]
+    #     σx = 2 * s[move] - 1
+    #     Ax = A[move]
+    #     for k = 1:length(Ax)
+    #         y = Ax[k]
+    #         σy = 2 * s[y] - 1
+    #         Jxy = Jx[k]
+    #         Δ += 2 * Jxy * σx * σy
+    #     end
+    # end
+    # return Δ
 end
 
 function update_cache!(X::GraphKSAT, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
-    @extract X : K T cache
-    @extract cache : S I
+    @extract X : A T neighb cache lfcache
 
-    # Δ = 0
+    @extract cache : S I
+    @extract lfcache : lfields lfields_last move_last
+
+    # if move_last == move
+    #     @inbounds begin
+    #         for j in neighbors[move]
+    #             lfields[j], lfields_last[j] = lfields_last[j], lfields[j]
+    #         end
+    #         lfields[move] = -lfields[move]
+    #         lfields_last[move] = -lfields_last[move]
+    #     end
+    #     return
+    # end
+
     @inbounds for a in T[move]
         Sa = S[a]
         Ia = I[a]
+        Aa = A[a]
         if Sa == 0
             S[a] = 1
             Ia[1] = move
-            # Δ -= 1
-            continue
-        end
-        sat = false
-        for k = 1:Sa
-            Ia[k] ≠ move && continue
-            for l = k:Sa-1
-                Ia[l] = Ia[l+1]
+            lfields[move] -= 2
+            for j in Aa
+                j == move && continue
+                lfields[j] -= 1
             end
-            Ia[Sa] = 0
-            S[a] = Sa - 1
-            # Sa == 1 && (Δ += 1)
-            sat = true
-            break
+        else
+            k = findfirst(Ia, move)
+            if k ≠ 0
+                for l = k:Sa-1
+                    Ia[l] = Ia[l+1]
+                end
+                Ia[Sa] = 0
+                S[a] = Sa - 1
+                if Sa == 1
+                    lfields[move] += 2
+                    for j in Aa
+                        j == move && continue
+                        lfields[j] += 1
+                    end
+                elseif Sa == 2
+                    lfields[Ia[1]] -= 1
+                end
+            else
+                if Sa == 1
+                    lfields[Ia[1]] += 1
+                end
+                S[a] = Sa + 1
+                Ia[Sa + 1] = move
+            end
         end
-        sat && continue
-        S[a] = Sa + 1
-        Ia[Sa + 1] = move
     end
+
+    # cache.move_last = move
+
     return
 end
 
