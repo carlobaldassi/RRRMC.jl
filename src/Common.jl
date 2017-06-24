@@ -4,7 +4,7 @@ module Common
 
 using Compat
 
-export Vec, Vec2, IVec, unsafe_bitflip!, discretize,
+export Vec, Vec2, IVec, IVec2, unsafe_bitflip!, discretize,
        LocalFields, @inner
 
 wrapin(head::Symbol, fn, T::Symbol) = Expr(:curly, fn, T)
@@ -31,6 +31,7 @@ end
 const Vec  = Vector{Float64}
 const Vec2 = Vector{Vec}
 const IVec = Vector{Int}
+const IVec2 = Vector{IVec}
 
 @inline function unsafe_bitflip!(Bc::Array{UInt64}, i::Int)
     i1, i2 = Base.get_chunks_id(i)
