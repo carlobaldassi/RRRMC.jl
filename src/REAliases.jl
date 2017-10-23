@@ -8,8 +8,9 @@ using ..RE
 using ..Empty
 using ..SK
 using ..EA
+using ..SAT
 
-export Graph0RE, GraphSKRE, GraphEARE
+export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE
 
 @compat const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -66,6 +67,24 @@ function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
+end
+
+
+@compat const GraphSATRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSAT}
+
+# """
+#     GraphSATRE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphSATRE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64)
+    A, J = SAT.gen_randomSAT(N, K, α)
+    GraphRobustEnsemble(N, M, γ, β, GraphSAT, N, A, J)
+end
+
+function GraphSATRE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
+    N = X.N
+    GraphRobustEnsemble(N, M, γ, β, GraphSAT, N, X.A, X.J)
 end
 
 end # module

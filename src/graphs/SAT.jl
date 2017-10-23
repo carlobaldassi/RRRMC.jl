@@ -1,6 +1,6 @@
 # This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
 
-module KSAT
+module SAT
 
 using ExtractMacro
 using Compat
@@ -12,7 +12,7 @@ if isdefined(Main, :Documenter)
 using ...RRRMC
 end
 
-export GraphKSAT
+export GraphSAT
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     delta_energy_residual, update_cache!, update_cache_residual!
@@ -60,10 +60,10 @@ end
 
 type ClauseCache
     M::Int
-    K::Int
     S::IVec  # S[a] = how many vars satisfy clause a
     I::IVec2 # I[a] = indices of the vars in S[a]
-    ClauseCache(M::Integer, K::Integer) = new(M, K, zeros(Int, M), IVec[zeros(Int, K) for a = 1:M])
+    ClauseCache(M::Integer, K::Integer) = new(M, zeros(Int, M), IVec[zeros(Int, K) for a = 1:M])
+    ClauseCache(M::Integer, A::IVec2) = new(M, zeros(Int, M), IVec[zeros(Int, length(A[a])) for a = 1:M])
 end
 
 function clear!(cache::ClauseCache)
@@ -75,7 +75,7 @@ function clear!(cache::ClauseCache)
     return cache
 end
 
-type GraphKSAT <: DiscrGraph{Int}
+type GraphSAT <: DiscrGraph{Int}
     N::Int
     M::Int
     K::Int
@@ -86,9 +86,11 @@ type GraphKSAT <: DiscrGraph{Int}
     max_conn::Int
     cache::ClauseCache
     lfcache::LocalFields{Int}
-    function GraphKSAT(N::Integer, K::Integer, A::IVec2, J::Vector{BitVector})
+    function GraphSAT(N::Integer, A::IVec2, J::Vector{BitVector})
         M = length(A)
         length(J) == M || throw(ArgumentError("Incompatible lengths of A and J: $M vs $(length(J))"))
+
+        K = maximum(map(length, A))
 
         T = [Int[] for i = 1:N]
         for a = 1:M
@@ -109,23 +111,23 @@ type GraphKSAT <: DiscrGraph{Int}
 
         # TODO: more input consistency checks?
         max_conn = maximum(map(length, T))
-        cache = ClauseCache(M, K)
+        cache = ClauseCache(M, A)
         lfcache = LocalFields{Int}(N)
         return new(N, M, K, A, J, T, neighb, max_conn, cache, lfcache)
     end
 end
 
 """
-  GraphKSAT(N::Integer, α::Real, K::Integer)
+  GraphSAT(N::Integer, α::Real, K::Integer)
 
 A `DiscGraph` implementing a random `K`-SAT graph with `N` spins and `αN` clauses.
 """
-function GraphKSAT(N::Integer, K::Integer, α::Real)
+function GraphSAT(N::Integer, K::Integer, α::Real)
     A, J = gen_randomKSAT(N, K, α)
-    return GraphKSAT(N, K, A, J)
+    return GraphSAT(N, A, J)
 end
 
-function export_cnf(X::GraphKSAT, filename::AbstractString)
+function export_cnf(X::GraphSAT, filename::AbstractString)
     @extract X : N M A J
     open(filename, "w") do f
         println(f, "p cnf $N $M")
@@ -138,7 +140,7 @@ function export_cnf(X::GraphKSAT, filename::AbstractString)
     end
 end
 
-function export_cnf(X::GraphKSAT, filename::AbstractString, decimate::Vector{Int})
+function export_cnf(X::GraphSAT, filename::AbstractString, decimate::Vector{Int})
     @extract X : N M A=deepcopy(A) J=deepcopy(J) T=deepcopy(T)
 
     j = 1
@@ -185,10 +187,10 @@ function export_cnf(X::GraphKSAT, filename::AbstractString, decimate::Vector{Int
     end
 end
 
-function energy(X::GraphKSAT, C::Config)
+function energy(X::GraphSAT, C::Config)
     length(C) == X.N || throw(ArgumentError("different N: $(length(C)) $(X.N)"))
     @extract C : s
-    @extract X : N M K A J T cache lfcache
+    @extract X : N M A J T cache lfcache
     clear!(cache)
     @extract cache : S I
     @extract lfcache : lfields lfields_last
@@ -199,7 +201,7 @@ function energy(X::GraphKSAT, C::Config)
         Aa = A[a]
         sat = 0
         Ia = I[a]
-        for k = 1:K
+        for k = 1:length(Aa)
             i = Aa[k]
             si = s[i]
             Ji = Ja[k]
@@ -229,7 +231,7 @@ function energy(X::GraphKSAT, C::Config)
     return n
 end
 
-function delta_energy(X::GraphKSAT, C::Config, move::Int)
+function delta_energy(X::GraphSAT, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -254,7 +256,7 @@ function delta_energy(X::GraphKSAT, C::Config, move::Int)
     # return Δ
 end
 
-function update_cache!(X::GraphKSAT, C::Config, move::Int)
+function update_cache!(X::GraphSAT, C::Config, move::Int)
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -318,9 +320,9 @@ function update_cache!(X::GraphKSAT, C::Config, move::Int)
     return
 end
 
-neighbors(X::GraphKSAT, i::Int) = return X.neighb[i]
+neighbors(X::GraphSAT, i::Int) = return X.neighb[i]
 
 # TODO: improve
-allΔE(X::GraphKSAT) = tuple(0:X.max_conn...)
+allΔE(X::GraphSAT) = tuple(0:X.max_conn...)
 
 end

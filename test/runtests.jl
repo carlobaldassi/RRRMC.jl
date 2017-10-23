@@ -66,7 +66,7 @@ function test()
         RRRMC.GraphEANormal(3, 2),
         RRRMC.GraphSK(10),
         RRRMC.GraphSKNormal(10),
-        RRRMC.GraphKSAT(10, 3, 4.2),
+        RRRMC.GraphSAT(10, 3, 4.2),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),

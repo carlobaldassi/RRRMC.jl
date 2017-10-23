@@ -8,8 +8,9 @@ using ..LE
 using ..Empty
 using ..SK
 using ..EA
+using ..SAT
 
-export Graph0LE, GraphSKLE, GraphEALE
+export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE
 
 @compat const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -66,6 +67,25 @@ function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     L = round(Int, N^(1/D))
     @assert L^D == N
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
+end
+
+
+
+@compat const GraphSATLE{M,γT} = GraphLocalEntropy{M,γT,GraphSAT}
+
+# """
+#     GraphSATLE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphSATLE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64)
+    A, J = SAT.gen_randomSAT(N, K, α)
+    GraphLocalEntropy(N, M, γ, β, GraphSAT, N, A, J)
+end
+
+function GraphSATLE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
+    N = X.N
+    GraphLocalEntropy(N, M, γ, β, GraphSAT, N, X.A, X.J)
 end
 
 end # module

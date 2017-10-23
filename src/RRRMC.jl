@@ -99,6 +99,8 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
         # println("it=$it")
         # @assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
         if (it % step == 0)
+            # println("it=$it")
+            # @assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
             push!(Es, E)
             hook(it, X, C, accepted, E) || break
         end
@@ -117,6 +119,7 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
         println("iters = ", it)
         println("accept rate = ", accepted / it)
     end
+    # @show E, energy(X, C), abs(E - energy(X, C))
     return Es, C
 end
 
@@ -229,6 +232,7 @@ function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
     C::Config = C0 ≡ nothing ? Config(N) : C0
     C.N == N || throw(ArgumentError("Invalid C0, wrong N, expected $N, given: $(C.N)"))
     E = energy(X, C)
+    @assert isfinite(E)
     X0 = inner_graph(X)
     ΔEcache = gen_ΔEcache(X0, C, β)
     #check_consistency(ΔEcache)
