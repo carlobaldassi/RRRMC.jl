@@ -10,10 +10,11 @@ if isdefined(Main, :Documenter)
 using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
 end
 
-export GraphLE, GraphLocalEntropy, LEenergies, cenergy
+export GraphLE, GraphLocalEntropy, LEenergies
 
 import ..Interface: energy, delta_energy, neighbors, allΔE,
-                    update_cache!, delta_energy_residual
+                    update_cache!, delta_energy_residual,
+                    cenergy, distances
 
 type GraphLE{M,γT} <: DiscrGraph{Float64}
     N::Int
@@ -282,12 +283,6 @@ function LEenergies{M}(X::GraphLocalEntropy{M})
     return Es
 end
 
-"""
-    cenergy(X::GraphLocalEntropy)
-
-Returns a the individual energy (as defined by the original model)
-of the reference configuration in a [`GraphLocalEntropy`](@ref) graph.
-"""
 function cenergy{M}(X::GraphLocalEntropy{M})
     @extract X : Xc Cc
     return energy(Xc, Cc)
@@ -309,7 +304,7 @@ function delta_energy(X::GraphLocalEntropy, C::Config, move::Int)
            delta_energy_residual(X, C, move)
 end
 
-# This is type-instable and inefficient. On the other hand, it is
+# This is type-unstable and inefficient. On the other hand, it is
 # basically only written for testing purposes...
 function neighbors{M}(X::GraphLocalEntropy{M}, i::Int)
     @extract X : X0 X1
@@ -324,6 +319,17 @@ function neighbors{M}(X::GraphLocalEntropy{M}, i::Int)
     is = neighbors(X1[k-1], i1)
 
     return tuple(jts..., map(i->((i-1)*(M+1)+k), is)...)
+end
+
+function distances{M}(X::GraphLocalEntropy{M})
+    @extract X : C1
+    # @extract C : s
+    # @assert Nk == C.N ÷ (M+1)
+
+    # rs = BitVector[s[(k-1)*(M+1) + (2:(M+1):end)] for k = 1:M]
+
+    # return [sum(s1 .⊻ s2) for s1 in rs, s2 in rs]
+    return [sum(C1[k1].s .⊻ C1[k2].s) for k1 = 1:M, k2 = 1:M]
 end
 
 end # module

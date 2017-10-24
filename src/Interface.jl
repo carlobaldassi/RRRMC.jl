@@ -12,7 +12,8 @@ end
 
 export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
        spinflip!, energy, delta_energy, neighbors, getN, allΔE, inner_graph,
-       delta_energy_residual, update_cache!, update_cache_residual!
+       delta_energy_residual, update_cache!, update_cache_residual!,
+       cenergy, distances
 
 import Base: length, copy!, copy, ==
 
@@ -174,13 +175,17 @@ See also [`allΔE`](@ref).
 
 """
     allΔE{P<:DiscrGraph}(::Type{P})
+    allΔE(X::DiscrGraph)
 
 Returns a tuple of all possible *non-negative* values that can be returned
 by [`delta_energy`](@ref). This must be implemented by all `DiscrGraph`
 objects in order to use [`rrrMC`](@ref) or [`bklMC`](@ref).
 
-For performance reasons, it is best if the result can be computed
-from the type of the graph alone (possibly using a generated function).
+The second form above, called directly on the `DiscrGraph` object, takes
+precedence; however, for performance reasons, it is best if the result can
+be computed from the type of the graph alone (possibly using a generated
+function), i.e. it is best to implement the first definition above — the
+second one then falls back automatically to the first.
 """
 allΔE{P<:DiscrGraph}(::Type{P}) = error("not implemented")
 allΔE(X::DiscrGraph) = allΔE(typeof(X))
@@ -254,5 +259,23 @@ function update_cache!(X::DoubleGraph, C::Config, move::Int)
 end
 
 allΔE{ET,GT<:DiscrGraph}(X::DoubleGraph{ET,GT}) = allΔE(typeof(inner_graph(X)))
+
+"""
+    cenergy(X::DoubleGraph)
+
+Returns the individual energy (as defined by the original model)
+of the reference configuration in a [`GraphLocalEntropy`](@ref) graph or a
+[`GraphTopologicalLocalEntropy`](@ref) graph.
+"""
+cenergy(::AbstractGraph) = error("not implemented")
+
+"""
+    distances(X::DoubleGraph)
+
+Returns the matrix of the Hamming distances between replicas, in graphs with
+replicas: [`GraphQuant`](@ref), [`GraphLocalEntropy`](@ref), [`GraphTopologicalLocalEntropy`](@ref)
+or [`GraphRobustEnsemble`](@ref).
+"""
+distances(::AbstractGraph) = error("not implemented")
 
 end # module

@@ -78,7 +78,7 @@ end
 # TODO
 # """
 function GraphSATRE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64)
-    A, J = SAT.gen_randomSAT(N, K, α)
+    A, J = SAT.gen_randomKSAT(N, K, α)
     GraphRobustEnsemble(N, M, γ, β, GraphSAT, N, A, J)
 end
 
