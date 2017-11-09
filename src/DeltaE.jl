@@ -21,7 +21,42 @@ export DeltaECache, gen_ΔEcache, check_consistency, compute_staged!, apply_stag
        compute_reverse_probabilities!, rand_move, rand_skip, apply_move!,
        get_class_f, get_z, gen_EOcache
 
-findk(ΔElist, dE) = findfirst(ΔElist, abs(dE))
+# findk(ΔElist, dE) = findfirst(ΔElist, abs(dE))
+
+function binsearchexpr(imin::Int, imax::Int, i::Int, ΔElist::Symbol, dE::Symbol)
+    if imax - imin < 10
+        ex = :(return 0)
+        for j = imax:-1:imin
+            ex = quote
+                if $dE == $ΔElist[$j]
+                    return $j
+                else
+                    $ex
+                end
+            end
+        end
+        return ex
+    end
+    quote
+        cE = $ΔElist[$i]
+        cE == $dE && return $i
+        if cE < $dE
+            $(binsearchexpr(i + 1, imax, (i + 1 + imax) ÷ 2, ΔElist, dE))
+        else
+            $(binsearchexpr(imin, i - 1, (imin + i - 1) ÷ 2, ΔElist, dE))
+        end
+    end
+end
+
+@generated function findk{L,ET}(ΔElist::NTuple{L,ET}, dE::ET)
+    pre = :(dE = abs(dE))
+    ex = binsearchexpr(1, L, (1 + L) ÷ 2, :ΔElist, :dE)
+    return quote
+        $pre
+        @inbounds $ex
+    end
+end
+
 
 type DeltaECache{ET,L}
     N::Int
