@@ -20,6 +20,8 @@ type GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
     N::Int
     Nk::Int
     neighb::Vector{Vector{Int}}
+    neighb_jcs::Vector{Vector{Int}}
+    neighb_Us::Vector{Vector{UnitRange{Int}}}
     cache1::LocalFields{Int} # replica-center
     cache2::LocalFields{Int} # topological
     ncache::Vector{Int}
@@ -45,10 +47,13 @@ type GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
             end
         end
 
+        neighb_jcs = [[1 + (i1-1) * (M+1) for i1 in ni] for ni in neighb]
+        neighb_Us = [[jinterval(i1, M) for i1 in ni] for ni in neighb]
+
         cache1 = LocalFields{Int}(N)
         cache2 = LocalFields{Int}(N)
         ncache = empty!(Array{Int}((M+1) * maximum(length.(neighb))))
-        return new(N, Nk, neighb, cache1, cache2, ncache)
+        return new(N, Nk, neighb, neighb_jcs, neighb_Us, cache1, cache2, ncache)
     end
 end
 
@@ -154,17 +159,19 @@ function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
     # @assert X.N == C.N
     # @assert 1 ≤ move ≤ C.N
     @extract C : N s
-    @extract X : Nk neighb cache1 cache2
+    @extract X : Nk neighb neighb_jcs neighb_Us cache1 cache2
 
     k = mod1(move, M+1)         # replica index
     i = (move-1) ÷ (M+1) + 1    # variable index
     jc = 1 + (i-1) * (M+1)      # corresponding reference
     if k ≠ 1
-        jcs = [1 + (i1-1) * (M+1) for i1 in neighb[i]]  # other neighboring references
-        js = [k + (i1-1) * (M+1) for i1 in neighb[i]]   # other neighboring variables
+        jcs = neighb_jcs[i]
+        # jcs = [1 + (i1-1) * (M+1) for i1 in neighb[i]]  # other neighboring references
+        # js = [k + (i1-1) * (M+1) for i1 in neighb[i]]   # other neighboring variables
     else
         Ux = kinterval(move, M)                         # the whole slice
-        Us = [jinterval(i1, M) for i1 in neighb[i]]     # other neighboring slices
+        # Us = [jinterval(i1, M) for i1 in neighb[i]]     # other neighboring slices
+        Us = neighb_Us[i]
     end
 
     @extract cache1 : lfields1=lfields lfields_last1=lfields_last move_last1=move_last
@@ -189,12 +196,14 @@ function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
             if k ≠ 1
                 lfields2[jc], lfields_last2[jc] = lfields_last2[jc], lfields2[jc]
                 lfields2[move], lfields_last2[move] = lfields_last2[move], lfields2[move]
-                for j in jcs
-                    lfields2[j], lfields_last2[j] = lfields_last2[j], lfields2[j]
+                for jc1 in jcs
+                    lfields2[jc1], lfields_last2[jc1] = lfields_last2[jc1], lfields2[jc1]
+                    j1 = jc1 - 1 + k
+                    lfields2[j1], lfields_last2[j1] = lfields_last2[j1], lfields2[j1]
                 end
-                for j in js
-                    lfields2[j], lfields_last2[j] = lfields_last2[j], lfields2[j]
-                end
+                # for j in js
+                #     lfields2[j], lfields_last2[j] = lfields_last2[j], lfields2[j]
+                # end
             else
                 for y in Ux
                     lfields2[y], lfields_last2[y] = lfields_last2[y], lfields2[y]
@@ -236,7 +245,7 @@ function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
     # lfields_bk1 ≠ lfields1 && @show move hcat(lfields1,lfields_bk1) find(lfields1 .≠ lfields_bk1)
     # @assert lfields_bk1 == lfields1
 
-    begin
+    @inbounds begin
         if k ≠ 1
             σx = 2s[move] - 1
             lfm = lfields2[move]
@@ -246,7 +255,9 @@ function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
             σc = 2s[jc] - 1
             lfc = lfields2[jc]
             lfields_last2[jc] = lfc
-            for (jc1,j1) in zip(jcs, js)
+            # for (jc1,j1) in zip(jcs, js)
+            for jc1 in jcs
+                j1 = jc1 - 1 + k
                 lfj1 = lfields2[j1]
                 lfc1 = lfields2[jc1]
                 lfields_last2[j1] = lfj1
