@@ -176,8 +176,8 @@ end
 end
 
 @generated function allΔE{M,γT}(::Type{GraphLE{M,γT}})
-    iseven(M) ? Expr(:tuple, insert!([4*d*γT for d = 0:(M÷2)], 2, 2γT)...) :
-                Expr(:tuple, [2*(2d-1)*γT for d = 1:((M+1)÷2)]...)
+    iseven(M) ? Expr(:tuple, insert!([4*d*abs(γT) for d = 0:(M÷2)], 2, 2abs(γT))...) :
+                Expr(:tuple, [2*(2d-1)*abs(γT) for d = 1:((M+1)÷2)]...)
 end
 
 # Replicate an existsing graph
