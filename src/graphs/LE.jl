@@ -248,17 +248,11 @@ function energy{M}(X::GraphLocalEntropy{M}, C::Config)
 
     E = energy(X0, C)
 
-    s1 = Cc.s
-    for (i,j) = enumerate(1:(M+1):(1 + (M+1) * (Nk-1)))
-        s1[i] = s[j]
-    end
+    Cc.s .= s[1:(M+1):(1 + (M+1) * (Nk-1))]
     energy(Xc, Cc)
 
     for k = 1:M
-        s1 = C1[k].s
-        for (i,j) = enumerate((k+1):(M+1):(k+1 + (M+1) * (Nk-1)))
-            s1[i] = s[j]
-        end
+        C1[k].s .= s[(k+1):(M+1):(k+1 + (M+1) * (Nk-1))]
         E += energy(X1[k], C1[k])
     end
 
@@ -273,14 +267,7 @@ of each replica in a [`GraphLocalEntropy`](@ref) graph.
 """
 function LEenergies{M}(X::GraphLocalEntropy{M})
     @extract X : X1 C1
-
-    Es = zeros(M)
-
-    for k = 1:M
-        Es[k] = energy(X1[k], C1[k])
-    end
-
-    return Es
+    return Float64[energy(X1[k], C1[k]) for k = 1:M]
 end
 
 function cenergy{M}(X::GraphLocalEntropy{M})

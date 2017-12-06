@@ -99,10 +99,10 @@ function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
     while it < iters
         it += 1
         # println("it=$it")
-        # @assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
+        # @assert isapprox(E , energy(X, C), atol=1e-8) (E, energy(X, C))
         if (it % step == 0)
             # println("it=$it")
-            # @assert abs(E - energy(X, C)) < 1e-8 (E, energy(X, C))
+            # @assert isapprox(E , energy(X, C), atol=1e-8) (E, energy(X, C))
             push!(Es, E)
             hook(it, X, C, accepted, E) || break
         end

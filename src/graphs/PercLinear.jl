@@ -142,8 +142,6 @@ end
 
 function delta_energy_naive(X::GraphPercLinear, C::Config, move::Int)
     @assert C.N == X.N
-    @extract C : s
-    @extract X : N P ξ stab
     @assert 1 ≤ move ≤ N
 
     spinflip!(C, move)
@@ -181,9 +179,9 @@ end
 
 function check_delta(X::GraphPercLinear, C::Config, move::Int)
     delta = delta_energy(X, C, move)
-    e0 = energy(X, s)
+    e0 = energy(X, C)
     spinflip!(C, move)
-    e1 = energy(X, s)
+    e1 = energy(X, C)
     spinflip!(C, move)
 
     (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
