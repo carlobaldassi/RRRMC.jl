@@ -61,6 +61,30 @@ GraphSK
 GraphSKNormal
 ```
 
+### Binary Neural Networks
+
+```@docs
+GraphPercStep
+```
+
+```@docs
+GraphPercLinear
+```
+
+```@docs
+GraphPercXEntr
+```
+
+```@docs
+GraphCommStep
+```
+
+### SAT
+
+```@docs
+GraphSAT
+```
+
 ## Quantum models with transverse fields
 
 ```@docs
