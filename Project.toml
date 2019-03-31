@@ -3,7 +3,7 @@ uuid = "ff70551f-00bc-5e1a-85c4-e17d0b71e9c9"
 version = "2.0.0"
 author = ["Carlo Baldassi <carlobaldassi@gmail.com>"]
 desc = "Reduced-rejection-rate MonteCarlo and more."
-keywords = ["monte carlo", "spin glass"]
+keywords = ["monte carlo", "spin glass", "ising spin models"]
 license = "MIT"
 
 [deps]
