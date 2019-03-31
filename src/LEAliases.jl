@@ -2,8 +2,6 @@
 
 module LEAliases
 
-using Compat
-
 using ..LE
 using ..Empty
 using ..SK
@@ -15,7 +13,7 @@ using ..CommStep
 
 export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE, GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE
 
-@compat const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
+const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
 # """
 #     Graph0LE(...)
@@ -26,7 +24,7 @@ Graph0LE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy(
 
 
 
-@compat const GraphSKLE{M,γT} = GraphLocalEntropy{M,γT,GraphSK}
+const GraphSKLE{M,γT} = GraphLocalEntropy{M,γT,GraphSK}
 
 # """
 #     GraphSKLE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -38,7 +36,7 @@ GraphSKLE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphLocalEntropy
 
 
 
-@compat const GraphEALE{M,γT,twoD} = GraphLocalEntropy{M,γT,GraphEANormal{twoD}}
+const GraphEALE{M,γT,twoD} = GraphLocalEntropy{M,γT,GraphEANormal{twoD}}
 
 # """
 #     GraphEALE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -63,7 +61,7 @@ function GraphEALE(fname::AbstractString, M::Integer, γ::Float64, β::Float64)
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Float64)
+function GraphEALE(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Float64) where {twoD}
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
@@ -72,7 +70,7 @@ function GraphEALE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphLocalEntropy(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-@compat const GraphSATLE{M,γT} = GraphLocalEntropy{M,γT,GraphSAT}
+const GraphSATLE{M,γT} = GraphLocalEntropy{M,γT,GraphSAT}
 
 # """
 #     GraphSATLE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -89,7 +87,7 @@ function GraphSATLE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
     GraphLocalEntropy(N, M, γ, β, GraphSAT, N, X.A, X.J)
 end
 
-@compat const GraphPercLinearLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercLinear}
+const GraphPercLinearLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercLinear}
 
 # """
 #     GraphPercLinearLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -105,7 +103,7 @@ function GraphPercLinearLE(X::GraphPercLinear, M::Integer, γ::Float64, β::Floa
     GraphLocalEntropy(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-@compat const GraphPercStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercStep}
+const GraphPercStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphPercStep}
 
 # """
 #     GraphPercStepLE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -121,7 +119,7 @@ function GraphPercStepLE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
     GraphLocalEntropy(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
-@compat const GraphCommStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphCommStep}
+const GraphCommStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphCommStep}
 
 # """
 #     GraphCommStepLE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph

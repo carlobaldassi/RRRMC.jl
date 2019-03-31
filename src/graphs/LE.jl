@@ -16,12 +16,12 @@ import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual,
                     cenergy, distances
 
-type GraphLE{M,γT} <: DiscrGraph{Float64}
+mutable struct GraphLE{M,γT} <: DiscrGraph{Float64}
     N::Int
     Nk::Int
     cache::LocalFields{Int}
 
-    @inner {M,γT} function GraphLE(N::Integer)
+    function GraphLE{M,γT}(N::Integer) where {M,γT}
         isa(M, Int) || throw(ArgumentError("invalid parameter M, expected Int, given: $(typeof(M))"))
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(γT, Float64) || throw(ArgumentError("invalid parameter γT, expected Float64, given: $(typeof(γT))"))
@@ -29,7 +29,7 @@ type GraphLE{M,γT} <: DiscrGraph{Float64}
         Nk = N ÷ (M+1)
 
         cache = LocalFields{Int}(N)
-        return new(N, Nk, cache)
+        return new{M,γT}(N, Nk, cache)
     end
 end
 
@@ -42,7 +42,7 @@ Local Entropy Ensemble.
 It is only useful when implementing other graph types; see [`GraphLocalEntropy`](@ref).
 """ -> GraphLE{M,γT}(N::Integer)
 
-GraphLE{M,oldγ}(X::GraphLE{M,oldγ}, newγ::Float64) = GraphLE{M,newγ}(X.N)
+GraphLE(X::GraphLE{M,oldγ}, newγ::Float64) where {M,oldγ} = GraphLE{M,newγ}(X.N)
 
 # @generated function ΔElist{M,γT}(::Type{GraphLE{M,γT}})
 #     Expr(:tuple, ntuple(d->fk(2*(d - 1 - (M-1) >>> 0x1) - iseven(M), γT), M)...)
@@ -54,7 +54,7 @@ GraphLE{M,oldγ}(X::GraphLE{M,oldγ}, newγ::Float64) = GraphLE{M,newγ}(X.N)
 #     return k
 # end
 
-function energy{M,γT}(X::GraphLE{M,γT}, C::Config)
+function energy(X::GraphLE{M,γT}, C::Config) where {M,γT}
     # @assert X.N == C.N
     @extract X : Nk cache
     @extract cache : lfields lfields_last
@@ -91,7 +91,7 @@ function kinterval(move::Integer, M::Integer)
     return j0:j1
 end
 
-function update_cache!{M,γT}(X::GraphLE{M,γT}, C::Config, move::Int)
+function update_cache!(X::GraphLE{M,γT}, C::Config, move::Int) where {M,γT}
     # @assert X.N == C.N
     # @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -155,7 +155,7 @@ function update_cache!{M,γT}(X::GraphLE{M,γT}, C::Config, move::Int)
     return
 end
 
-@inline function delta_energy{M,γT}(X::GraphLE{M,γT}, C::Config, move::Int)
+@inline function delta_energy(X::GraphLE{M,γT}, C::Config, move::Int) where {M,γT}
     # @assert X.N == C.N
     # @assert 1 ≤ move ≤ C.N
     @extract X : cache
@@ -165,7 +165,7 @@ end
     return Δ
 end
 
-@inline function neighbors{M}(X::GraphLE{M}, j::Int)
+@inline function neighbors(X::GraphLE{M}, j::Int) where {M}
     r = (j-1) % (M+1)
     if r == 0
         return (j+1):(j+M)
@@ -175,14 +175,14 @@ end
     end
 end
 
-@generated function allΔE{M,γT}(::Type{GraphLE{M,γT}})
+@generated function allΔE(::Type{GraphLE{M,γT}}) where {M,γT}
     iseven(M) ? Expr(:tuple, insert!([4*d*abs(γT) for d = 0:(M÷2)], 2, 2abs(γT))...) :
                 Expr(:tuple, [2*(2d-1)*abs(γT) for d = 1:((M+1)÷2)]...)
 end
 
 # Replicate an existsing graph
 
-type GraphLocalEntropy{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
+mutable struct GraphLocalEntropy{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphLE{M,γT}
@@ -190,17 +190,17 @@ type GraphLocalEntropy{M,γT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64
     X1::Vector{G}
     Cc::Config
     C1::Vector{Config}
-    @inner {M,γT,G} function GraphLocalEntropy(N::Integer, g0::G, Gconstr, args...)
+    function GraphLocalEntropy{M,γT,G}(N::Integer, g0::G, Gconstr, args...) where {M,γT,G}
         X0 = GraphLE{M,γT}(N)
         Nk = X0.Nk
-        X1 = Array{G}(M)
+        X1 = Array{G}(undef, M)
         Xc = g0
         for k = 1:M
             X1[k] = Gconstr(args...)
         end
         Cc = Config(Nk, init=false)
         C1 = [Config(Nk, init=false) for k = 1:M]
-        return new(N, Nk, X0, Xc, X1, Cc, C1)
+        return new{M,γT,G}(N, Nk, X0, Xc, X1, Cc, C1)
     end
 end
 
@@ -226,7 +226,7 @@ function GraphLocalEntropy(Nk::Integer, M::Integer, γ::Float64, β::Float64, Gc
     return GraphLocalEntropy{M,γ/β,G}(Nk * (M+1), g0, Gconstr, args...)
 end
 
-function update_cache!{M}(X::GraphLocalEntropy{M}, C::Config, move::Int)
+function update_cache!(X::GraphLocalEntropy{M}, C::Config, move::Int) where {M}
     @extract X : X0 Xc X1 Cc C1
     k = mod1(move, M+1)
     i = (move - 1) ÷ (M+1) + 1
@@ -241,7 +241,7 @@ function update_cache!{M}(X::GraphLocalEntropy{M}, C::Config, move::Int)
     update_cache!(X0, C, move)
 end
 
-function energy{M}(X::GraphLocalEntropy{M}, C::Config)
+function energy(X::GraphLocalEntropy{M}, C::Config) where {M}
     # @assert X.N == C.N
     @extract X : Nk X0 Xc X1 Cc C1
     @extract C : s
@@ -265,17 +265,17 @@ end
 Returns a Vector with the individual energy (as defined by the original model)
 of each replica in a [`GraphLocalEntropy`](@ref) graph.
 """
-function LEenergies{M}(X::GraphLocalEntropy{M})
+function LEenergies(X::GraphLocalEntropy{M}) where {M}
     @extract X : X1 C1
     return Float64[energy(X1[k], C1[k]) for k = 1:M]
 end
 
-function cenergy{M}(X::GraphLocalEntropy{M})
+function cenergy(X::GraphLocalEntropy{M}) where {M}
     @extract X : Xc Cc
     return energy(Xc, Cc)
 end
 
-function delta_energy_residual{M}(X::GraphLocalEntropy{M}, C::Config, move::Int)
+function delta_energy_residual(X::GraphLocalEntropy{M}, C::Config, move::Int) where {M}
     @extract X : X1 C1
 
     k = mod1(move, M+1)
@@ -293,7 +293,7 @@ end
 
 # This is type-unstable and inefficient. On the other hand, it is
 # basically only written for testing purposes...
-function neighbors{M}(X::GraphLocalEntropy{M}, i::Int)
+function neighbors(X::GraphLocalEntropy{M}, i::Int) where {M}
     @extract X : X0 X1
     jts = neighbors(X0, i)
 
@@ -308,7 +308,7 @@ function neighbors{M}(X::GraphLocalEntropy{M}, i::Int)
     return tuple(jts..., map(i->((i-1)*(M+1)+k), is)...)
 end
 
-function distances{M}(X::GraphLocalEntropy{M})
+function distances(X::GraphLocalEntropy{M}) where {M}
     @extract X : C1
     # @extract C : s
     # @assert Nk == C.N ÷ (M+1)

@@ -6,14 +6,16 @@
 
 module DynamicSamplers
 
+using Random
 using ExtractMacro
 using ..Common
 
-import Base: getindex, setindex!, @propagate_inbounds, rand, copy!, copy
+import Base: getindex, setindex!, @propagate_inbounds, copy!, copy
+import Random: rand
 
 export DynamicSampler, refresh!, getel
 
-type DynamicSampler
+mutable struct DynamicSampler
     v::Vec
     ps::Vec
     z::Float64
@@ -39,7 +41,7 @@ type DynamicSampler
             v2[i] = x
         end
         n = findfirst(v2 .< 0)
-        n == 0 || throw(ArgumentError("negative element given: v[$n] = $(v2[n])"))
+        n ≡ nothing || throw(ArgumentError("negative element given: v[$n] = $(v2[n])"))
         ps = zeros(N2 - 1)
         tinds, tpos = buildtable(levs)
 
@@ -53,8 +55,8 @@ end
 function buildtable(levs::Int)
     N2 = 2^levs
 
-    tinds = Array{Int}(N2+1)
-    tpos = empty!(Array{Int}(N2 * levs))
+    tinds = Array{Int}(undef, N2+1)
+    tpos = empty!(Array{Int}(undef, N2 * levs))
 
     j0 = 1
     for i = 1:N2
@@ -147,7 +149,7 @@ function getel(dynsmp::DynamicSampler, x::Float64)
 end
 
 rand(rng::AbstractRNG, dynsmp::DynamicSampler) = getel(dynsmp, rand(rng))
-rand(dynsmp::DynamicSampler) = rand(Base.GLOBAL_RNG, dynsmp)
+rand(dynsmp::DynamicSampler) = rand(Random.GLOBAL_RNG, dynsmp)
 
 @inline getindex(dynsmp::DynamicSampler, i::Int) = dynsmp.v[i]
 

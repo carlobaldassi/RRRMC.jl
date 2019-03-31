@@ -2,8 +2,8 @@
 
 module CommStep
 
+using Random
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 
@@ -14,8 +14,8 @@ export GraphCommStep
 import ..Interface: energy, delta_energy, update_cache!, neighbors
 
 function gen_ξ(N::Integer, P::Integer)
-    ξ = BitArray(P, N)
-    ξv = Vector{BitVector}(P)
+    ξ = BitArray(undef, P, N)
+    ξv = Vector{BitVector}(undef, P)
     for a = 1:P
         ξv[a] = bitrand(N)
         ξ[a,:] = ξv[a]
@@ -25,7 +25,7 @@ function gen_ξ(N::Integer, P::Integer)
     return ξ, ξv
 end
 
-type Stabilities
+mutable struct Stabilities
     K2::Int
     p1::Vector{ArraySet}
     m1::Vector{ArraySet}
@@ -42,12 +42,12 @@ type Stabilities
         m2 = ArraySet(P)
         Δ1s = [zeros(P) for k in 1:K2]
         Δ2s = zeros(P)
-        ξsi = BitArray(P)
+        ξsi = BitArray(undef, P)
         return new(K2, p1, m1, p2, m2, Δ1s, Δ2s, ξsi, 0)
     end
 end
 
-type GraphCommStep <: SimpleGraph{Int}
+mutable struct GraphCommStep <: SimpleGraph{Int}
     N::Int
     K1::Int
     K2::Int
@@ -63,7 +63,7 @@ type GraphCommStep <: SimpleGraph{Int}
         isodd(K2) || throw(ArgumentError("K2 must be odd, given: $K2"))
         N = K1 * K2
         stab = Stabilities(K2, P)
-        tmps = BitVector(N)
+        tmps = BitVector(undef, N)
         return new(N, K1, K2, P, ξ, ξv, stab, tmps)
     end
 end
@@ -99,12 +99,12 @@ function energy(X::GraphCommStep, C::Config)
 
     E = 0
     empty!(stab)
-    tmps = BitArray(K1)
+    tmps = BitArray(undef, K1)
 
     for a = 1:P
         Δ2 = 0
         for k = 1:K2
-            unsafe_copy!(tmps, 1, s, (k-1)*K1 + 1, K1)
+            unsafe_copyto!(tmps, 1, s, (k-1)*K1 + 1, K1)
             map!(⊻, tmps, tmps, ξv[a])
             Δ1 = K1 - 2 * sum(tmps)
             Δ1s[k][a] = Δ1
@@ -137,7 +137,7 @@ function update_cache!(X::GraphCommStep, C::Config, move::Int)
     si = s[move]
     k2 = (move - 1) ÷ K1 + 1
     k1 = (move - 1) % K1 + 1
-    last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (k1-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (k1-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     Δ1k = Δ1s[k2]
@@ -207,7 +207,7 @@ function delta_energy(X::GraphCommStep, C::Config, move::Int)
     k2 = (move - 1) ÷ K1 + 1
     k1 = (move - 1) % K1 + 1
 
-    last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (k1-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (k1-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     ΔE = 0

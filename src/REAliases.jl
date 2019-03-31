@@ -2,8 +2,6 @@
 
 module REAliases
 
-using Compat
-
 using ..RE
 using ..Empty
 using ..SK
@@ -15,7 +13,7 @@ using ..CommStep
 
 export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE, GraphPercLinearRE, GraphPercStepRE, GraphCommStepRE
 
-@compat const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
+const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
 # """
 #     Graph0RE(...)
@@ -26,7 +24,7 @@ Graph0RE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphRobustEnsembl
 
 
 
-@compat const GraphSKRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSK}
+const GraphSKRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSK}
 
 # """
 #     GraphSKRE(N::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -38,7 +36,7 @@ GraphSKRE(Nk::Integer, M::Integer, γ::Float64, β::Float64) = GraphRobustEnsemb
 
 
 
-@compat const GraphEARE{M,γ,β,twoD} = GraphRobustEnsemble{M,γ,β,GraphEANormal{twoD}}
+const GraphEARE{M,γ,β,twoD} = GraphRobustEnsemble{M,γ,β,GraphEANormal{twoD}}
 
 # """
 #     GraphEARE(L::Integer, D::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -63,7 +61,7 @@ function GraphEARE(fname::AbstractString, M::Integer, γ::Float64, β::Float64)
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Float64)
+function GraphEARE(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Float64) where {twoD}
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
@@ -72,7 +70,7 @@ function GraphEARE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, β::Fl
     GraphRobustEnsemble(N, M, γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-@compat const GraphSATRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSAT}
+const GraphSATRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphSAT}
 
 # """
 #     GraphSATRE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -89,7 +87,7 @@ function GraphSATRE(X::GraphSAT, M::Integer, γ::Float64, β::Float64)
     GraphRobustEnsemble(N, M, γ, β, GraphSAT, N, X.A, X.J)
 end
 
-@compat const GraphPercLinearRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercLinear}
+const GraphPercLinearRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercLinear}
 
 # """
 #     GraphPercLinearRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -105,7 +103,7 @@ function GraphPercLinearRE(X::GraphPercLinear, M::Integer, γ::Float64, β::Floa
     GraphRobustEnsemble(X.N, M, γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-@compat const GraphPercStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercStep}
+const GraphPercStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphPercStep}
 
 # """
 #     GraphPercStepRE(N::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
@@ -121,7 +119,7 @@ function GraphPercStepRE(X::GraphPercStep, M::Integer, γ::Float64, β::Float64)
     GraphRobustEnsemble(X.N, M, γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
-@compat const GraphCommStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphCommStep}
+const GraphCommStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphCommStep}
 
 # """
 #     GraphCommStepRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph

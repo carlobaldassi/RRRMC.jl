@@ -2,8 +2,6 @@
 
 module QAliases
 
-using Compat
-
 using ..QT
 using ..Empty
 using ..SK
@@ -14,7 +12,7 @@ using ..CommStep
 
 export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT
 
-@compat const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
+const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
 
 """
     GraphQ0T(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -29,7 +27,7 @@ GraphQ0T(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, 
 
 
 
-@compat const GraphQSKT{fourK} = GraphQuant{fourK,GraphSK}
+const GraphQSKT{fourK} = GraphQuant{fourK,GraphSK}
 
 """
     GraphQSKT(N::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -41,12 +39,12 @@ See [`GraphQuant`](@ref).
 GraphQSKT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSK, SK.gen_J(Nk))
 
 
-@compat const GraphQSKNormalT{fourK} = GraphQuant{fourK,GraphSKNormal}
+const GraphQSKNormalT{fourK} = GraphQuant{fourK,GraphSKNormal}
 GraphQSKNormalT(Nk::Integer, M::Integer, Γ::Float64, β::Float64) = GraphQuant(Nk, M, Γ, β, GraphSKNormal, SK.gen_J_gauss(Nk))
 
 
 
-@compat const GraphQEAT{fourK,twoD} = GraphQuant{fourK,GraphEANormal{twoD}}
+const GraphQEAT{fourK,twoD} = GraphQuant{fourK,GraphEANormal{twoD}}
 
 # """
 #     GraphQEAT(L::Integer, D::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -71,7 +69,7 @@ function GraphQEAT(fname::AbstractString, M::Integer, Γ::Float64, β::Float64)
     GraphQuant(N, M, Γ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Float64)
+function GraphQEAT(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Float64) where {twoD}
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
@@ -80,7 +78,7 @@ function GraphQEAT{twoD}(X::GraphEANormal{twoD}, M::Integer, Γ::Float64, β::Fl
     GraphQuant(N, M, Γ, β, GraphEANormal{twoD}, L, X.A, X.J)
 end
 
-@compat const GraphQPercLinearT{fourK} = GraphQuant{fourK,GraphPercLinear}
+const GraphQPercLinearT{fourK} = GraphQuant{fourK,GraphPercLinear}
 
 # """
 #     GraphQPercLinearT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -96,7 +94,7 @@ function GraphQPercLinearT(X::GraphPercLinear, M::Integer, Γ::Float64, β::Floa
     GraphQuant(X.N, M, Γ, β, GraphPercLinear, X.ξ, X.ξv)
 end
 
-@compat const GraphQPercStepT{fourK} = GraphQuant{fourK,GraphPercStep}
+const GraphQPercStepT{fourK} = GraphQuant{fourK,GraphPercStep}
 
 # """
 #     GraphQPercStepT(N::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
@@ -112,7 +110,7 @@ function GraphQPercStepT(X::GraphPercStep, M::Integer, Γ::Float64, β::Float64)
     GraphQuant(X.N, M, Γ, β, GraphPercStep, X.ξ, X.ξv)
 end
 
-@compat const GraphQCommStepT{fourK} = GraphQuant{fourK,GraphCommStep}
+const GraphQCommStepT{fourK} = GraphQuant{fourK,GraphCommStep}
 
 # """
 #     GraphQCommStepT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph

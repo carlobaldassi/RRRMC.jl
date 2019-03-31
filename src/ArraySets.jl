@@ -6,15 +6,17 @@
 
 module ArraySets
 
+using Random
 using ExtractMacro
 using ..Common
 
 export ArraySet, check_consistency
 
-import Base: push!, delete!, rand, length, empty!,
-             start, next, done, in, show
+import Base: push!, delete!, length, empty!,
+             iterate, in, show
+import Random: rand
 
-type ArraySet
+mutable struct ArraySet
     N::Int
     v::IVec
     pos::IVec
@@ -75,7 +77,7 @@ function delete!(aset::ArraySet, i::Integer)
     end
 end
 
-rand(aset::ArraySet) = rand(Base.Random.globalRNG(), aset)
+rand(aset::ArraySet) = rand(Random.GLOBAL_RNG, aset)
 function rand(r::AbstractRNG, aset::ArraySet)
     @extract aset : v t
     @inbounds i = v[rand(r, 1:t)]
@@ -89,9 +91,8 @@ function empty!(aset::ArraySet)
     return aset
 end
 
-start(aset::ArraySet) = 1
-done(aset::ArraySet, i) = i == aset.t + 1
-@inline function next(aset::ArraySet, i)
+function iterate(aset::ArraySet, i = 1)
+    i == aset.t + 1 && return nothing
     @extract aset : v
     @boundscheck 1 ≤ i ≤ aset.t
     @inbounds x = v[i]

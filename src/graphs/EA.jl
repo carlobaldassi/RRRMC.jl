@@ -3,7 +3,6 @@
 module EA
 
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 using ..DFloats
@@ -18,11 +17,11 @@ import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, update_cache_residual!
 
 import ..DFloats: MAXDIGITS
-sentinel{ET}(::Type{ET}) = typemin(ET)
+sentinel(::Type{ET}) where {ET} = typemin(ET)
 
-discr{ET}(::Type{ET}, x::Real) = convert(ET, round(x, MAXDIGITS))
+discr(::Type{ET}, x::Real) where {ET} = convert(ET, round(x, digits=MAXDIGITS))
 discr(::Type{DFloat64}, x::Real) = x
-discr{ET<:Integer}(::Type{ET}, x::Integer) = convert(ET, x)
+discr(::Type{ET}, x::Integer) where {ET<:Integer} = convert(ET, x)
 
 function gen_EA(L::Integer, D::Integer)
     L ≥ 2 || throw(ArgumentError("L must be ≥ 2, given: $L"))
@@ -31,11 +30,11 @@ function gen_EA(L::Integer, D::Integer)
     A = [Int[] for x = 1:N]
     dims = ntuple(d->L, D)
 
-    for cind in CartesianRange(dims)
-        x = sub2ind(dims, cind.I...)
+    for cind in CartesianIndices(dims)
+        x = LinearIndices(dims)[cind.I...]
         for d in 1:D
             I1 = ntuple(k->(k==d ? mod1(cind.I[k] + 1, L) : cind.I[k]), D)
-            y = sub2ind(dims, I1...)
+            y = LinearIndices(dims)[I1...]
             push!(A[x], y)
             push!(A[y], x)
         end
@@ -45,7 +44,7 @@ function gen_EA(L::Integer, D::Integer)
     return tA
 end
 
-function gen_J{twoD}(f, ET::Type, N::Integer, A::Vector{NTuple{twoD,Int}})
+function gen_J(f, ET::Type, N::Integer, A::Vector{NTuple{twoD,Int}}) where {twoD}
     @assert all(issorted, A)
     m = sentinel(ET)
     J = Vector{ET}[zeros(ET,twoD) for i = 1:N]
@@ -59,7 +58,7 @@ function gen_J{twoD}(f, ET::Type, N::Integer, A::Vector{NTuple{twoD,Int}})
                 Jxy = f()
                 @assert Jx[k] == m
                 Jx[k] = Jxy
-                J[y][findfirst(J[y],m)] = Jxy
+                J[y][findfirst(==(m), J[y])] = Jxy
             # else # this check fails for L=2
             #     l = findfirst(A[y], x)
             #     Jxy = J[y][l]
@@ -121,10 +120,10 @@ function gen_AJ(fname::AbstractString)
 end
 
 function get_vLEV(LEV, ET::Type)
-    isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
+    LEV isa Tuple{Real,Vararg{Real}} || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
     length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
 
-    vLEV = Array{ET}(length(LEV))
+    vLEV = Array{ET}(undef, length(LEV))
     try
         for i = 1:length(LEV)
             vLEV[i] = LEV[i]
@@ -138,14 +137,14 @@ function get_vLEV(LEV, ET::Type)
     return vLEV
 end
 
-type GraphEA{ET,LEV,twoD} <: DiscrGraph{ET}
+mutable struct GraphEA{ET,LEV,twoD} <: DiscrGraph{ET}
     N::Int
     #L::Int
     A::Vector{NTuple{twoD,Int}}
     J::Vector{NTuple{twoD,ET}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
-    @inner {ET,LEV,twoD} function GraphEA(A::Vector{NTuple{twoD,Int}}, J::Vector{NTuple{twoD,ET}})
+    function GraphEA{ET,LEV,twoD}(A::Vector{NTuple{twoD,Int}}, J::Vector{NTuple{twoD,ET}}) where {ET,LEV,twoD}
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -167,7 +166,7 @@ type GraphEA{ET,LEV,twoD} <: DiscrGraph{ET}
 
         cache = LocalFields{ET}(N)
 
-        return new(N, A, J, uA, cache)
+        return new{ET,LEV,twoD}(N, A, J, uA, cache)
     end
 end
 
@@ -181,7 +180,7 @@ conditions.
 The interactions are extracted at random from `LEV`, which must be a `Tuple` of `Real`s.
 No external fields.
 """
-function GraphEA{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}})
+function GraphEA(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real}
     A = gen_EA(L, D)
     vLEV = get_vLEV(LEV, ET)
     N = length(A)
@@ -195,7 +194,7 @@ GraphEA(L::Integer, D::Integer) = GraphEA(L, D, (-1,1))
 
 GraphEA(L::Integer, D::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphEA(L, D, map(DFloat64, LEV))
 
-function energy{ET}(X::GraphEA{ET}, C::Config)
+function energy(X::GraphEA{ET}, C::Config) where {ET}
     @assert X.N == C.N
     @extract C : s
     @extract X : A J cache
@@ -224,7 +223,7 @@ function energy{ET}(X::GraphEA{ET}, C::Config)
     return discr(ET, n)
 end
 
-function update_cache!{ET}(X::GraphEA{ET}, C::Config, move::Int)
+function update_cache!(X::GraphEA{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -266,7 +265,7 @@ function update_cache!{ET}(X::GraphEA{ET}, C::Config, move::Int)
     return
 end
 
-function delta_energy{ET}(X::GraphEA{ET}, C::Config, move::Int)
+function delta_energy(X::GraphEA{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -293,9 +292,9 @@ function delta_energy{ET}(X::GraphEA{ET}, C::Config, move::Int)
 end
 
 neighbors(X::GraphEA, i::Int) = return X.uA[i]
-@generated allΔE{twoD}(::Type{GraphEA{Int,(-1,1),twoD}}) = Expr(:tuple, ntuple(d1->(4 * (d1 - 1)), (twoD÷2)+1)...)
+@generated allΔE(::Type{GraphEA{Int,(-1,1),twoD}}) where {twoD} = Expr(:tuple, ntuple(d1->(4 * (d1 - 1)), (twoD÷2)+1)...)
 
-@generated function allΔE{ET,LEV,twoD}(::Type{GraphEA{ET,LEV,twoD}})
+@generated function allΔE(::Type{GraphEA{ET,LEV,twoD}}) where {ET,LEV,twoD}
     list = Set{ET}()
     L = length(LEV)
     es = Set{ET}(zero(ET))
@@ -311,14 +310,14 @@ neighbors(X::GraphEA, i::Int) = return X.uA[i]
     return Expr(:tuple, deltas...)
 end
 
-type GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
+mutable struct GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphEA{ET,LEV,twoD}
     A::Vector{NTuple{twoD,Int}}
     rJ::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    @inner {ET,LEV,twoD} function GraphEANormalDiscretized(L::Integer)
+    function GraphEANormalDiscretized{ET,LEV,twoD}(L::Integer) where {ET,LEV,twoD}
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -329,15 +328,15 @@ type GraphEANormalDiscretized{ET,LEV,twoD} <: DoubleGraph{DiscrGraph{ET},Float64
             randn()
         end
 
-        dJ = Array{NTuple{twoD,ET}}(N)
-        rJ = Array{NTuple{twoD,Float64}}(N)
+        dJ = Array{NTuple{twoD,ET}}(undef, N)
+        rJ = Array{NTuple{twoD,Float64}}(undef, N)
         for (x, cJx) in enumerate(cJ)
             dJ[x], rJ[x] = discretize(cJx, LEV)
         end
 
         X0 = GraphEA{ET,LEV,twoD}(A, dJ)
         cache = LocalFields{Float64}(N)
-        return new(N, X0, A, rJ, X0.uA, cache)
+        return new{ET,LEV,twoD}(N, X0, A, rJ, X0.uA, cache)
     end
 end
 
@@ -354,7 +353,7 @@ which must be a `Tuple` of `Real`s. No external fields.
 
 Same as [`GraphEANormal`](@ref), but works differently when used with [`rrrMC`](@ref).
 """
-GraphEANormalDiscretized{ET<:Real}(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphEANormalDiscretized{ET,LEV,2D}(L)
+GraphEANormalDiscretized(L::Integer, D::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real} = GraphEANormalDiscretized{ET,LEV,2D}(L)
 GraphEANormalDiscretized(L::Integer, D::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphEANormalDiscretized(L, D, promote(LEV...))
 
 GraphEANormalDiscretized(L::Integer, D::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphEANormalDiscretized{DFloat64,map(DFloat64,LEV),2D}(L)
@@ -390,7 +389,7 @@ function energy(X::GraphEANormalDiscretized, C::Config)
     return convert(Float64, E0 + E1)
 end
 
-function update_cache!{ET}(X::GraphEANormalDiscretized{ET}, C::Config, move::Int)
+function update_cache!(X::GraphEANormalDiscretized{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
 
@@ -534,13 +533,13 @@ neighbors(X::GraphEANormalDiscretized, i::Int) = return X.uA[i]
 
 ## GraphEANormal
 
-type GraphEANormal{twoD} <: SimpleGraph{Float64}
+mutable struct GraphEANormal{twoD} <: SimpleGraph{Float64}
     N::Int
     A::Vector{NTuple{twoD,Int}}
     J::Vector{NTuple{twoD,Float64}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{Float64}
-    @inner {twoD} function GraphEANormal(L::Integer, A, J)
+    function GraphEANormal{twoD}(L::Integer, A, J) where {twoD}
         isa(twoD, Integer) || throw(ArgumentError("twoD must be integer, given a: $(typeof(twoD))"))
         iseven(twoD) || throw(ArgumentError("twoD must be even, given: $twoD"))
         D = twoD ÷ 2
@@ -551,7 +550,7 @@ type GraphEANormal{twoD} <: SimpleGraph{Float64}
         uA = [unique(a) for a in A] # needed for the case L=2
 
         cache = LocalFields{Float64}(N)
-        return new(N, A, J, uA, cache)
+        return new{twoD}(N, A, J, uA, cache)
     end
 end
 

@@ -1,7 +1,8 @@
 module RRRMCTest
 
 using RRRMC
-using Base.Test
+using Test
+using Random
 
 function gen_timeout_hook(t = 1.0)
     t += time()
@@ -9,20 +10,18 @@ function gen_timeout_hook(t = 1.0)
 end
 
 function checkenergy_hook(it, X, C, acc, E)
-    @test ≈(E, RRRMC.energy(X, C), atol=1e-12)
-    # @test E ≈ RRRMC.energy(X, C) atol=1e-12 # change to this when julia v0.5 support is dropped
+    @test E ≈ RRRMC.energy(X, C) atol=1e-11
     return true
 end
 
 function checkenergy_hook_EO(it, X, C, E, Emin)
-    @test ≈(E, RRRMC.energy(X, C), atol=1e-12)
-    # @test E ≈ RRRMC.energy(X, C) atol=1e-12 # change to this when julia v0.5 support is dropped
+    @test E ≈ RRRMC.energy(X, C) atol=1e-11
     return true
 end
 
 function test()
 
-    srand(8426732438942) # get reproducible results...
+    Random.seed!(8426732438942) # get reproducible results...
 
     graphs = [
         RRRMC.GraphTwoSpin(),

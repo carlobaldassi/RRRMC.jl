@@ -2,6 +2,7 @@
 
 module PSpin3
 
+using Random
 using ExtractMacro
 using ..Interface
 using ..Common
@@ -10,21 +11,20 @@ export GraphPSpin3
 
 import ..Interface: energy, delta_energy, neighbors, allΔE, update_cache!
 
-type GraphPSpin3{K} <: DiscrGraph{Int}
+struct GraphPSpin3{K} <: DiscrGraph{Int}
     N::Int
     #allA::Vector{Int} # aux contiguous memory
     A::Vector{Vector{Int}} # neighbors
     U::Vector{Vector{Int}} # unique neighbors
     #J::Vector{Vector{Int}} # currently unused (all 1)
     cache::LocalFields{Int}
-    @inner {K} function GraphPSpin3(N::Int)
-        @assert isa(K, Integer)
+    function GraphPSpin3(N::Integer, K::Integer)
         @assert K ≥ 1
 
         N % 3 == 0 || throw(ArgumentError("N must be divisible by 3, given: $N"))
         A = Vector{Int}[zeros(Int, 2*K) for i = 1:N]
         #allA = zeros(Int, 2 * K * N)
-        #A = Array{Vector{Int}}(N)
+        #A = Array{Vector{Int}}(undef, N)
         #for i = 1:N
             #A[i] = pointer_to_array(pointer(allA, (i-1) * 2K + 1), 2K)
         #end
@@ -48,19 +48,18 @@ type GraphPSpin3{K} <: DiscrGraph{Int}
 
         cache = LocalFields{Int}(N)
 
-        return new(N, A, U, cache)
+        return new{K}(N, A, U, cache)
     end
 end
 
-"""
+@doc """
     GraphPSpin3(N::Integer, K::Integer) <: DiscrGraph{Int}
 
 A `DiscrGraph` implementing a \$p\$-spin regular graph with \$p=3\$. `N` is the number of spins, and must
 be divisible by \$3\$; `K` is the connectivity. All interactions are set to \$J=1\$.
-"""
-GraphPSpin3(N, K) = GraphPSpin3{K}(N)
+""" -> GraphPSpin3(N, K)
 
-function energy{K}(X::GraphPSpin3{K}, C::Config)
+function energy(X::GraphPSpin3{K}, C::Config) where {K}
     @assert X.N == C.N
     @extract C : s
     @extract X : A cache #J
@@ -93,7 +92,7 @@ function energy{K}(X::GraphPSpin3{K}, C::Config)
     return n
 end
 
-function update_cache!{K}(X::GraphPSpin3{K}, C::Config, move::Int)
+function update_cache!(X::GraphPSpin3{K}, C::Config, move::Int) where {K}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -145,7 +144,7 @@ function update_cache!{K}(X::GraphPSpin3{K}, C::Config, move::Int)
     return
 end
 
-function delta_energy{K}(X::GraphPSpin3{K}, C::Config, move::Int)
+function delta_energy(X::GraphPSpin3, C::Config, move::Int) where {K}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -176,7 +175,7 @@ function delta_energy{K}(X::GraphPSpin3{K}, C::Config, move::Int)
 end
 
 neighbors(X::GraphPSpin3, i::Int) = return X.U[i]
-@generated allΔE{K}(::Type{GraphPSpin3{K}}) =
+@generated allΔE(::Type{GraphPSpin3{K}}) where {K} =
     iseven(K) ? Expr(:tuple, ntuple(d->4*(d-1), K÷2+1)...) :
                 Expr(:tuple, ntuple(d->2*(2d-1), (K+1)÷2)...)
 

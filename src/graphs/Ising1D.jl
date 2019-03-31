@@ -4,13 +4,12 @@ module Ising1D
 
 using ExtractMacro
 using ..Interface
-using Compat # for the .& in julia 0.5
 
 export GraphIsing1D
 
 import ..Interface: energy, delta_energy, neighbors, allΔE
 
-type GraphIsing1D <: DiscrGraph{Int}
+mutable struct GraphIsing1D <: DiscrGraph{Int}
     N::Int
     J::BitVector
     sJ::Int
@@ -43,7 +42,7 @@ function energy(X::GraphIsing1D, C::Config)
         n0 += (2J[i] - 1) * (2s[i] - 1) * (2s[mod1(i+1,N)] - 1)
     end=#
 
-    s1 = rol(s, 1)
+    s1 = circshift(s, -1)
 
     Js = J .& s
     Js1 = J .& s1

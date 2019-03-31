@@ -5,6 +5,7 @@
 
 module DeltaE
 
+using Random
 using ExtractMacro
 using ..Common
 using ..Interface
@@ -48,7 +49,7 @@ function binsearchexpr(imin::Int, imax::Int, i::Int, ΔElist::Symbol, dE::Symbol
     end
 end
 
-@generated function findk{L,ET}(ΔElist::NTuple{L,ET}, dE::ET)
+@generated function findk(ΔElist::NTuple{L,ET}, dE::ET) where {L,ET}
     pre = :(dE = abs(dE))
     ex = binsearchexpr(1, L, (1 + L) ÷ 2, :ΔElist, :dE)
     return quote
@@ -58,7 +59,7 @@ end
 end
 
 
-type DeltaECache{ET,L}
+mutable struct DeltaECache{ET,L}
     N::Int
     ΔElist::NTuple{L,ET}
     ft::Vec
@@ -69,7 +70,7 @@ type DeltaECache{ET,L}
     ascache::Vector{ArraySet}
     pos::IVec
     staged::Vector{NTuple{3,Int}}
-    @inner {ET,L} function DeltaECache(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, β::Float64, rrr::Bool)
+    function DeltaECache{ET,L}(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, β::Float64, rrr::Bool) where {ET,L}
         N = getN(X)
         @assert C.N == N
         ascache = [ArraySet(N) for k = 1:2L]
@@ -84,7 +85,7 @@ type DeltaECache{ET,L}
             push!(ascache[ki], i)
             #check_consistency(ascache[ki])
         end
-        staged = empty!(Array{NTuple{3,Int}}(N))
+        staged = empty!(Array{NTuple{3,Int}}(undef, N))
 
         ft = Float64[exp(-β * ΔE) for ΔE in allΔE(X)]
         T = zeros(2L)
@@ -97,7 +98,7 @@ type DeltaECache{ET,L}
         end
         T′ = rrr ? similar(T) : T
         z′ = z
-        new(N, ΔElist, ft, T, z, T′, z′, ascache, pos, staged)
+        new{ET,L}(N, ΔElist, ft, T, z, T′, z′, ascache, pos, staged)
     end
 end
 
@@ -106,7 +107,7 @@ end
 #     Expr(:call, Expr(:curly, :DeltaECache, ET, length(ΔElist)), :X, :C, ΔElist, :β, :rrr)
 # end
 
-function DeltaECache{ET}(X::DiscrGraph{ET}, C::Config, β::Float64, rrr::Bool = true)
+function DeltaECache(X::DiscrGraph{ET}, C::Config, β::Float64, rrr::Bool = true) where {ET}
     ΔElist = allΔE(X)
     DeltaECache{ET,length(ΔElist)}(X, C, ΔElist, β, rrr)
 end
@@ -115,7 +116,7 @@ gen_ΔEcache(X::DiscrGraph, C::Config, β::Float64, rrr::Bool = true) = DeltaECa
 
 get_z(ΔEcache::DeltaECache) = ΔEcache.z
 
-function check_consistency{ET,L}(ΔEcache::DeltaECache{ET,L})
+function check_consistency(ΔEcache::DeltaECache{ET,L}) where {ET,L}
     @extract ΔEcache : ΔElist ascache pos
     for as in ascache
         check_consistency(as)
@@ -133,7 +134,7 @@ function check_consistency{ET,L}(ΔEcache::DeltaECache{ET,L})
     end
 end
 
-get_class_f{ET,L}(ΔEcache::DeltaECache{ET,L}, k::Integer) = get_class_f(ΔEcache.ft, k, L)
+get_class_f(ΔEcache::DeltaECache{ET,L}, k::Integer) where {ET,L} = get_class_f(ΔEcache.ft, k, L)
 get_class_f(ft::Vec, k::Integer, L::Integer) = k > L ? ft[k - L] : 1.0
 
 function rand_skip(ΔEcache::DeltaECache)
@@ -141,12 +142,12 @@ function rand_skip(ΔEcache::DeltaECache)
     return floor(Int, Base.log1p(-rand()) / Base.log1p(-z / N))
 end
 
-function rand_move{ET,L}(ΔEcache::DeltaECache{ET,L})
+function rand_move(ΔEcache::DeltaECache{ET,L}) where {ET,L}
     @extract ΔEcache: ΔElist ascache ft T z
     r = rand() * z
     k = 0
     cT = 0.0
-    for k = 1:2L
+    for outer k = 1:2L
         cT += T[k]
         r < cT && break
     end
@@ -179,7 +180,7 @@ function apply_staged!(ΔEcache::DeltaECache)
     return ΔEcache
 end
 
-function compute_reverse_probabilities!{ET,L}(ΔEcache::DeltaECache{ET,L})
+function compute_reverse_probabilities!(ΔEcache::DeltaECache{ET,L}) where {ET,L}
     @extract ΔEcache : staged ft T T′ z
 
     z′ = z
@@ -197,7 +198,7 @@ function compute_reverse_probabilities!{ET,L}(ΔEcache::DeltaECache{ET,L})
     return z′
 end
 
-function compute_staged!{ET,L}(X::DiscrGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECache{ET,L})
+function compute_staged!(X::DiscrGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECache{ET,L}) where {ET,L}
     @extract C : N s
     @extract ΔEcache : ΔElist pos staged
 
@@ -227,7 +228,8 @@ function compute_staged!{ET,L}(X::DiscrGraph{ET}, C::Config, i::Int, ΔEcache::D
     spinflip!(X, C, i)
 end
 
-function apply_move!{ET,L}(X::Union{DiscrGraph{ET},DoubleGraph{DiscrGraph{ET}}}, C::Config, move::Int, ΔEcache::DeltaECache{ET,L})
+function apply_move!(X::Union{DiscrGraph{ET},DoubleGraph{DiscrGraph{ET}}}, C::Config,
+                     move::Int, ΔEcache::DeltaECache{ET,L}) where {ET,L}
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -293,31 +295,31 @@ end
 
 prior(x) = x > 0 ? exp(-x) : 1.0
 
-type DeltaECacheCont{ET}
+mutable struct DeltaECacheCont{ET}
     dynsmp::DynamicSampler
     ΔEs::Vector{ET}
     β::Float64
     staged::Vector{Tuple{Int,ET,Float64}}
-    @inner {ET} function DeltaECacheCont(X::AbstractGraph, C::Config, β::Float64)
+    function DeltaECacheCont{ET}(X::AbstractGraph, C::Config, β::Float64) where {ET}
         N = getN(X)
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]
         dynsmp = DynamicSampler(prior(β * ΔE) for ΔE in ΔEs)
-        staged = empty!(Array{Tuple{Int,ET,Float64}}(N))
-        return new(dynsmp, ΔEs, β, staged)
+        staged = empty!(Array{Tuple{Int,ET,Float64}}(undef, N))
+        return new{ET}(dynsmp, ΔEs, β, staged)
     end
 end
 
 # the rrr argument here is just for consistency but it's unused
-gen_ΔEcache{ET}(X::AbstractGraph{ET}, C::Config, β::Float64, rrr::Bool = true) = DeltaECacheCont{ET}(X, C, β)
+gen_ΔEcache(X::AbstractGraph{ET}, C::Config, β::Float64, rrr::Bool = true) where {ET} = DeltaECacheCont{ET}(X, C, β)
 
 get_z(ΔEcache::DeltaECacheCont) = ΔEcache.dynsmp.z
 
 function rand_skip(ΔEcache::DeltaECacheCont)
     @extract ΔEcache : dynsmp
     @extract dynsmp : z N
-    b = clamp(z / N, realmin(Float64), 1.0)
-    return floor(Int, Base.log1p(-rand()) / Base.log1p(-b))
+    b = clamp(z / N, floatmin(Float64), 1.0)
+    return floor(Int, log1p(-rand()) / log1p(-b))
 end
 
 function rand_move(ΔEcache::DeltaECacheCont)
@@ -345,12 +347,12 @@ function compute_reverse_probabilities!(ΔEcache::DeltaECacheCont)
     @inbounds for (j,_,p) in staged
         z += p - dynsmp[j]
     end
-    z = clamp(z, realmin(Float64), N)
+    z = clamp(z, floatmin(Float64), N)
 
     return z
 end
 
-function compute_staged!{ET}(X::AbstractGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET})
+function compute_staged!(X::AbstractGraph{ET}, C::Config, i::Int, ΔEcache::DeltaECacheCont{ET}) where {ET}
     @extract C : N s
     @extract ΔEcache : β staged
 
@@ -372,7 +374,9 @@ end
 get_inner(X, ::Type{Val{true}}) = inner_graph(X)
 get_inner(X, ::Type{Val{false}}) = X
 
-function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::DeltaECacheCont{ET}, inner = Val{true})
+function apply_move!(X::AbstractGraph{ET}, C::Config,
+                     move::Int, ΔEcache::DeltaECacheCont{ET},
+                     inner = Val{true}) where {ET}
     ## equivalent to:
     #
     # compute_staged!(X, C, move, ΔEcache)
@@ -416,7 +420,7 @@ function findks(ΔElist, ΔE, L, has_zero)
     return k
 end
 
-type EOCache{ET,L}
+mutable struct EOCache{ET,L}
     N::Int
     ΔElist::NTuple{L,ET}
     has_zero::Bool
@@ -424,7 +428,7 @@ type EOCache{ET,L}
     z::Float64
     ascache::Vector{ArraySet}
     pos::IVec
-    @inner {ET,L} function EOCache(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, τ::Float64)
+    function EOCache{ET,L}(X::DiscrGraph, C::Config, ΔElist::NTuple{L,ET}, τ::Float64) where {ET,L}
         N = getN(X)
         @assert C.N == N
         has_zero = zero(ET) ∈ ΔElist
@@ -442,7 +446,7 @@ type EOCache{ET,L}
         fτ = cumsum([j^(-τ) for j = 1:N])
         z = fτ[end]
 
-        new(N, ΔElist, has_zero, fτ, z, ascache, pos)
+        new{ET,L}(N, ΔElist, has_zero, fτ, z, ascache, pos)
     end
 end
 
@@ -451,14 +455,14 @@ end
 #     Expr(:call, Expr(:curly, :EOCache, ET, length(ΔElist)), :X, :C, ΔElist, :τ)
 # end
 
-function EOCache{ET}(X::DiscrGraph{ET}, C::Config, τ::Float64)
+function EOCache(X::DiscrGraph{ET}, C::Config, τ::Float64) where {ET}
     ΔElist = allΔE(X)
     EOCache{ET,length(ΔElist)}(X, C, ΔElist, τ)
 end
 
 gen_EOcache(X::DiscrGraph, C::Config, τ::Float64) = EOCache(X, C, τ)
 
-function check_consistency{ET,L}(ΔEcache::EOCache{ET,L})
+function check_consistency(ΔEcache::EOCache{ET,L}) where {ET,L}
     @extract ΔEcache : ΔElist has_zero ascache pos
     for as in ascache
         check_consistency(as)
@@ -477,7 +481,7 @@ function check_consistency{ET,L}(ΔEcache::EOCache{ET,L})
     end
 end
 
-function rand_move{ET,L}(ΔEcache::EOCache{ET,L})
+function rand_move(ΔEcache::EOCache{ET,L}) where {ET,L}
     @extract ΔEcache: N ΔElist has_zero ascache pos fτ z
     K = 2L - has_zero
     r = (1 - rand()) * z
@@ -513,7 +517,8 @@ function rand_move{ET,L}(ΔEcache::EOCache{ET,L})
     return move, ΔE
 end
 
-function apply_move!{ET,L}(X::DiscrGraph{ET}, C::Config, move::Int, ΔEcache::EOCache{ET,L})
+function apply_move!(X::DiscrGraph{ET}, C::Config,
+                     move::Int, ΔEcache::EOCache{ET,L}) where {ET,L}
     @extract C : s
     @extract ΔEcache : ΔElist has_zero ascache pos fτ z
 
@@ -548,13 +553,13 @@ function apply_move!{ET,L}(X::DiscrGraph{ET}, C::Config, move::Int, ΔEcache::EO
 end
 
 # WARNING: very sub-optimal...
-type EOCacheCont{ET}
+mutable struct EOCacheCont{ET}
     N::Int
     ΔEs::Vector{ET}
     rank::IVec
     fτ::Vec
     z::Float64
-    @inner {ET} function EOCacheCont(X::AbstractGraph, C::Config, τ::Float64)
+    function EOCacheCont{ET}(X::AbstractGraph, C::Config, τ::Float64) where {ET}
         N = getN(X)
         @assert C.N == N
         ΔEs = [delta_energy(X, C, i) for i = 1:N]
@@ -563,13 +568,13 @@ type EOCacheCont{ET}
         fτ = cumsum([j^(-τ) for j = 1:N])
         z = fτ[end]
 
-        new(N, ΔEs, rank, fτ, z)
+        new{ET}(N, ΔEs, rank, fτ, z)
     end
 end
 
-gen_EOcache{ET}(X::AbstractGraph{ET}, C::Config, τ::Float64) = EOCacheCont{ET}(X, C, τ)
+gen_EOcache(X::AbstractGraph{ET}, C::Config, τ::Float64) where {ET} = EOCacheCont{ET}(X, C, τ)
 
-function rand_move{ET}(ΔEcache::EOCacheCont{ET})
+function rand_move(ΔEcache::EOCacheCont{ET}) where {ET}
     @extract ΔEcache: N ΔEs rank fτ z
     r = (1 - rand()) * z
 
@@ -583,7 +588,7 @@ function rand_move{ET}(ΔEcache::EOCacheCont{ET})
     return move, ΔE
 end
 
-function apply_move!{ET}(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::EOCacheCont{ET})
+function apply_move!(X::AbstractGraph{ET}, C::Config, move::Int, ΔEcache::EOCacheCont{ET}) where {ET}
     @extract C : s
     @extract ΔEcache : ΔEs rank fτ z
 

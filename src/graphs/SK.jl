@@ -2,8 +2,8 @@
 
 module SK
 
+using Random, LinearAlgebra
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 using ..QT
@@ -11,8 +11,6 @@ using ..QT
 export GraphSK, GraphSKNormal
 
 import ..Interface: energy, delta_energy, update_cache!, neighbors
-
-import Base: start, next, done, length
 
 function gen_J(N::Integer)
     J = BitVector[bitrand(N) for i = 1:N]
@@ -25,7 +23,7 @@ function gen_J(N::Integer)
     return J
 end
 
-type GraphSK <: SimpleGraph{Float64}
+struct GraphSK <: SimpleGraph{Float64}
     N::Int
     sN::Float64
     J::Vector{BitVector}
@@ -42,7 +40,7 @@ type GraphSK <: SimpleGraph{Float64}
                 end
             end
         end
-        #tmps = BitArray(N)
+        #tmps = BitArray(undef, N)
         cache = LocalFields{Int}(N)
         return new(N, √N, J, cache)
     end
@@ -64,7 +62,7 @@ function energy(X::GraphSK, C::Config)
     @extract C : s
     @extract X : N sN J cache
     @extract cache : lfields lfields_last
-    tmps = BitArray(N)
+    tmps = BitArray(undef, N)
     n = -2 * sum(s)
     for i = 1:N
         Ji = J[i]
@@ -162,23 +160,13 @@ end
 #     (e1-e0) == delta || (@show e1,e0,delta,e1-e0; error())
 # end
 
-type FCNeighbors
-    N::Int
-    i::Int
-end
-
-start(fcn::FCNeighbors) = 1 + (fcn.i == 1)
-done(fcn::FCNeighbors, j) = j > fcn.N
-next(fcn::FCNeighbors, j) = (j, j + 1 + (j == fcn.i - 1))
-length(fcn::FCNeighbors) = fcn.N - (1 ≤ fcn.i ≤ fcn.N)
-
-neighbors(X::GraphSK, i::Int) = FCNeighbors(X.N, i)
+neighbors(X::GraphSK, i::Int) = AllButOne(X.N, i)
 
 #####
 
 
 function gen_J_gauss(N::Integer)
-    J = Vec[scale!(randn(N), 1/√N) for i = 1:N]
+    J = Vec[rmul!(randn(N), 1/√N) for i = 1:N]
     for i = 1:N
         J[i][i] = 0
         for j = (i+1):N
@@ -188,7 +176,7 @@ function gen_J_gauss(N::Integer)
     return J
 end
 
-type GraphSKNormal <: SimpleGraph{Float64}
+struct GraphSKNormal <: SimpleGraph{Float64}
     N::Int
     J::Vec2
     cache::LocalFields{Float64}
@@ -304,6 +292,6 @@ function check_delta(X::GraphSKNormal, C::Config, move::Int)
     abs((e1-e0) - delta) < 1e-10 || (@show e1,e0,delta,e1-e0; error())
 end
 
-neighbors(X::GraphSKNormal, i::Int) = FCNeighbors(X.N, i)
+neighbors(X::GraphSKNormal, i::Int) = AllButOne(X.N, i)
 
 end

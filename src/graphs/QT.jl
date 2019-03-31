@@ -3,7 +3,6 @@
 module QT
 
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 
@@ -17,7 +16,7 @@ export GraphQT, Qenergy, transverse_mag,
 import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual
 
-import Base: start, next, done, length
+import Base: iterate, length
 
 """
     Qenergy(X::DoubleGraph, C::Config)
@@ -42,17 +41,17 @@ transverse_mag(X::DoubleGraph, C::Config, β::Float64) = transverse_mag(inner_gr
 
 const MAXDIGITS = 8
 
-type GraphQT{fourK} <: DiscrGraph{Float64}
+mutable struct GraphQT{fourK} <: DiscrGraph{Float64}
     N::Int
     M::Int
     Nk::Int
-    @inner {fourK} function GraphQT(N::Integer, M::Integer)
+    function GraphQT{fourK}(N::Integer, M::Integer) where {fourK}
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(fourK, Float64) || throw(ArgumentError("invalid parameter fourK, expected Float64, given: $(typeof(fourK))"))
-        round(fourK, MAXDIGITS) ≠ fourK && throw(ArgumentError("up to $MAXDIGITS decimal digits supported in fourK, given: $(fourK)"))
+        round(fourK, digits=MAXDIGITS) ≠ fourK && throw(ArgumentError("up to $MAXDIGITS decimal digits supported in fourK, given: $(fourK)"))
         N % M == 0 || throw(ArgumentError("N must be divisible by M, given: N=$N M=$M"))
         Nk = N ÷ M
-        return new(N, M, Nk)
+        return new{fourK}(N, M, Nk)
     end
 end
 
@@ -66,7 +65,7 @@ transverse field.
 It is only useful when implementing other graph types; see [`GraphQuant`](@ref).
 """ -> GraphQT{fourK}(N::Integer, M::Integer)
 
-GraphQT{oldK}(X::GraphQT{oldK}, newK::Float64) = GraphQT{newK}(X.N, X.M)
+GraphQT(X::GraphQT{oldK}, newK::Float64) where {oldK} = GraphQT{newK}(X.N, X.M)
 
 function energy0(X::GraphQT, C::Config)
     @assert X.N == C.N
@@ -84,9 +83,9 @@ function energy0(X::GraphQT, C::Config)
     return n
 end
 
-energy{fourK}(X::GraphQT{fourK}, C::Config) = energy0(X, C) * fourK / 4
+energy(X::GraphQT{fourK}, C::Config) where {fourK} = energy0(X, C) * fourK / 4
 
-function delta_energy{fourK}(X::GraphQT{fourK}, C::Config, move::Int)
+function delta_energy(X::GraphQT{fourK}, C::Config, move::Int) where {fourK}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : s
@@ -111,9 +110,9 @@ function neighbors(X::GraphQT, i::Int)
 end
 #neighbors(X::GraphQT, i::Int) = (mod1(i-X.Nk, X.N), mod1(i+X.Nk, X.N))
 
-@generated allΔE{fourK}(::Type{GraphQT{fourK}}) = (0.0, fourK)
+@generated allΔE(::Type{GraphQT{fourK}}) where {fourK} = (0.0, fourK)
 
-function transverse_mag{fourK}(X::GraphQT{fourK}, C::Config, β::Float64)
+function transverse_mag(X::GraphQT{fourK}, C::Config, β::Float64) where {fourK}
     @extract X : N M
     p = -energy0(X, C) / N
 
@@ -126,7 +125,7 @@ end
 
 # Add Transverse field to (almost) any AbstractGraph
 
-type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
+mutable struct GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     M::Int
     Nk::Int
@@ -135,17 +134,17 @@ type GraphQuant{fourK,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float
     C1::Vector{Config}
     β::Float64
     Γ::Float64
-    @inner {fourK,G} function GraphQuant(N::Integer, M::Integer, β::Float64, Γ::Float64, g0::G, Gconstr, args...)
+    function GraphQuant{fourK,G}(N::Integer, M::Integer, β::Float64, Γ::Float64, g0::G, Gconstr, args...) where {fourK,G}
         X0 = GraphQT{fourK}(N, M)
         Nk = X0.Nk
         #J = gen_J(Nk)
-        X1 = Array{G}(M)
+        X1 = Array{G}(undef, M)
         X1[1] = g0
         for k = 2:M
             X1[k] = Gconstr(args...)
         end
         C1 = [Config(Nk, init=false) for k = 1:M]
-        return new(N, M, Nk, X0, X1, C1, β, Γ)
+        return new{fourK,G}(N, M, Nk, X0, X1, C1, β, Γ)
     end
 end
 
@@ -165,7 +164,7 @@ See also [`Qenergy`](@ref) and [`transverse_mag`](@ref).
 """
 function GraphQuant(Nk::Integer, M::Integer, Γ::Float64, β::Float64, Gconstr, args...)
     @assert Γ ≥ 0
-    fourK = round(2/β * log(coth(β * Γ / M)), MAXDIGITS)
+    fourK = round(2/β * log(coth(β * Γ / M)), digits=MAXDIGITS)
     # H0 = Nk * M / 2β * log(sinh(2β * Γ / M) / 2) # useless!!!
     g0 = Gconstr(args...)
     G = typeof(g0)
@@ -181,7 +180,7 @@ function update_cache!(X::GraphQuant, C::Config, move::Int)
     spinflip!(X1[k], C1[k], i)
 
     #s1 = C1[k].s
-    #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+    #copyto!(s1, 1, s, (k-1)*Nk + 1, Nk)
     #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
 end
 
@@ -194,7 +193,7 @@ function energy(X::GraphQuant, C::Config)
 
     for k = 1:M
         s1 = C1[k].s
-        copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+        copyto!(s1, 1, s, (k-1)*Nk + 1, Nk)
         E += energy(X1[k], C1[k]) / M
     end
 
@@ -216,7 +215,7 @@ end
 function overlaps(X::GraphQuant)
     @extract X : M Nk C1
 
-    aux = BitArray(Nk)
+    aux = BitArray(undef, Nk)
     ovs = zeros(M ÷ 2)
 
     for k1 = 1:(M-1)
@@ -262,7 +261,7 @@ function Qenergy(X::GraphQuant, C::Config)
 
     for k = 1:M
         #s1 = C1[k].s
-        #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+        #copyto!(s1, 1, s, (k-1)*Nk + 1, Nk)
         #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
         E += energy(X1[k], C1[k]) / N
     end
@@ -276,7 +275,7 @@ function delta_energy_residual(X::GraphQuant, C::Config, move::Int)
 
     k = (move - 1) ÷ Nk + 1
     #s1 = C1[k].s
-    #copy!(s1, 1, s, (k-1)*Nk + 1, Nk)
+    #copyto!(s1, 1, s, (k-1)*Nk + 1, Nk)
     #@assert C1[k].s == s[((k-1)*Nk + 1):k*Nk]
 
     i = mod1(move, Nk)
@@ -288,24 +287,27 @@ function delta_energy(X::GraphQuant, C::Config, move::Int)
            delta_energy_residual(X, C, move)
 end
 
-type QNeighbIter{T}
+mutable struct QNeighbIter{T}
     tn1::Int
     tn2::Int
     off::Int
     r::T
-    @inner {T} QNeighbIter(tn1, tn2, off, r) = new(tn1, tn2, off, r)
+    QNeighbIter(tn1, tn2, off, r::T) where {T} = new{T}(tn1, tn2, off, r)
 end
 
-QNeighbIter{T}(tn1::Integer, tn2::Integer, off::Integer, r::T) = QNeighbIter{T}(tn1, tn2, off, r)
-
-start(qn::QNeighbIter) = (1, false)
-done(qn::QNeighbIter, st::Tuple{Int,Bool}) = st[2] && done(qn.r, st[1])
-function next(qn::QNeighbIter, st::Tuple{Int,Bool})
-    if !st[2]
-        return st[1] == 1 ? (qn.tn1, (2, false)) : (qn.tn2, (start(qn.r), true))
-    end
-    v, i = next(qn.r, st[1])::NTuple{2,Int} # XXX: dangerous assumption!
-    return v+qn.off, (i, true)
+iterate(qn::QNeighbIter) = (qn.tn1, (nothing, Val(1)))
+iterate(qn::QNeighbIter, st::Tuple{Nothing,Val{1}}) = (qn.tn2, (nothing, Val(2)))
+function iterate(qn::QNeighbIter, st::Tuple{Nothing,Val{2}})
+    rr = iterate(qn.r)
+    rr ≡ nothing && return nothing
+    v, i = rr
+    return (v + qn.off, (i, nothing))
+end
+function iterate(qn::QNeighbIter, st::Tuple{<:Any,Nothing})
+    rr = iterate(qn.r, st[1])
+    rr ≡ nothing && return nothing
+    v, i = rr
+    return (v + qn.off, (i, nothing))
 end
 
 length(qn::QNeighbIter) = 2 + length(qn.r)

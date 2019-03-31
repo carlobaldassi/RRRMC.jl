@@ -2,9 +2,8 @@
 
 module PercXEntr
 
+using Random
 using ExtractMacro
-using Compat
-using SpecialFunctions
 using ..Interface
 using ..Common
 
@@ -15,8 +14,8 @@ export GraphPercXEntr
 import ..Interface: energy, delta_energy, update_cache!, neighbors
 
 function gen_ξ(N::Integer, P::Integer)
-    ξ = BitArray(P, N)
-    ξv = Vector{BitVector}(P)
+    ξ = BitArray(undef, P, N)
+    ξv = Vector{BitVector}(undef, P)
     for a = 1:P
         ξv[a] = bitrand(N)
         ξ[a,:] = ξv[a]
@@ -26,7 +25,7 @@ function gen_ξ(N::Integer, P::Integer)
     return ξ, ξv
 end
 
-type Stabilities
+mutable struct Stabilities
     Δs::Vector{Int}
     newΔs::Vector{Int}
     ξsi::BitVector
@@ -34,7 +33,7 @@ type Stabilities
     function Stabilities(P::Integer)
         Δs = zeros(P)
         newΔs = zeros(P)
-        ξsi = BitArray(P)
+        ξsi = BitArray(undef, P)
         return new(Δs, newΔs, ξsi, 0)
     end
 end
@@ -44,10 +43,9 @@ function swap_Δs!(stab::Stabilities)
     return stab
 end
 
-H(x) = erfc(x / √2) / 2
 Δ2i(Δ, N) = (Δ + N) >>> 1 + 1
 
-type GraphPercXEntr{λ} <: SimpleGraph{Float64}
+mutable struct GraphPercXEntr{λ} <: SimpleGraph{Float64}
     N::Int
     P::Int
     ξ::BitMatrix
@@ -55,18 +53,18 @@ type GraphPercXEntr{λ} <: SimpleGraph{Float64}
     stab::Stabilities
     Hs::Vector{Float64}
     tmps::BitVector
-    @inner {λ} function GraphPercXEntr(ξ::BitMatrix, ξv::Vector{BitVector})
+    function GraphPercXEntr{λ}(ξ::BitMatrix, ξv::Vector{BitVector}) where {λ}
         P, N = size(ξ)
         #TODO: check
-        isa(λ, Float64) || throw(ArgumentError("λ must be a Float64, given a $(typeof(λ))"))
+        λ isa Float64 || throw(ArgumentError("λ must be a Float64, given a $(typeof(λ))"))
         isodd(N) || throw(ArgumentError("N must be odd, given: $N"))
         stab = Stabilities(P)
         Hs = [log(1 + exp(-2 * λ * Δ / √(N))) for Δ = -N:2:N]
         # for Δ = -N:2:N
-        #     @assert Hs[Δ2i(Δ, N)] == -log(H(-λ * Δ / √(N)))
+        #     @assert Hs[Δ2i(Δ, N)] == log((1 + exp(-2 * λ * Δ / √(N))))
         # end
-        tmps = BitVector(N)
-        return new(N, P, ξ, ξv, stab, Hs, tmps)
+        tmps = BitVector(undef, N)
+        return new{λ}(N, P, ξ, ξv, stab, Hs, tmps)
     end
 end
 
@@ -77,13 +75,13 @@ A `SimpleGraph` implementing a single-layer binary perceptron with `N` binary (\
 trained on `P` random i.i.d. \$±1\$ patterns.
 
 The energy of the model is computed for each pattern using the cross-entropy loss (with a `λ`
-parameter: $$ log(1 + exp(-2λ σ⋅ξ / √N)) $$.
+parameter: ``\\log(1 + \\exp(-2λ σ⋅ξ / √N))``.
 
 See also [`GraphPercStep`](@ref), [`GraphPercLinear`](@ref)
 """
 GraphPercXEntr(N::Integer, P::Integer, λ::Float64) = GraphPercXEntr{λ}(gen_ξ(N, P)...)
 
-GraphPercXEntr{λold}(X::GraphPercXEntr{λold}, λnew::Float64) = GraphPercXEntr{λnew}(X.ξ, X.ξv)
+GraphPercXEntr(X::GraphPercXEntr{λold}, λnew::Float64) where {λold} = GraphPercXEntr{λnew}(X.ξ, X.ξv)
 
 function Base.empty!(stab::Stabilities)
     @extract stab : Δs
@@ -92,7 +90,7 @@ function Base.empty!(stab::Stabilities)
     return stab
 end
 
-function energy{λ}(X::GraphPercXEntr{λ}, C::Config)
+function energy(X::GraphPercXEntr{λ}, C::Config) where {λ}
     @assert X.N == C.N
     @extract C : s
     @extract X : N P ξv stab Hs tmps
@@ -100,7 +98,7 @@ function energy{λ}(X::GraphPercXEntr{λ}, C::Config)
 
     E = 0.0
     empty!(stab)
-    tmps = BitArray(N)
+    tmps = BitArray(undef, N)
 
     for a = 1:P
         # tmps[:] = ξ[a,:]
@@ -116,7 +114,7 @@ function energy{λ}(X::GraphPercXEntr{λ}, C::Config)
     return E
 end
 
-function update_cache!{λ}(X::GraphPercXEntr{λ}, C::Config, move::Int)
+function update_cache!(X::GraphPercXEntr{λ}, C::Config, move::Int) where {λ}
     @assert X.N == C.N
 
     @extract X : stab
@@ -154,7 +152,7 @@ function delta_energy_naive(X::GraphPercXEntr, C::Config, move::Int)
     return E1 - E0
 end
 
-function delta_energy{λ}(X::GraphPercXEntr{λ}, C::Config, move::Int)
+function delta_energy(X::GraphPercXEntr{λ}, C::Config, move::Int) where {λ}
     @assert C.N == X.N
     @extract C : s
     @extract X : N P ξ stab Hs
@@ -162,7 +160,7 @@ function delta_energy{λ}(X::GraphPercXEntr{λ}, C::Config, move::Int)
     @assert 1 ≤ move ≤ N
 
     si = s[move]
-    last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     # @assert ξsi == ξ[:,move] .⊻ si
@@ -171,6 +169,7 @@ function delta_energy{λ}(X::GraphPercXEntr{λ}, C::Config, move::Int)
         oldΔ = Δs[a]
         newΔ = oldΔ + (4 * ξsi[a] - 2)
         newΔs[a] = newΔ
+        # @assert -N ≤ newΔ ≤ N  (N, oldΔ, newΔ, ξsi[a])
 
         # ΔE += H(λ * newΔ) - H(λ * oldΔ)
         ΔE += Hs[Δ2i(newΔ, N)] - Hs[Δ2i(oldΔ, N)]
@@ -181,8 +180,6 @@ function delta_energy{λ}(X::GraphPercXEntr{λ}, C::Config, move::Int)
     # @assert ΔE == td
     return ΔE
 end
-
-using Base.Test
 
 function check_delta(X::GraphPercXEntr, C::Config, move::Int)
     delta = delta_energy(X, C, move)

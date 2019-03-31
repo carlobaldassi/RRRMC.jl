@@ -11,7 +11,7 @@ export GraphEmpty
 
 import ..Interface: energy, delta_energy, neighbors
 
-type GraphEmpty <: SimpleGraph{Int}
+struct GraphEmpty <: SimpleGraph{Int}
     N::Int
     GraphEmpty(N::Integer) = return new(N)
 end

@@ -2,8 +2,8 @@
 
 module PercLinear
 
+using Random
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 
@@ -14,8 +14,8 @@ export GraphPercLinear
 import ..Interface: energy, delta_energy, update_cache!, neighbors
 
 function gen_ξ(N::Integer, P::Integer)
-    ξ = BitArray(P, N)
-    ξv = Vector{BitVector}(P)
+    ξ = BitArray(undef, P, N)
+    ξv = Vector{BitVector}(undef, P)
     for a = 1:P
         ξv[a] = bitrand(N)
         ξ[a,:] = ξv[a]
@@ -25,7 +25,7 @@ function gen_ξ(N::Integer, P::Integer)
     return ξ, ξv
 end
 
-type Stabilities
+mutable struct Stabilities
     p::ArraySet
     m::ArraySet
     Δs::Vector{Int}
@@ -35,12 +35,12 @@ type Stabilities
         p = ArraySet(P)
         m = ArraySet(P)
         Δs = zeros(P)
-        ξsi = BitArray(P)
+        ξsi = BitArray(undef, P)
         return new(p, m, Δs, ξsi, 0)
     end
 end
 
-type GraphPercLinear <: SimpleGraph{Float64}
+mutable struct GraphPercLinear <: SimpleGraph{Float64}
     N::Int
     sN::Float64
     P::Int
@@ -53,7 +53,7 @@ type GraphPercLinear <: SimpleGraph{Float64}
         #TODO: check
         isodd(N) || throw(ArgumentError("N must be odd, given: $N"))
         stab = Stabilities(P)
-        tmps = BitVector(N)
+        tmps = BitVector(undef, N)
         return new(N, √N, P, ξ, ξv, stab, tmps)
     end
 end
@@ -88,7 +88,7 @@ function energy(X::GraphPercLinear, C::Config)
 
     E = 0
     empty!(stab)
-    tmps = BitArray(N)
+    tmps = BitArray(undef, N)
 
     for a = 1:P
         # tmps[:] = ξ[a,:]
@@ -116,7 +116,7 @@ function update_cache!(X::GraphPercLinear, C::Config, move::Int)
     @assert N == length(s)
 
     si = s[move]
-    last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     # @assert ξsi == ξ[:,move] ⊻ si
@@ -159,7 +159,7 @@ function delta_energy(X::GraphPercLinear, C::Config, move::Int)
     @assert 1 ≤ move ≤ N
 
     si = s[move]
-    last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     # @assert ξsi == ξ[:,move] ⊻ si

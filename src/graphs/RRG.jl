@@ -3,7 +3,6 @@
 module RRG
 
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 using ..DFloats
@@ -19,11 +18,11 @@ import ..Interface: energy, delta_energy, neighbors, allΔE,
                     delta_energy_residual, update_cache!, update_cache_residual!
 
 import ..DFloats: MAXDIGITS
-sentinel{ET}(::Type{ET}) = typemin(ET)
+sentinel(::Type{ET}) where {ET} = typemin(ET)
 
-discr{ET}(::Type{ET}, x::Real) = convert(ET, round(x, MAXDIGITS))
+discr(::Type{ET}, x::Real) where {ET} = convert(ET, round(x, digits=MAXDIGITS))
 discr(::Type{DFloat64}, x::Real) = x
-discr{ET<:Integer}(::Type{ET}, x::Integer) = convert(ET, x)
+discr(::Type{ET}, x::Integer) where {ET<:Integer} = convert(ET, x)
 
 # Bollobás pairing model generator for random regular graphs.
 # Will fail when `K` is too large.
@@ -32,7 +31,7 @@ function gen_RRG(N::Integer, K::Integer)
     iseven(N * K) || throw(ArgumentError("N * K must be even, given N=$N, K=$K"))
 
     NK = N * K
-    rp = Array{Int}(NK)
+    rp = Array{Int}(undef, NK)
     B = [falses(N) for i = 1:N]
 
     maxattmpts = 100_000
@@ -64,15 +63,15 @@ function gen_RRG(N::Integer, K::Integer)
         ok = true
         break
     end
-    ok || error("failed!")
-    A = [find(b) for b in B]
+    ok || @error("failed!")
+    A = [findall(b) for b in B]
     @assert all(a->length(a) == K, A)
 
     tA = NTuple{K,Int}[tuple(Ax...) for Ax in A]
     return tA
 end
 
-function gen_J{K}(f, ET::Type, N::Integer, A::Vector{NTuple{K,Int}})
+function gen_J(f, ET::Type, N::Integer, A::Vector{NTuple{K,Int}}) where {K}
     m = sentinel(ET)
     J = Vector{ET}[zeros(ET,K) for i = 1:N]
     map(Jx->fill!(Jx, m), J)
@@ -85,9 +84,9 @@ function gen_J{K}(f, ET::Type, N::Integer, A::Vector{NTuple{K,Int}})
                 Jxy = f() #rand(vLEV)
                 @assert Jx[k] == m
                 Jx[k] = Jxy
-                J[y][findfirst(J[y],m)] = Jxy
+                J[y][findfirst(==(m),J[y])] = Jxy
             else
-                l = findfirst(A[y], x)
+                l = findfirst(==(x), A[y])
                 Jxy = J[y][l]
                 @assert Jxy ≠ m
                 @assert J[x][k] == Jxy
@@ -103,7 +102,7 @@ function get_vLEV(LEV, ET::Type)
     isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
     length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
 
-    vLEV = Array{ET}(length(LEV))
+    vLEV = Array{ET}(undef, length(LEV))
     try
         for i = 1:length(LEV)
             vLEV[i] = LEV[i]
@@ -117,13 +116,13 @@ function get_vLEV(LEV, ET::Type)
     return vLEV
 end
 
-type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
+struct GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
     N::Int
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,ET}}
     uA::Vector{Vector{Int}}
     cache::LocalFields{ET}
-    @inner {ET,LEV,K} function GraphRRG(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}})
+    function GraphRRG{ET,LEV,K}(A::Vector{NTuple{K,Int}}, J::Vector{NTuple{K,ET}}) where {ET,LEV,K}
         isa(K, Integer) || throw(ArgumentError("K must be integer, given a: $(typeof(K))"))
 
         N = length(A)
@@ -134,11 +133,11 @@ type GraphRRG{ET,LEV,K} <: DiscrGraph{ET}
         length(J) == N || throw(ArgumentError("incompatible lengths of A and J: $(length(A)), $(length(J))"))
         #all(j->length(j) == K, J) || throw(ArgumentError("invalid J inner length, expected $K, given: $(unique(map(length,J)))"))
 
-        uA = [collect(A[x][find(J[x])]) for x = 1:N]
+        uA = [collect(A[x][findall(J[x] .≠ 0)]) for x = 1:N]
 
         cache = LocalFields{ET}(N)
 
-        return new(N, A, J, uA, cache)
+        return new{ET,LEV,K}(N, A, J, uA, cache)
     end
 end
 
@@ -152,7 +151,7 @@ with a cutoff on the number of restarts, and thus it may occasionally fail if `K
 The interactions are extracted at random from `LEV`, which must be a `Tuple` of `Real`s.
 No external fields.
 """
-function GraphRRG{ET<:Real}(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}})
+function GraphRRG(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real}
     A = gen_RRG(N, K)
     vLEV = get_vLEV(LEV, ET)
     J = gen_J(ET, N, A) do
@@ -165,7 +164,7 @@ GraphRRG(N::Integer, K::Integer) = GraphRRG(N, K, (-1,1))
 
 GraphRRG(N::Integer, K::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphRRG(N, K, map(DFloat64, LEV))
 
-function energy{ET}(X::GraphRRG{ET}, C::Config)
+function energy(X::GraphRRG{ET}, C::Config) where {ET}
     @assert X.N == C.N
     @extract C : s
     @extract X : A J cache
@@ -192,7 +191,7 @@ function energy{ET}(X::GraphRRG{ET}, C::Config)
     return discr(ET, n)
 end
 
-function update_cache!{ET}(X::GraphRRG{ET}, C::Config, move::Int)
+function update_cache!(X::GraphRRG{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -237,7 +236,7 @@ function update_cache!{ET}(X::GraphRRG{ET}, C::Config, move::Int)
     return
 end
 
-function delta_energy{ET}(X::GraphRRG{ET}, C::Config, move::Int)
+function delta_energy(X::GraphRRG{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
     #@extract C : s
@@ -263,12 +262,12 @@ function delta_energy{ET}(X::GraphRRG{ET}, C::Config, move::Int)
 end
 
 neighbors(X::GraphRRG, i::Int) = return X.uA[i]
-@generated _allΔE{K}(::Type{GraphRRG{Int,(-1,1),K}}) =
+@generated _allΔE(::Type{GraphRRG{Int,(-1,1),K}}) where {K} =
     iseven(K) ? Expr(:tuple, ntuple(d->4*(d-1), K÷2+1)...) :
                 Expr(:tuple, ntuple(d->2*(2d-1), (K+1)÷2)...)
 
 
-@generated function allΔE{ET,LEV,K}(::Type{GraphRRG{ET,LEV,K}})
+@generated function allΔE(::Type{GraphRRG{ET,LEV,K}}) where {ET,LEV,K}
     list = Set{ET}()
     L = length(LEV)
     es = Set{ET}(zero(ET))
@@ -286,27 +285,27 @@ end
 
 ## continous weights
 
-type GraphRRGNormalDiscretized{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
+struct GraphRRGNormalDiscretized{ET,LEV,K} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphRRG{ET,LEV,K}
     A::Vector{NTuple{K,Int}}
     rJ::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    @inner {ET,LEV,K} function GraphRRGNormalDiscretized(N::Integer)
+    function GraphRRGNormalDiscretized{ET,LEV,K}(N::Integer) where {ET,LEV,K}
         A = gen_RRG(N, K)
         cJ = gen_J(Float64, N, A) do
             randn()
         end
 
-        dJ = Array{NTuple{K,ET}}(N)
-        rJ = Array{NTuple{K,Float64}}(N)
+        dJ = Array{NTuple{K,ET}}(undef, N)
+        rJ = Array{NTuple{K,Float64}}(undef, N)
         for (x, cJx) in enumerate(cJ)
             dJ[x], rJ[x] = discretize(cJx, LEV)
         end
 
         X0 = GraphRRG{ET,LEV,K}(A, dJ)
         cache = LocalFields{Float64}(N)
-        return new(N, X0, A, rJ, cache)
+        return new{ET,LEV,K}(N, X0, A, rJ, cache)
     end
 end
 
@@ -322,7 +321,7 @@ discretized using the values in `LEV`, which must be a `Tuple` of `Real`s. No ex
 
 Same as [`GraphRRGNormal`](@ref), but it works differently when used with [`rrrMC`](@ref).
 """
-GraphRRGNormalDiscretized{ET<:Real}(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphRRGNormalDiscretized{ET,LEV,K}(N)
+GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real} = GraphRRGNormalDiscretized{ET,LEV,K}(N)
 GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV::Tuple{Real,Vararg{Real}}) = GraphRRGNormalDiscretized(N, K, promote(LEV...))
 
 GraphRRGNormalDiscretized(N::Integer, K::Integer, LEV::Tuple{Float64,Vararg{Float64}}) = GraphRRGNormalDiscretized{DFloat64,map(DFloat64,LEV),K}(N)
@@ -358,7 +357,7 @@ function energy(X::GraphRRGNormalDiscretized, C::Config)
     return convert(Float64, E0 + E1)
 end
 
-function update_cache!{ET}(X::GraphRRGNormalDiscretized{ET}, C::Config, move::Int)
+function update_cache!(X::GraphRRGNormalDiscretized{ET}, C::Config, move::Int) where {ET}
     @assert X.N == C.N
     @assert 1 ≤ move ≤ C.N
 
@@ -505,19 +504,19 @@ neighbors(X::GraphRRGNormalDiscretized, i::Int) = return X.A[i]
 
 ## GraphRRGNormal
 
-type GraphRRGNormal{K} <: SimpleGraph{Float64}
+struct GraphRRGNormal{K} <: SimpleGraph{Float64}
     N::Int
     A::Vector{NTuple{K,Int}}
     J::Vector{NTuple{K,Float64}}
     cache::LocalFields{Float64}
-    @inner {K} function GraphRRGNormal(N::Integer)
+    function GraphRRGNormal{K}(N::Integer) where {K}
         A = gen_RRG(N, K)
         J = gen_J(Float64, N, A) do
             randn()
         end
 
         cache = LocalFields{Float64}(N)
-        return new(N, A, J, cache)
+        return new{K}(N, A, J, cache)
     end
 end
 

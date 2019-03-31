@@ -9,7 +9,7 @@ export GraphThreeSpin
 
 import ..Interface: energy, delta_energy, neighbors, allΔE, getN
 
-type GraphThreeSpin <: DiscrGraph{Int}
+struct GraphThreeSpin <: DiscrGraph{Int}
 end
 
 @doc """

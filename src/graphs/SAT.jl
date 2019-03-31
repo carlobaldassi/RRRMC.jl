@@ -2,8 +2,8 @@
 
 module SAT
 
+using Random
 using ExtractMacro
-using Compat
 using ..Interface
 using ..Common
 
@@ -49,8 +49,8 @@ function gen_randomKSAT(N::Integer, K::Integer, α::Real)
     N ≥ K || throw(ArgumentError("N must not be less than K: $N < $K"))
 
     M = round(Int, α * N)
-    A = Array{IVec}(M)
-    J = [BitArray(K) for a = 1:M]
+    A = Array{IVec}(undef, M)
+    J = [BitArray(undef, K) for a = 1:M]
     for a = 1:M
         A[a] = choose(N, K)
         rand!(J[a])
@@ -58,7 +58,7 @@ function gen_randomKSAT(N::Integer, K::Integer, α::Real)
     return A, J
 end
 
-type ClauseCache
+struct ClauseCache
     M::Int
     S::IVec  # S[a] = how many vars satisfy clause a
     I::IVec2 # I[a] = indices of the vars in S[a]
@@ -75,7 +75,7 @@ function clear!(cache::ClauseCache)
     return cache
 end
 
-type GraphSAT <: DiscrGraph{Int}
+struct GraphSAT <: DiscrGraph{Int}
     N::Int
     M::Int
     K::Int
@@ -150,17 +150,17 @@ function export_cnf(X::GraphSAT, filename::AbstractString, decimate::Vector{Int}
         i = abs(v)
         for a in T[i]
             isempty(A[a]) && continue
-            k = findfirst(A[a], i)
-            @assert k > 0
+            k = findfirst(==(i), A[a])
+            @assert k ≢ nothing
             if J[a][k] == s
                 empty!(A[a])
             else
-                length(A[a]) > 1 || error("contradiction")
+                length(A[a]) > 1 || @error("contradiction")
                 deleteat!(A[a], k)
                 deleteat!(J[a], k)
                 if length(A[a]) == 1
                     newv = A[a][1] * (2J[a][1]-1)
-                    -newv ∈ decimate && (error("contradiction"))
+                    -newv ∈ decimate && @error("contradiction")
                     newv ∉ decimate && push!(decimate, newv)
                     empty!(A[a])
                 end
@@ -289,8 +289,8 @@ function update_cache!(X::GraphSAT, C::Config, move::Int)
                 lfields[j] -= 1
             end
         else
-            k = findfirst(Ia, move)
-            if k ≠ 0
+            k = findfirst(==(move), Ia)
+            if k ≢ nothing
                 for l = k:Sa-1
                     Ia[l] = Ia[l+1]
                 end

@@ -1,18 +1,16 @@
 # This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
 
 # A Real type which is actually an integer in disguise.
-# Similar to FixedPoint floats, but more efficient for
+# Similar to FixedPoint, but more efficient for
 # the purposes of this code.
 
 module DFloats
-
-using Compat
 
 export DFloat64, MAXDIGITS
 
 const MAXDIGITS = 5
 
-@compat primitive type DFloat64 <: Real 64 end
+primitive type DFloat64 <: Real 64 end
 const dfact = 10^MAXDIGITS
 
 import Base: convert, ==, <, <=, *, /, +, -, round, typemin, show, promote_rule, decompose,
@@ -24,8 +22,9 @@ convert(::Type{DFloat64}, x::DFloat64) = x
 convert(::Type{DFloat64}, x::Real) = i2d(round(Int64, x * dfact))
 convert(::Type{Bool}, x::DFloat64) = d2i(x) > 0
 convert(::Type{Integer}, x::DFloat64) = Int64(d2i(x) / dfact)
-convert{T<:Real}(::Type{T}, x::DFloat64) = T(d2i(x) / dfact)
+convert(::Type{T}, x::DFloat64) where {T<:Real} = T(d2i(x) / dfact)
 convert(::Type{DFloat64}, x::Integer) = i2d(Int64(x * dfact))
+DFloat64(x::Number) = convert(DFloat64, x)
 
 -(x::DFloat64) = i2d(-d2i(x))
 -(x::DFloat64, y::DFloat64) = i2d(d2i(x) - d2i(y))

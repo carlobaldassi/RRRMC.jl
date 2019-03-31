@@ -11,6 +11,7 @@ module RRRMC
 
 export standardMC, rrrMC, bklMC, wtmMC, extremal_opt
 
+using LinearAlgebra, Random
 using ExtractMacro
 
 include("DFloats.jl")
@@ -65,7 +66,7 @@ Possible keyord arguments are:
 Basic example:
 
 ```
-julia> srand(76543); X = RRRMC.GraphPSpin3(3999, 5); β = 1.0;
+julia> Random.seed!(76543); X = RRRMC.GraphPSpin3(3999, 5); β = 1.0;
 julia> Es, C = standardMC(X, β, 100_000, step = 1_000);
 ```
 
@@ -73,20 +74,20 @@ Example of using the `hook` for collecting samples as the columns of a `BitMatri
 
 ```
 julia> iters = 100_000; step = 1_000; l = iters ÷ step; N = RRRMC.getN(X);
-julia> Cs = BitArray(N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; true);
+julia> Cs = BitArray(undef, N, l); hook = (it, X, C, acc, E) -> (Cs[:,it÷step]=C.s; true);
 julia> Es, C = standardMC(X, β, iters, step = step, hook = hook);
 ```
 """
-function standardMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
-                        seed = 167432777111,
-                        step::Integer = 1,
-                        hook = (x...)->true,
-                        C0::Union{Config,Void} = nothing,
-                        pp = nothing,
-                        quiet::Bool = false
-                       )
-    seed > 0 && srand(seed)
-    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
+function standardMC(X::AbstractGraph{ET}, β::Real, iters::Integer;
+                    seed = 167432777111,
+                    step::Integer = 1,
+                    hook = (x...)->true,
+                    C0::Union{Config,Nothing} = nothing,
+                    pp = nothing,
+                    quiet::Bool = false
+                   ) where {ET}
+    seed > 0 && Random.seed!(seed)
+    Es = empty!(Array{ET}(undef, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -145,22 +146,22 @@ This function has specialized versions for [`DiscrGraph`](@ref) and [`DoubleGrap
 
 The return values and the keyword arguments are the same as [`standardMC`](@ref), see the usage examples for that function.
 """
-function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer;
-                   seed = 167432777111,
-                   step::Integer = 1,
-                   hook = (x...)->true,
-                   C0::Union{Config,Void} = nothing,
-                   staged_thr::Real = NaN,
-                   staged_thr_fact::Real = 5.0,
-                   quiet::Bool = false
-                  )
+function rrrMC(X::SingleGraph{ET}, β::Real, iters::Integer;
+               seed = 167432777111,
+               step::Integer = 1,
+               hook = (x...)->true,
+               C0::Union{Config,Nothing} = nothing,
+               staged_thr::Real = NaN,
+               staged_thr_fact::Real = 5.0,
+               quiet::Bool = false
+              ) where {ET}
 
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    seed > 0 && srand(seed)
-    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
+    seed > 0 && Random.seed!(seed)
+    Es = empty!(Array{ET}(undef, min(10^8, iters ÷ step)))
 
     if staged_thr ≡ NaN
-        staged_thr = isa(X, SimpleGraph) ? 0.8 : 0.5
+        staged_thr = X isa SimpleGraph ? 0.8 : 0.5
     end
 
     N = getN(X)
@@ -217,18 +218,18 @@ function rrrMC{ET}(X::SingleGraph{ET}, β::Real, iters::Integer;
     return Es, C
 end
 
-function rrrMC{GT,ET}(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
-                      seed = 167432777111,
-                      step::Integer = 1,
-                      hook = (x...)->true,
-                      C0::Union{Config,Void} = nothing,
-                      staged_thr::Real = 0.5,
-                      staged_thr_fact::Real = 5.0,
-                      quiet::Bool = false
-                     )
+function rrrMC(X::DoubleGraph{GT,ET}, β::Real, iters::Integer;
+               seed = 167432777111,
+               step::Integer = 1,
+               hook = (x...)->true,
+               C0::Union{Config,Nothing} = nothing,
+               staged_thr::Real = 0.5,
+               staged_thr_fact::Real = 5.0,
+               quiet::Bool = false
+              ) where {GT,ET}
     isfinite(β) || throw(ArgumentError("β must be finite, given: $β"))
-    seed > 0 && srand(seed)
-    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
+    seed > 0 && Random.seed!(seed)
+    Es = empty!(Array{ET}(undef, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -307,15 +308,15 @@ The return values and the keyword arguments are the same as [`standardMC`](@ref)
 Note that the number of iterations includes the rejected moves. This makes the results directly comparable with those of `standardMC`. It also
 means that increasing `β` at fixed `iters` will result in fewer steps being actually computed.
 """
-function bklMC{ET}(X::AbstractGraph{ET}, β::Real, iters::Integer;
-                   seed = 167432777111,
-                   step::Integer = 1,
-                   hook = (x...)->true,
-                   C0::Union{Config,Void} = nothing,
-                   quiet::Bool = false
-                  )
-    seed > 0 && srand(seed)
-    Es = empty!(Array{ET}(min(10^8, iters ÷ step)))
+function bklMC(X::AbstractGraph{ET}, β::Real, iters::Integer;
+               seed = 167432777111,
+               step::Integer = 1,
+               hook = (x...)->true,
+               C0::Union{Config,Nothing} = nothing,
+               quiet::Bool = false
+              ) where {ET}
+    seed > 0 && Random.seed!(seed)
+    Es = empty!(Array{ET}(undef, min(10^8, iters ÷ step)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -372,15 +373,15 @@ and of [`bklMC`](@ref). Thus, this function has two differences with respect to 
 
 The total number of samples actually collected can still be less than `samples` if the `hook` function from the keyword arguments returns `false` earlier.
 """
-function wtmMC{ET}(X::AbstractGraph{ET}, β::Real, samples::Integer;
-                   seed = 167432777111,
-                   step::Float64 = 1.0,
-                   hook = (x...)->true,
-                   C0::Union{Config,Void} = nothing,
-                   quiet::Bool = false
-                  )
-    seed > 0 && srand(seed)
-    Es = empty!(Array{ET}(min(10^8, samples)))
+function wtmMC(X::AbstractGraph{ET}, β::Real, samples::Integer;
+               seed = 167432777111,
+               step::Float64 = 1.0,
+               hook = (x...)->true,
+               C0::Union{Config,Nothing} = nothing,
+               quiet::Bool = false
+              ) where {ET}
+    seed > 0 && Random.seed!(seed)
+    Es = empty!(Array{ET}(undef, min(10^8, samples)))
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -457,7 +458,7 @@ Possible keyord arguments are:
 Basic example:
 
 ```
-julia> srand(76543); X = RRRMC.GraphPSpin3(3999, 5); τ = 1.3;
+julia> Random.seed!(76543); X = RRRMC.GraphPSpin3(3999, 5); τ = 1.3;
 julia> C, Emin, Cmin, itmin = extremal_opt(X, τ, 100_000, step = 1_000);
 ```
 
@@ -465,19 +466,19 @@ Example of using the `hook` for collecting samples as the columns of a `BitMatri
 
 ```
 julia> iters = 100_000; step = 1_000; l = iters ÷ step; N = RRRMC.getN(X);
-julia> Cs = BitArray(N, l); hook = (it, X, C, E, Emin) -> (Cs[:,it÷step]=C.s; true);
+julia> Cs = BitArray(undef, N, l); hook = (it, X, C, E, Emin) -> (Cs[:,it÷step]=C.s; true);
 julia> C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step = step, hook = hook);
 ```
 
 """
-function extremal_opt{ET}(X::AbstractGraph{ET}, τ::Real, iters::Integer;
-                         seed = 167432777111,
-                         step::Integer = 1,
-                         hook = (x...)->true,
-                         C0::Union{Config,Void} = nothing,
-                         quiet::Bool = false
-                        )
-    seed > 0 && srand(seed)
+function extremal_opt(X::AbstractGraph{ET}, τ::Real, iters::Integer;
+                      seed = 167432777111,
+                      step::Integer = 1,
+                      hook = (x...)->true,
+                      C0::Union{Config,Nothing} = nothing,
+                      quiet::Bool = false
+                     ) where {ET}
+    seed > 0 && Random.seed!(seed)
 
     N = getN(X)
     C::Config = C0 ≡ nothing ? Config(N) : C0
@@ -522,7 +523,7 @@ end
 ### auxiliary/miscellanaous/ugly stuff. Hic sunt leones.
 
 ba2int(b::BitArray) = Int(b.chunks[1])
-int2ba(i::Int, N) = (@assert N≤64; b = BitVector(N); b.chunks[1]=i; b)
+int2ba(i::Int, N) = (@assert N≤64; b = BitVector(undef, N); b.chunks[1]=i; b)
 
 function truep(X::DiscrGraph, β::Real)
     N = X.N
@@ -537,7 +538,7 @@ function truep(X::DiscrGraph, β::Real)
         p[i] = exp(-β * E)
         Z += p[i]
     end
-    scale!(p, 1/Z)
+    p ./= Z
     return p
 end
 
@@ -551,11 +552,11 @@ function samplep(ws::Vector{BitVector})
         i = ba2int(w) + 1
         p[i] += 1
     end
-    scale!(p, 1/length(ws))
+    p ./= length(ws)
     return p
 end
 
-function tm{T<:Real}(Es::Vector{T}, step = 1, skip0 = 0.1, skip1 = 0.05)
+function tm(Es::Vector{T}, step = 1, skip0 = 0.1, skip1 = 0.05) where {T<:Real}
     N = length(Es)
     i0 = floor(Int, N * skip0)
     N0 = N - i0
@@ -568,7 +569,7 @@ function tm{T<:Real}(Es::Vector{T}, step = 1, skip0 = 0.1, skip1 = 0.05)
     return m[1 + floor(Int, skip1 * n):end]
 end
 
-function ravg{T<:Real}(Es::Vector{T}, step = 1_000, skip0 = 0.0)
+function ravg(Es::Vector{T}, step = 1_000, skip0 = 0.0) where {T<:Real}
     N = length(Es)
     i0 = floor(Int, N * skip0)
     N0 = N - i0
@@ -594,13 +595,13 @@ function second_eigenvalue_standard(X::DiscrGraph, β::Float64)
     @assert N ≤ 64
     S = 1 << N
     Q = zeros(S, S)
-    C = MCNew.Config(N)
+    C = Config(N)
     p = zeros(S)
     for ks = 1:S
         C.s.chunks[1] = ks - 1
         pT = 0.0
         for j = 1:N
-            kd = Int(((ks-1) $ (UInt64(1) << (j-1))) + 1)
+            kd = Int(((ks-1) ⊻ (UInt64(1) << (j-1))) + 1)
 
             #=
             C.s[j] $= 1
@@ -624,7 +625,7 @@ end
 
 function second_eigenvalue_bkl(Q::Matrix{Float64})
     pr = diag(Q)
-    rfQ = (Q - diagm(pr)) ./ (1 - pr')
+    rfQ = (Q - diagm(pr)) ./ (1 .- pr')
     τ = second_eigenvalue(rfQ)
 
     return rfQ, τ
@@ -662,7 +663,7 @@ function second_eigenvalue_rrr(X::DiscrGraph, β::Float64)
             @assert isfinite(pp)
             pchg += pp
 
-            kd = Int(((ks-1) $ (UInt64(1) << (j-1))) + 1)
+            kd = Int(((ks-1) ⊻ (UInt64(1) << (j-1))) + 1)
             Q[kd, ks] = pp
         end
         @assert -1e-15 ≤ 1 - pchg ≤ 1 + 1e-15
@@ -678,20 +679,20 @@ function second_eigenvalue_stats(;seed::Integer = 86823, graph = GraphRRG, args 
     τs = Matrix{Float64}[]
     rrs = Matrix{Float64}[]
     for j = 1:n
-        srand(seed + j)
+        Random.seed!(seed + j)
         println("seed = $(seed + j)")
         X = graph(args...)
-        τ = Array{Float64}(length(βr), 3)
-        rr = Array{Float64}(length(βr), 3)
+        τ = Array{Float64}(undef, length(βr), 3)
+        rr = Array{Float64}(undef, length(βr), 3)
         for (l,β) in enumerate(βr)
             println("  β=$β")
             p = truep(X, β);
             Q, τ[l,1] = second_eigenvalue_standard(X, β)
-            @assert maximum(abs(p - Q * p)) < 1e-13
+            @assert maximum(abs.(p - Q * p)) < 1e-13
             rr[l,1] = sum(diag(Q) .* p)
             rfQ, τ[l,2] = second_eigenvalue_bkl(Q)
             pr = diag(Q)
-            @assert maximum(abs(p .* (1 - pr) - rfQ * (p .* (1 - pr)))) < 1e-13
+            @assert maximum(abs.(p .* (1 .- pr) - rfQ * (p .* (1 .- pr)))) < 1e-13
             rr[l,2] = 0.0
             Q, τ[l,3] = second_eigenvalue_rrr(X, β)
             @assert maximum(abs(p - Q * p)) < 1e-13
@@ -730,7 +731,7 @@ function second_eigenvalue_stats(;seed::Integer = 86823, graph = GraphRRG, args 
 end
 
 function runtest(;N = 1_000, D = 4, β = 1.0, seedlist = 101:110, iters = 10_000_000, stepfact = 10, step = 100)
-    srand(111)
+    Random.seed!(111)
     X = GraphRRG(N, D)
 
     nsamples = iters ÷ step

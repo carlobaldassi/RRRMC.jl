@@ -2,8 +2,6 @@
 
 module TLEAliases
 
-using Compat
-
 using ..TLE
 using ..Empty
 using ..SK
@@ -12,7 +10,7 @@ using ..SAT
 
 export Graph0TLE, GraphSKTLE, GraphEATLE, GraphSATTLE
 
-@compat const Graph0TLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphEmpty}
+const Graph0TLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphEmpty}
 
 # """
 #     Graph0TLE(...)
@@ -23,7 +21,7 @@ Graph0TLE(Nk::Integer, M::Integer, γ::Float64, λ::Float64, β::Float64) = Grap
 
 
 
-@compat const GraphSKTLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphSK}
+const GraphSKTLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphSK}
 
 # """
 #     GraphSKTLE(N::Integer, M::Integer, γ::Float64, λ::Float64, β::Float64) <: DoubleGraph
@@ -35,7 +33,7 @@ GraphSKTLE(Nk::Integer, M::Integer, γ::Float64, λ::Float64, β::Float64) = Gra
 
 
 
-@compat const GraphEATLE{M,γT,λT,twoD} = GraphTopologicalLocalEntropy{M,γT,λT,GraphEANormal{twoD}}
+const GraphEATLE{M,γT,λT,twoD} = GraphTopologicalLocalEntropy{M,γT,λT,GraphEANormal{twoD}}
 
 # """
 #     GraphEATLE(L::Integer, D::Integer, M::Integer, γ::Float64, λ::Float64, β::Float64) <: DoubleGraph
@@ -60,7 +58,7 @@ function GraphEATLE(fname::AbstractString, M::Integer, γ::Float64, λ::Float64,
     GraphTopologicalLocalEntropy(N, M, γ, λ, β, GraphEANormal{2D}, L, A, J)
 end
 
-function GraphEATLE{twoD}(X::GraphEANormal{twoD}, M::Integer, γ::Float64, λ::Float64, β::Float64)
+function GraphEATLE(X::GraphEANormal{twoD}, M::Integer, γ::Float64, λ::Float64, β::Float64) where {twoD}
     @assert iseven(twoD)
     D = twoD ÷ 2
     N = X.N
@@ -71,7 +69,7 @@ end
 
 
 
-@compat const GraphSATTLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphSAT}
+const GraphSATTLE{M,γT,λT} = GraphTopologicalLocalEntropy{M,γT,λT,GraphSAT}
 
 # """
 #     GraphSATTLE(N::Integer, K::Integer, α::Real, M::Integer, γ::Float64, λ::Float64, β::Float64) <: DoubleGraph

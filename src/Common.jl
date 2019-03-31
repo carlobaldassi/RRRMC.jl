@@ -2,31 +2,10 @@
 
 module Common
 
-using Compat
+export Vec, Vec2, IVec, IVec2, unsafe_bitflip!, flipbits!, discretize,
+       LocalFields, AllButOne
 
-export Vec, Vec2, IVec, IVec2, unsafe_bitflip!, discretize,
-       LocalFields, @inner, AllButOne
-
-wrapin(head::Symbol, fn, T::Symbol) = Expr(:curly, fn, T)
-function wrapin(head::Symbol, fn, T::Expr)
-    @assert Base.Meta.isexpr(T, [:tuple, :cell1d])
-    Expr(head, fn, T.args...)
-end
-
-# horrible macro to keep compatibility with both julia 0.5 and 0.6,
-# while avoiding some even more horrible syntax
-macro inner(T, ex)
-    VERSION < v"0.6.0-dev.2643" && return esc(ex)
-    @assert Base.Meta.isexpr(ex, [:(=), :function])
-    @assert length(ex.args) == 2
-    @assert isa(ex.args[1], Expr) && ex.args[1].head == :call
-    @assert isa(ex.args[1].args[1], Symbol)
-    fn = wrapin(:curly, ex.args[1].args[1], T)
-    fargs = ex.args[1].args[2:end]
-    body = ex.args[2]
-
-    return esc(Expr(ex.head, wrapin(:where, Expr(:call, fn, fargs...), T), body))
-end
+import Base: iterate
 
 const Vec  = Vector{Float64}
 const Vec2 = Vector{Vec}
@@ -43,18 +22,20 @@ const IVec2 = Vector{IVec}
 end
 @inline unsafe_bitflip!(B::BitArray, i::Int) = unsafe_bitflip!(B.chunks, i)
 
-type LocalFields{ET}
+flipbits!(B::BitArray) = B .= .!(B)
+
+mutable struct LocalFields{ET}
     lfields::Vector{ET}
     lfields_last::Vector{ET}
     move_last::Int
-    @inner {ET} function LocalFields(N::Int)
+    function LocalFields{ET}(N::Int) where {ET}
         lfields = zeros(ET, N)
         lfields_last = zeros(ET, N)
-        return new(lfields, lfields_last, 0)
+        return new{ET}(lfields, lfields_last, 0)
     end
 end
 
-function discretize{T<:Real,S<:Real}(x::T, LEV::Tuple{S,Vararg{S}})
+function discretize(x::T, LEV::Tuple{S,Vararg{S}}) where {T<:Real,S<:Real}
     d = LEV[1]
     r = x - d
     for l = 2:length(LEV)
@@ -67,10 +48,10 @@ function discretize{T<:Real,S<:Real}(x::T, LEV::Tuple{S,Vararg{S}})
     return d, r
 end
 
-function discretize{T<:Real,S<:Real}(cvec::Vector{T}, LEV::Tuple{S,Vararg{S}})
+function discretize(cvec::Vector{T}, LEV::Tuple{S,Vararg{S}}) where {T<:Real,S<:Real}
     N = length(cvec)
-    fields = Array{S}(N)
-    rfields = Array{T}(N)
+    fields = Array{S}(undef, N)
+    rfields = Array{T}(undef, N)
     for (i,x) in enumerate(cvec)
         d, r = discretize(x, LEV)
         fields[i] = d
@@ -79,9 +60,9 @@ function discretize{T<:Real,S<:Real}(cvec::Vector{T}, LEV::Tuple{S,Vararg{S}})
     return fields, rfields
 end
 
-function discretize{N,T<:Real,S<:Real}(cvec::NTuple{N,T}, LEV::Tuple{S,Vararg{S}})
-    fields = Array{S}(N)
-    rfields = Array{T}(N)
+function discretize(cvec::NTuple{N,T}, LEV::Tuple{S,Vararg{S}}) where {N,T<:Real,S<:Real}
+    fields = Array{S}(undef, N)
+    rfields = Array{T}(undef, N)
     for (i,x) in enumerate(cvec)
         d, r = discretize(x, LEV)
         fields[i] = d
@@ -94,7 +75,7 @@ end
 # iterate over 1:N except i, i.e.
 #   1, 2, 3, ..., i-1, i+1, ..., N-1, N
 # useful for fully-connected models
-type AllButOne
+mutable struct AllButOne
     N::Int
     i::Int
     function AllButOne(N::Integer, i::Integer)
@@ -104,9 +85,10 @@ type AllButOne
     end
 end
 
-Base.start(n::AllButOne) = 1 + (n.i == 1)
-Base.done(n::AllButOne, j::Int) = j == n.N+1
-Base.next(n::AllButOne, j::Int) = j, j + 1 + (j == n.i - 1)
+function iterate(n::AllButOne, j = 1 + (n.i == 1))
+    j == n.N + 1 && return nothing
+    return j, j + 1 + (j == n.i - 1)
+end
 Base.length(n::AllButOne) = n.N - 1
 
 end # module

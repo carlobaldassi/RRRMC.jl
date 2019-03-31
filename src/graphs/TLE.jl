@@ -16,7 +16,7 @@ import ..Interface: energy, delta_energy, neighbors, allΔE,
                     update_cache!, delta_energy_residual,
                     cenergy, distances
 
-type GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
+mutable struct GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
     N::Int
     Nk::Int
     neighb::Vector{Vector{Int}}
@@ -26,7 +26,7 @@ type GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
     cache2::LocalFields{Int} # topological
     ncache::Vector{Int}
 
-    @inner {M,γT,λT} function GraphTLE(N::Integer, neighb::Vector{Vector{Int}})
+    function GraphTLE(N::Integer, neighb::Vector{Vector{Int}}) where {M,γT,λT}
         isa(M, Int) || throw(ArgumentError("invalid parameter M, expected Int, given: $(typeof(M))"))
         M > 2 || throw(ArgumentError("M must be greater than 2, given: $M"))
         isa(γT, Float64) || throw(ArgumentError("invalid parameter γT, expected Float64, given: $(typeof(γT))"))
@@ -52,8 +52,8 @@ type GraphTLE{M,γT,λT} <: DiscrGraph{Float64}
 
         cache1 = LocalFields{Int}(N)
         cache2 = LocalFields{Int}(N)
-        ncache = empty!(Array{Int}((M+1) * maximum(length.(neighb))))
-        return new(N, Nk, neighb, neighb_jcs, neighb_Us, cache1, cache2, ncache)
+        ncache = empty!(Array{Int}(undef, (M+1) * maximum(length.(neighb))))
+        return new{M,γT,λT}(N, Nk, neighb, neighb_jcs, neighb_Us, cache1, cache2, ncache)
     end
 end
 
@@ -66,7 +66,7 @@ Local Entropy Ensemble.
 It is only useful when implementing other graph types; see [`GraphTopologicalLocalEntropy`](@ref).
 """ -> GraphTLE{M,γT,λT}(N::Integer)
 
-GraphTLE{M,oldγ,oldλ}(X::GraphTLE{M,oldγ,oldλ}, newγ::Float64, newλ::Float64) = GraphTLE{M,newγ,newλ}(X.N, X.neighb)
+GraphTLE(X::GraphTLE{M,oldγ,oldλ}, newγ::Float64, newλ::Float64) where {M,oldγ,oldλ} = GraphTLE{M,newγ,newλ}(X.N, X.neighb)
 
 # @generated function ΔElist{M,γT}(::Type{GraphTLE{M,γT}})
 #     Expr(:tuple, ntuple(d->fk(2*(d - 1 - (M-1) >>> 0x1) - iseven(M), γT), M)...)
@@ -78,7 +78,7 @@ GraphTLE{M,oldγ,oldλ}(X::GraphTLE{M,oldγ,oldλ}, newγ::Float64, newλ::Float
 #     return k
 # end
 
-function energy{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config)
+function energy(X::GraphTLE{M,γT,λT}, C::Config) where {M,γT,λT}
     # @assert X.N == C.N
     @extract X : Nk neighb cache1 cache2
     @extract cache1 : lfields1=lfields lfields_last1=lfields_last
@@ -155,7 +155,7 @@ function jinterval(i::Integer, M::Integer)
     return a:b
 end
 
-function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
+function update_cache!(X::GraphTLE{M,γT,λT}, C::Config, move::Int) where {M,γT,λT}
     # @assert X.N == C.N
     # @assert 1 ≤ move ≤ C.N
     @extract C : N s
@@ -300,7 +300,7 @@ function update_cache!{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
     return
 end
 
-@inline function delta_energy{M,γT,λT}(X::GraphTLE{M,γT,λT}, C::Config, move::Int)
+@inline function delta_energy(X::GraphTLE{M,γT,λT}, C::Config, move::Int) where {M,γT,λT}
     # @assert X.N == C.N
     # @assert 1 ≤ move ≤ C.N
     @extract X : cache1 cache2
@@ -312,7 +312,7 @@ end
     return Δ
 end
 
-@inline function neighbors{M}(X::GraphTLE{M}, j::Int)
+@inline function neighbors(X::GraphTLE{M}, j::Int) where {M}
     @extract X : neighb ncache
     k = mod1(j, M+1)         # replica index
     i = (j-1) ÷ (M+1) + 1    # variable index
@@ -334,7 +334,7 @@ end
     return ncache
 end
 
-function allΔE{M,γT,λT}(X::GraphTLE{M,γT,λT})
+function allΔE(X::GraphTLE{M,γT,λT}) where {M,γT,λT}
     @extract X : neighb
     ΔE1 = iseven(M) ? insert!([4*d*γT for d = 0:(M÷2)], 2, 2γT) :
                       [2*(2d-1)*γT for d = 1:((M+1)÷2)]
@@ -350,7 +350,7 @@ end
 
 # Replicate an existsing graph
 
-type GraphTopologicalLocalEntropy{M,γT,λT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
+mutable struct GraphTopologicalLocalEntropy{M,γT,λT,G<:AbstractGraph} <: DoubleGraph{DiscrGraph{Float64},Float64}
     N::Int
     Nk::Int
     X0::GraphTLE{M,γT,λT}
@@ -358,17 +358,17 @@ type GraphTopologicalLocalEntropy{M,γT,λT,G<:AbstractGraph} <: DoubleGraph{Dis
     X1::Vector{G}
     Cc::Config
     C1::Vector{Config}
-    @inner {M,γT,λT,G} function GraphTopologicalLocalEntropy(N::Integer, neighb::Vector{Vector{Int}}, g0::G, Gconstr, args...)
+    function GraphTopologicalLocalEntropy(N::Integer, neighb::Vector{Vector{Int}}, g0::G, Gconstr, args...) where {M,γT,λT,G}
         X0 = GraphTLE{M,γT,λT}(N, neighb)
         Nk = X0.Nk
-        X1 = Array{G}(M)
+        X1 = Array{G}(undef, M)
         Xc = g0
         for k = 1:M
             X1[k] = Gconstr(args...)
         end
         Cc = Config(Nk, init=false)
         C1 = [Config(Nk, init=false) for k = 1:M]
-        return new(N, Nk, X0, Xc, X1, Cc, C1)
+        return new{M,γT,λT,G}(N, Nk, X0, Xc, X1, Cc, C1)
     end
 end
 
@@ -397,7 +397,7 @@ function GraphTopologicalLocalEntropy(Nk::Integer, M::Integer, γ::Float64, λ::
     return GraphTopologicalLocalEntropy{M,γ/β,λ/β,G}(Nk * (M+1), neighb, g0, Gconstr, args...)
 end
 
-function update_cache!{M}(X::GraphTopologicalLocalEntropy{M}, C::Config, move::Int)
+function update_cache!(X::GraphTopologicalLocalEntropy{M}, C::Config, move::Int) where {M}
     @extract X : X0 Xc X1 Cc C1
     k = mod1(move, M+1)
     i = (move - 1) ÷ (M+1) + 1
@@ -412,7 +412,7 @@ function update_cache!{M}(X::GraphTopologicalLocalEntropy{M}, C::Config, move::I
     update_cache!(X0, C, move)
 end
 
-function energy{M}(X::GraphTopologicalLocalEntropy{M}, C::Config)
+function energy(X::GraphTopologicalLocalEntropy{M}, C::Config) where {M}
     # @assert X.N == C.N
     @extract X : Nk X0 Xc X1 Cc C1
     @extract C : s
@@ -442,7 +442,7 @@ end
 Returns a Vector with the individual energy (as defined by the original model)
 of each replica in a [`GraphTopologicalLocalEntropy`](@ref) graph.
 """
-function TLEenergies{M}(X::GraphTopologicalLocalEntropy{M})
+function TLEenergies(X::GraphTopologicalLocalEntropy{M}) where {M}
     @extract X : X1 C1
 
     Es = zeros(M)
@@ -454,12 +454,12 @@ function TLEenergies{M}(X::GraphTopologicalLocalEntropy{M})
     return Es
 end
 
-function cenergy{M}(X::GraphTopologicalLocalEntropy{M})
+function cenergy(X::GraphTopologicalLocalEntropy{M}) where {M}
     @extract X : Xc Cc
     return energy(Xc, Cc)
 end
 
-function delta_energy_residual{M}(X::GraphTopologicalLocalEntropy{M}, C::Config, move::Int)
+function delta_energy_residual(X::GraphTopologicalLocalEntropy{M}, C::Config, move::Int) where {M}
     @extract X : X1 C1
 
     k = mod1(move, M+1)
@@ -477,7 +477,7 @@ end
 
 # This is type-unstable and inefficient. On the other hand, it is
 # basically only written for testing purposes...
-function neighbors{M}(X::GraphTopologicalLocalEntropy{M}, i::Int)
+function neighbors(X::GraphTopologicalLocalEntropy{M}, i::Int) where {M}
     @extract X : X0 X1
     jts = neighbors(X0, i)
 
@@ -492,7 +492,7 @@ function neighbors{M}(X::GraphTopologicalLocalEntropy{M}, i::Int)
     return tuple(jts..., map(i->((i-1)*(M+1)+k), is)...)
 end
 
-function distances{M}(X::GraphTopologicalLocalEntropy{M})
+function distances(X::GraphTopologicalLocalEntropy{M}) where {M}
     @extract X : C1
     # @extract C : s
     # @assert Nk == C.N ÷ (M+1)

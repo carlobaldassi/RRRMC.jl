@@ -20,13 +20,13 @@ gen_wt(τ::Float64) = begin
     return wt
 end
 
-const THeap = MutableBinaryHeap{Float64, DataStructures.LessThan}
+const THeap = MutableBinaryMinHeap{Float64}
 
 function THeap(X::AbstractGraph, C::Config, β::Real)
     N = getN(X)
     @assert C.N == N
     τs = [τ(X, C, β, i) for i = 1:N]
-    theap = mutable_binary_minheap(Float64)
+    theap = THeap()
     for i = 1:N
         j = push!(theap, gen_wt(τs[i]))
         @assert j == i # implementation detail check
@@ -34,13 +34,7 @@ function THeap(X::AbstractGraph, C::Config, β::Real)
     return theap
 end
 
-function pick_next(theap::THeap)
-    # warning: depends on implementation details
-    # see issue #217 in DataStructures.jl
-    el = theap.nodes[1]
-    t, i = el.value, el.handle
-    return t, i
-end
+pick_next(theap::THeap) = top_with_handle(theap)
 
 function update_heap!(theap::THeap, X::AbstractGraph, C::Config, β::Real, i::Integer, t::Float64)
     ΔE = delta_energy(X, C, i)

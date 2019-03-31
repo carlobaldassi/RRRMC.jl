@@ -2,7 +2,8 @@
 
 module Interface
 
-using Compat, ExtractMacro
+using Random
+using ExtractMacro
 using ..Common
 
 if isdefined(Main, :Documenter)
@@ -17,11 +18,11 @@ export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
 
 import Base: length, copy!, copy, ==
 
-immutable Config
+struct Config
     N::Int
     s::BitVector
     function Config(N::Integer; init::Bool = true)
-        s = BitArray(N)
+        s = BitArray(undef, N)
         init && rand!(s)
         return new(N, s)
     end
@@ -61,7 +62,7 @@ functions.
 See also [`SimpleGraph`](@ref), [`DiscrGraph`](@ref), [`SingleGraph`](@ref)
 and [`DoubleGraph`](@ref).
 """
-@compat abstract type AbstractGraph{ET<:Real} end
+abstract type AbstractGraph{ET<:Real} end
 
 """
     update_cache!(X::AbstractGraph, C::Config, move::Int)
@@ -100,7 +101,7 @@ All graphs must implement this function.
 
 It *must* also be used to initialize/reset the cache for a given graph, if any (see [`update_cache!`](@ref)).
 """
-energy(::AbstractGraph, ::Config) = error("not implemented")
+energy(::AbstractGraph, ::Config) = @error("not implemented")
 
 """
     delta_energy(X::AbstractGraph, C::Config, move::Int)
@@ -120,9 +121,9 @@ and [`update_cache_residual!`](@ref).
 function delta_energy(X::AbstractGraph, C::Config, move::Int)
     @extract C : s
     oldn = energy(X, C)
-    s[move] $= 1
+    s[move] ⊻= 1
     newn = energy(X, C)
-    s[move] $= 1
+    s[move] ⊻= 1
     Δn0 = newn - oldn
     return Δn0
 end
@@ -145,7 +146,7 @@ not required by [`standardMC`](@ref).
 For performance reasons, it is best if the returned value is stack-allocated
 rather than heap-allocated, e.g. it is better to return an `NTuple` than a `Vector`.
 """
-neighbors(::AbstractGraph, i::Int) = error("not implemented")
+neighbors(::AbstractGraph, i::Int) = @error("not implemented")
 
 
 
@@ -156,7 +157,7 @@ An abstract type representing a generic graph.
 
 The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`](@ref).
 """
-@compat abstract type SimpleGraph{ET} <: AbstractGraph{ET} end
+abstract type SimpleGraph{ET} <: AbstractGraph{ET} end
 
 
 """
@@ -171,7 +172,7 @@ The `ET` parameter is the type returned by [`energy`](@ref) and [`delta_energy`]
 
 See also [`allΔE`](@ref).
 """
-@compat abstract type DiscrGraph{ET} <: AbstractGraph{ET} end
+abstract type DiscrGraph{ET} <: AbstractGraph{ET} end
 
 """
     allΔE{P<:DiscrGraph}(::Type{P})
@@ -187,7 +188,7 @@ be computed from the type of the graph alone (possibly using a generated
 function), i.e. it is best to implement the first definition above — the
 second one then falls back automatically to the first.
 """
-allΔE{P<:DiscrGraph}(::Type{P}) = error("not implemented")
+allΔE(::Type{P}) where {P<:DiscrGraph} = @error("not implemented")
 allΔE(X::DiscrGraph) = allΔE(typeof(X))
 
 """
@@ -196,7 +197,7 @@ allΔE(X::DiscrGraph) = allΔE(typeof(X))
 A type alias representing either a [`SimpleGraph`](@ref) or a
 [`DiscrGraph{ET}`](@ref). See also [`DoubleGraph`](@ref).
 """
-@compat const SingleGraph{ET} = Union{SimpleGraph{ET},DiscrGraph{ET}}
+const SingleGraph{ET} = Union{SimpleGraph{ET},DiscrGraph{ET}}
 
 """
     DoubleGraph{GT<:SingleGraph,ET} <: AbstractGraph{ET}
@@ -218,7 +219,7 @@ concrete type of the inner graph, but either `SimpleGraph{T}` or
 See also [`inner_graph`](@ref), [`delta_energy_residual`](@ref) and
 [`update_cache_residual!`](@ref).
 """
-@compat abstract type DoubleGraph{GT,ET} <: AbstractGraph{ET} end
+abstract type DoubleGraph{GT,ET} <: AbstractGraph{ET} end
 
 """
     inner_graph(X::DoubleGraph)
@@ -258,7 +259,7 @@ function update_cache!(X::DoubleGraph, C::Config, move::Int)
     update_cache_residual!(X, C, move)
 end
 
-allΔE{ET,GT<:DiscrGraph}(X::DoubleGraph{ET,GT}) = allΔE(typeof(inner_graph(X)))
+allΔE(X::DoubleGraph{ET,GT}) where {ET,GT<:DiscrGraph} = allΔE(typeof(inner_graph(X)))
 
 """
     cenergy(X::DoubleGraph)
@@ -267,7 +268,7 @@ Returns the individual energy (as defined by the original model)
 of the reference configuration in a [`GraphLocalEntropy`](@ref) graph or a
 [`GraphTopologicalLocalEntropy`](@ref) graph.
 """
-cenergy(::AbstractGraph) = error("not implemented")
+cenergy(::AbstractGraph) = @error("not implemented")
 
 """
     distances(X::DoubleGraph)
@@ -276,6 +277,6 @@ Returns the matrix of the Hamming distances between replicas, in graphs with
 replicas: [`GraphQuant`](@ref), [`GraphLocalEntropy`](@ref), [`GraphTopologicalLocalEntropy`](@ref)
 or [`GraphRobustEnsemble`](@ref).
 """
-distances(::AbstractGraph) = error("not implemented")
+distances(::AbstractGraph) = @error("not implemented")
 
 end # module

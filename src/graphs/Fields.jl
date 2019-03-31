@@ -10,15 +10,15 @@ export GraphFields, GraphFieldsNormalDiscretized
 
 import ..Interface: energy, delta_energy, neighbors, allΔE, delta_energy_residual
 
-type GraphFields{ET,LEV} <: DiscrGraph{ET}
+struct GraphFields{ET,LEV} <: DiscrGraph{ET}
     N::Int
     fields::Vector{ET}
-    @inner {ET,LEV} function GraphFields(fields::Vector{ET})
-        isa(LEV, Tuple{Real,Vararg{Real}}) || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
+    function GraphFields{ET,LEV}(fields::Vector{ET}) where {ET,LEV}
+        LEV isa Tuple{Real,Vararg{Real}} || throw(ArgumentError("invalid level spec, expected a Tuple of Reals, given: $LEV"))
         all(f->f ∈ LEV, fields) || throw(ArgumentError("invalid field value, expected $LEV, given: $(findfirst(f->f ∉ LEV, fields))"))
         length(unique(LEV)) == length(LEV) || throw(ArgumentError("repeated levels in LEV: $LEV"))
         N = length(fields)
-        return new(N, fields)
+        return new{ET,LEV}(N, fields)
     end
 end
 
@@ -31,7 +31,7 @@ must be a `Tuple` of `Real`s.
 
 Mostly useful for testing/debugging purposes.
 """
-function GraphFields{ET<:Real}(N::Integer, LEV::Tuple{ET,Vararg{ET}})
+function GraphFields(N::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real}
     return GraphFields{ET,LEV}(rand(collect(LEV), N))
 end
 
@@ -42,7 +42,7 @@ function energy(X::GraphFields{Int,(1,)}, C::Config)
     return N - 2 * sum(s)
 end
 
-function energy{ET}(X::GraphFields{ET}, C::Config)
+function energy(X::GraphFields{ET}, C::Config) where {ET}
     @assert X.N == C.N
     @extract X : fields
     @extract C : N s
@@ -62,7 +62,7 @@ function delta_energy(X::GraphFields{Int,(1,)}, C::Config, move::Int)
     return 2 * (2 * s[move] - 1)
 end
 
-function delta_energy{ET}(X::GraphFields{ET}, C::Config, move::Int)
+function delta_energy(X::GraphFields{ET}, C::Config, move::Int) where {ET}
     @assert 1 ≤ move ≤ C.N
     @assert X.N == C.N
     @extract X : fields
@@ -75,21 +75,21 @@ end
 neighbors(X::GraphFields, i::Int) = return ()
 #allΔE(::Type{GraphFields{Int,(1,)}}) = (2,)
 
-@generated function allΔE{ET,LEV}(::Type{GraphFields{ET,LEV}})
+@generated function allΔE(::Type{GraphFields{ET,LEV}}) where {ET,LEV}
     absLEV = sort!(unique(map(x->convert(ET, 2*abs(x)), LEV)))
     return Expr(:tuple, absLEV...)
 end
 
 
-type GraphFieldsNormalDiscretized{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
+struct GraphFieldsNormalDiscretized{ET,LEV} <: DoubleGraph{DiscrGraph{ET},Float64}
     N::Int
     X0::GraphFields{ET,LEV}
     rfields::Vec
-    @inner {ET,LEV} function GraphFieldsNormalDiscretized(N::Integer)
+    function GraphFieldsNormalDiscretized{ET,LEV}(N::Integer) where {ET,LEV}
         cfields = randn(N)
         fields, rfields = discretize(cfields, LEV)
         X0 = GraphFields{ET,LEV}(fields)
-        return new(N, X0, rfields)
+        return new{ET,LEV}(N, X0, rfields)
     end
 end
 
@@ -103,7 +103,7 @@ must be a `Tuple` of `Real`s.
 
 Mostly useful for testing/debugging purposes.
 """
-GraphFieldsNormalDiscretized{ET<:Real}(N::Integer, LEV::Tuple{ET,Vararg{ET}}) = GraphFieldsNormalDiscretized{ET,LEV}(N)
+GraphFieldsNormalDiscretized(N::Integer, LEV::Tuple{ET,Vararg{ET}}) where {ET<:Real} = GraphFieldsNormalDiscretized{ET,LEV}(N)
 
 function energy(X::GraphFieldsNormalDiscretized, C::Config)
     @assert X.N == C.N
