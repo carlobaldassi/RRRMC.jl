@@ -16,7 +16,9 @@ export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
        delta_energy_residual, update_cache!, update_cache_residual!,
        cenergy, distances
 
-import Base: length, copy!, copy, ==
+import Base: length, copy, copy!, ==
+
+@static VERSION < v"1.1" && using Future
 
 struct Config
     N::Int
@@ -44,7 +46,8 @@ spinflip!(C::Config, move::Int) = unsafe_bitflip!(C.s, move)
 
 function copy!(dst::Config, src::Config)
     length(dst) == length(src) || throw(ArgumentError("Incompatible Config lengths, dst=$(length(dst)) src=$(length(src))"))
-    copy!(dst.s, src.s)
+    M = @static VERSION < v"1.1" ? Future : Base
+    M.copy!(dst.s, src.s)
     return dst
 end
 

@@ -9,6 +9,7 @@ using Random
 using ExtractMacro
 using ..Common
 using ..Interface
+@static VERSION < v"1.1" && using Future: copy!
 
 include("ArraySets.jl")
 using .ArraySets
