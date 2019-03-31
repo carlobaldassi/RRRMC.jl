@@ -4,15 +4,16 @@
 
 module Scripts
 
-using JLD
-using Compat
+using FileIO
+using Statistics, Random
+import Base: iterate
 
 include("../src/RRRMC.jl")
 
 function to_mat(Cv::Vector{BitVector})
     samples = length(Cv)
     N = length(Cv[1])
-    Cs = BitMatrix(N, samples)
+    Cs = BitMatrix(undef, N, samples)
     for i = 1:samples
         Cs[:,i] = Cv[i]
     end
@@ -45,14 +46,14 @@ function test_RRG(; N = 10_000,
 
     dirname = "output_RRG_N$(N)_K$(K)_beta$(β)_tmax$(t_limit)_step$(step)$(tag)"
     gen_fname(alg, seed) = joinpath(dirname, "output_$(alg)_sx$(seedx)_s$(seed).txt")
-    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld")
+    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld2")
 
     samples = iters ÷ step
 
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && error("file $fn exists")
+        !force && isfile(fn) && @error "file $fn exists"
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -69,10 +70,10 @@ function test_RRG(; N = 10_000,
         return hook, cleanup, Cv
     end
 
-    srand(seedx)
+    Random.seed!(seedx)
     X = RRRMC.GraphRRG(N, K)
 
-    info("compile...")
+    @info "compile..."
     RRRMC.standardMC(X, β, 10^3)
     RRRMC.bklMC(X, β, 10^3)
     RRRMC.wtmMC(X, β, 10^3)
@@ -80,14 +81,14 @@ function test_RRG(; N = 10_000,
 
     seed = seed0
     for tst = 1:ntests
-        info("### SEED = $seed SEEDx = $seedx")
+        @info "### SEED = $seed SEEDx = $seedx"
 
-        srand(seedx)
+        Random.seed!(seedx)
         X = RRRMC.GraphRRG(N, K)
 
         if :met in algs
-            info("# Metropolis")
-            gc()
+            @info "# Metropolis"
+            GC.gc()
             rstep = round(Int, step * met_factor)
             riters = rstep * samples
             hook, cleanup, met_Cv = gen_hook("met", seed)
@@ -100,8 +101,8 @@ function test_RRG(; N = 10_000,
             save(gen_Cfname("met", seedx, seed), Dict("Cs"=>met_Cs))
         end
         if :bkl in algs
-            info("# BKL")
-            gc()
+            @info "# BKL"
+            GC.gc()
             rstep = round(Int, step * bkl_factor)
             riters = rstep * samples
             hook, cleanup, bkl_Cv = gen_hook("bkl", seed)
@@ -114,8 +115,8 @@ function test_RRG(; N = 10_000,
             save(gen_Cfname("bkl", seedx, seed), Dict("Cs"=>bkl_Cs))
         end
         if :rrr in algs
-            info("# RRR")
-            gc()
+            @info "# RRR"
+            GC.gc()
             rstep = round(Int, step * rrr_factor)
             riters = rstep * samples
             hook, cleanup, rrr_Cv = gen_hook("rrr", seed)
@@ -128,8 +129,8 @@ function test_RRG(; N = 10_000,
             save(gen_Cfname("rrr", seedx, seed), Dict("Cs"=>rrr_Cs))
         end
         if :wtm in algs
-            info("# WTM")
-            gc()
+            @info "# WTM"
+            GC.gc()
             rtstep = step * wtm_factor
             hook, cleanup, wtm_Cv = gen_hook("wtm", seed)
             try
@@ -144,7 +145,7 @@ function test_RRG(; N = 10_000,
         seed += seedst
         seedx += seedstx
 
-        println(STDERR)
+        println(stderr)
     end
 end
 
@@ -174,14 +175,14 @@ function test_RRGCont(; N = 10_000,
 
     dirname = "output_RRGCont_N$(N)_K$(K)_beta$(β)_tmax$(t_limit)_step$(step)$(tag)"
     gen_fname(alg, seed) = joinpath(dirname, "output_$(alg)_sx$(seedx)_s$(seed).txt")
-    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld")
+    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld2")
 
     samples = iters ÷ step
 
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && error("file $fn exists")
+        !force && isfile(fn) && @error "file $fn exists"
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -198,10 +199,10 @@ function test_RRGCont(; N = 10_000,
         return hook, cleanup, Cv
     end
 
-    srand(seedx)
+    Random.seed!(seedx)
     X = RRRMC.GraphRRGNormal(N, K)
 
-    info("compile...")
+    @info "compile..."
     RRRMC.standardMC(X, β, 10^3)
     RRRMC.bklMC(X, β, 10^3)
     RRRMC.wtmMC(X, β, 10^3)
@@ -209,14 +210,14 @@ function test_RRGCont(; N = 10_000,
 
     seed = seed0
     for tst = 1:ntests
-        info("### SEED = $seed SEEDx = $seedx")
+        @info "### SEED = $seed SEEDx = $seedx"
 
-        srand(seedx)
+        Random.seed!(seedx)
         X = RRRMC.GraphRRGNormal(N, K)
 
         if :met in algs
-            info("# Metropolis")
-            gc()
+            @info "# Metropolis"
+            GC.gc()
             rstep = round(Int, step * met_factor)
             riters = rstep * samples
             hook, cleanup, met_Cv = gen_hook("met", seed)
@@ -229,8 +230,8 @@ function test_RRGCont(; N = 10_000,
             save(gen_Cfname("met", seedx, seed), Dict("Cs"=>met_Cs))
         end
         if :bkl in algs
-            info("# BKL")
-            gc()
+            @info "# BKL"
+            GC.gc()
             rstep = round(Int, step * bkl_factor)
             riters = rstep * samples
             hook, cleanup, bkl_Cv = gen_hook("bkl", seed)
@@ -243,8 +244,8 @@ function test_RRGCont(; N = 10_000,
             save(gen_Cfname("bkl", seedx, seed), Dict("Cs"=>bkl_Cs))
         end
         if :rrr in algs
-            info("# RRR")
-            gc()
+            @info "# RRR"
+            GC.gc()
             rstep = round(Int, step * rrr_factor)
             riters = rstep * samples
             hook, cleanup, rrr_Cv = gen_hook("rrr", seed)
@@ -257,8 +258,8 @@ function test_RRGCont(; N = 10_000,
             save(gen_Cfname("rrr", seedx, seed), Dict("Cs"=>rrr_Cs))
         end
         if :wtm in algs
-            info("# WTM")
-            gc()
+            @info "# WTM"
+            GC.gc()
             rtstep = step * wtm_factor
             hook, cleanup, wtm_Cv = gen_hook("wtm", seed)
             try
@@ -273,7 +274,7 @@ function test_RRGCont(; N = 10_000,
         seed += seedst
         seedx += seedstx
 
-        println(STDERR)
+        println(stderr)
     end
 end
 
@@ -283,7 +284,7 @@ function pm1dot(a::BitVector, b::BitVector)
     # one way to write it avoiding allocations:
     # 4 * (a ⋅ b) - 2sum(a) - 2sum(b) + length(a)
 
-    # ugly but slightly faster (length(a)-2sum(a ⊻ b) without allocations):
+    # ugly but slightly faster (length(a)-2sum(a .⊻ b) without allocations):
     l = length(a)
     ac = a.chunks
     bc = b.chunks
@@ -294,7 +295,7 @@ function pm1dot(a::BitVector, b::BitVector)
 end
 
 function parsets(outfname, tag::Symbol)
-    info("parse $outfname")
+    @info "parse $outfname"
     # ratio = 1.0
     # if tag == :wtm
     #     final_t = 0.0
@@ -328,41 +329,34 @@ function parsets(outfname, tag::Symbol)
     return ts #, ratio
 end
 
-type LogRange{T}
+struct LogRange{T}
     i0::T
     i1::T
     st0::Float64
     incr::Float64
-    function LogRange(i0::T, i1::T, st0::Real, incr::Real)
+    function LogRange(i0::T, i1::T, st0::Real, incr::Real) where {T}
         @assert st0 > 0
         @assert incr ≥ 1
-        return new(i0, i1, st0, incr)
+        return new{T}(i0, i1, st0, incr)
     end
 end
-
-LogRange{T}(i0::T, i1::T, st0::Real, incr::Real) = LogRange{T}(i0, i1, st0, incr)
 
 const LRINCR = 1.5
 
 LogRange(l::Int) = LogRange(1, l, 1, LRINCR)
 
-Base.start(lr::LogRange) = (lr.i0, lr.st0)
-Base.done{T}(lr::LogRange, stat::Tuple{T,Float64}) = stat[1] > lr.i1
-function Base.next{T<:Integer}(lr::LogRange{T}, stat::Tuple{T,Float64})
+_stT(st::Real, T::Type) = st
+_stT(st::Real, T::Type{<:Integer}) = max(1, round(T, st))
+function iterate(lr::LogRange{T}, stat = (lr.i0, lr.st0)) where {T}
     i, st = stat
-    inext = i + max(1, round(T, st))
-    stnext = st * lr.incr
-    return i, (inext, stnext)
-end
-function Base.next{T}(lr::LogRange{T}, stat::Tuple{T,Float64})
-    i, st = stat
-    inext = i + st
+    i > lr.i1 && return nothing
+    inext = i + _stT(st, T)
     stnext = st * lr.incr
     return i, (inext, stnext)
 end
 
 trunclen!(v::Vector, i::Integer) = deleteat!(v, (i+1):length(v))
-trunclen!{N}(vs::NTuple{N,Vector}, i::Integer) = for v in vs; trunclen!(v, i); end
+trunclen!(vs::NTuple{N,Vector}, i::Integer) where {N} = for v in vs; trunclen!(v, i); end
 trunclen!(vs::Vector...) = trunclen!(vs, minimum(length(v) for v in vs))
 
 function get_ts_range(tsm::Vector{Float64}, t0::Real)
@@ -372,7 +366,7 @@ function get_ts_range(tsm::Vector{Float64}, t0::Real)
 end
 
 function parseovs(Cfname::AbstractString, tsm::Vector{Float64}, lr::LogRange{Float64})
-    info("parse $Cfname")
+    @info "parse $Cfname"
     Cs::BitMatrix = load(Cfname, "Cs")
     N, l = size(Cs)
 
@@ -384,8 +378,8 @@ function parseovs(Cfname::AbstractString, tsm::Vector{Float64}, lr::LogRange{Flo
     for t_st in lr
         #println("   i=$i/$l")
         i, j = get_ts_range(tsm, t_st)
-        i == 0 && break
-        j == 0 && (j = length(tsm)+1)
+        i ≡ nothing && break
+        j ≡ nothing && (j = length(tsm)+1)
 
         mq2 = 0.0
         mq4 = 0.0
@@ -411,7 +405,7 @@ function parseovs(Cfname::AbstractString, tsm::Vector{Float64}, lr::LogRange{Flo
 end
 
 function parsexovs(Cfname1::AbstractString, Cfname2::AbstractString, ts1::Vector{Float64}, ts2::Vector{Float64}, lr::LogRange{Float64})
-    info("parse $Cfname1 + $Cfname2")
+    @info "parse $Cfname1 + $Cfname2"
     Cs1::BitMatrix = load(Cfname1, "Cs")
     Cs2::BitMatrix = load(Cfname2, "Cs")
     N, l1 = size(Cs1)
@@ -430,10 +424,10 @@ function parsexovs(Cfname1::AbstractString, Cfname2::AbstractString, ts1::Vector
         i1, j1 = get_ts_range(ts1, t_st)
         i2, j2 = get_ts_range(ts2, t_st)
 
-        (i1 == 0 || i2 == 0) && break
+        (i1 ≡ nothing || i2 ≡ nothing) && break
 
-        j1 == 0 && (j1 = length(ts1)+1)
-        j2 == 0 && (j2 = length(ts2)+1)
+        j1 ≡ nothing && (j1 = length(ts1)+1)
+        j2 ≡ nothing && (j2 = length(ts2)+1)
 
         mx2 = 0.0
         mx4 = 0.0
@@ -462,26 +456,29 @@ function parsexovs(Cfname1::AbstractString, Cfname2::AbstractString, ts1::Vector
     return mx2s, sx2s
 end
 
-function stats_overlaps(dirname::AbstractString, tags::Vector{Symbol}, sx::Int = 8370000274, s1::Int = 6540000789, s2::Int = 5430000678, step::Float64 = 30.0/2^8, incr::Float64 = 2.0)
-    for tag in tags
-        stats_overlaps(dirname, tag, sx, s1, s2, step, incr)
-    end
+function stats_overlaps(dirname::AbstractString; tags::Vector{Symbol} = [:met, :bkl, :rrr, :wtm],
+                        sx::Int = 8370000274, s1::Int = 6540000789,
+                        s2::Int = 5430000678, step::Float64 = 30.0/2^8,
+                        incr::Float64 = 2.0)
+    foreach(tag->stats_overlaps(dirname, tag, sx, s1, s2, step, incr), tags)
 end
 
-function stats_overlaps(dirname::AbstractString, tag::Symbol, sx::Int, s1::Int, s2::Int, step::Float64 = 30.0/2^8, incr::Float64 = 2.0)
-    isdir(dirname) || error("directory $dirname not found")
+function stats_overlaps(dirname::AbstractString, tag::Symbol,
+                        sx::Int, s1::Int, s2::Int, step::Float64 = 30.0/2^8,
+                        incr::Float64 = 2.0)
+    isdir(dirname) || @error "directory $dirname not found"
     tags = [:met, :bkl, :rrr, :wtm]
     @assert tag ∈ tags
 
     outfname1 = joinpath(dirname, "output_$(tag)_sx$(sx)_s$(s1).txt")
     outfname2 = joinpath(dirname, "output_$(tag)_sx$(sx)_s$(s2).txt")
-    Cfname1 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s1).jld")
-    Cfname2 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s2).jld")
+    Cfname1 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s1).jld2")
+    Cfname2 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s2).jld2")
 
-    isfile(outfname1) || error("file $outfname1 not found")
-    isfile(outfname2) || error("file $outfname2 not found")
-    isfile(Cfname1) || error("file $Cfname1 not found")
-    isfile(Cfname2) || error("file $Cfname2 not found")
+    isfile(outfname1) || @error "file $outfname1 not found"
+    isfile(outfname2) || @error "file $outfname2 not found"
+    isfile(Cfname1) || @error "file $Cfname1 not found"
+    isfile(Cfname2) || @error "file $Cfname2 not found"
 
     fname = joinpath(dirname, "overlaps_$(tag)_sx$(sx).txt")
 
@@ -506,7 +503,7 @@ function stats_overlaps(dirname::AbstractString, tag::Symbol, sx::Int, s1::Int, 
 
     r = min(length(mx2s), length(mq2s))
 
-    info("write output")
+    @info "write output"
     open(fname, "w") do f
         println(f, "#time self std cross std")
         for (i,t) = enumerate(lr)
@@ -514,18 +511,18 @@ function stats_overlaps(dirname::AbstractString, tag::Symbol, sx::Int, s1::Int, 
             mq2, sq2 = mq2s[i], sq2s[i]
             mx2, sx2 = mx2s[i], sx2s[i]
 
-            (isnan(mq2) || isnan(sq2) || isnan(mx2) || isnan(sx2)) && (warn("Found NaN at t=$t (mq2=$mq2, sq2=$sq2, mx2=$mx2, sx2=$sx2)"); continue)
+            (isnan(mq2) || isnan(sq2) || isnan(mx2) || isnan(sx2)) && (@warn "Found NaN at t=$t (mq2=$mq2, sq2=$sq2, mx2=$mx2, sx2=$sx2)"; continue)
 
             println(f, "$t $mq2 $sq2 $mx2 $sx2")
         end
     end
-    info("done")
+    @info "done"
 
     return
 end
 
 function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
-    isdir(dirname) || error("directory $dirname not found")
+    isdir(dirname) || @error "directory $dirname not found"
     tags = [:met, :bkl, :rrr, :wtm]
 
     diffs = Dict{Symbol, Dict{AbstractString,Float64}}()
@@ -535,7 +532,7 @@ function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
         startswith(fn, "stats_") && continue
         startswith(fn, "output_") && continue
         startswith(fn, "Cs_") && continue
-        ismatch(r"^overlaps_(...)_sx\d+\.txt$", fn) || continue
+        occursin(r"^overlaps_(...)_sx\d+\.txt$", fn) || continue
         tag = Symbol(match(r"overlaps_(...)_sx\d+\.txt", fn).captures[1])
         @assert tag ∈ tags
         dt = get!(diffs, tag, Dict{AbstractString,Float64}())
@@ -572,17 +569,17 @@ function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
             startswith(fn, "stats_") && continue
             startswith(fn, "output_") && continue
             startswith(fn, "Cs_") && continue
-            ismatch(r"^overlaps_(...)_sx\d+\.txt$", fn) || (warn("skipping file $fn"); continue)
+            occursin(r"^overlaps_(...)_sx\d+\.txt$", fn) || (@warn "skipping file $fn"; continue)
             tag = Symbol(match(r"overlaps_(...)_sx\d+\.txt", fn).captures[1])
             @assert tag ∈ tags
-            fn ∈ outliers[tag] && (info("skip $fn"); continue)
+            fn ∈ outliers[tag] && (@info "skip $fn"; continue)
             q2md_tag = q2mdict[tag]
             q2sd_tag = q2sdict[tag]
             x2md_tag = x2mdict[tag]
             x2sd_tag = x2sdict[tag]
             open(joinpath(dirname, fn)) do f
                 for l in eachline(f)
-                    ismatch(r"^\s*#", l) && continue
+                    occursin(r"^\s*#", l) && continue
                     sl = split(l)
                     @assert length(sl) ≥ 4
                     t_st = parse(Float64, sl[1])
@@ -638,7 +635,7 @@ function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
             end
         end
 
-        hasnans && warn("empty bins found (increase step?)")
+        hasnans && @warn "empty bins found (increase step?)"
 
         for i = 1:L
             t_st = all_t_st[i]
@@ -648,7 +645,7 @@ function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
 end
 
 function stats_overlaps_all_diff(dirname::AbstractString; outlfrac::Float64 = 0.0)
-    isdir(dirname) || error("directory $dirname not found")
+    isdir(dirname) || @error "directory $dirname not found"
     tags = [:met, :bkl, :rrr, :wtm]
 
     diffs = Dict{Symbol, Dict{AbstractString,Float64}}()
@@ -658,7 +655,7 @@ function stats_overlaps_all_diff(dirname::AbstractString; outlfrac::Float64 = 0.
         startswith(fn, "stats_") && continue
         startswith(fn, "output_") && continue
         startswith(fn, "Cs_") && continue
-        ismatch(r"^overlaps_(...)_sx\d+\.txt$", fn) || (warn("skipping file $fn"); continue)
+        occursin(r"^overlaps_(...)_sx\d+\.txt$", fn) || (@warn "skipping file $fn"; continue)
         tag = Symbol(match(r"overlaps_(...)_sx\d+\.txt", fn).captures[1])
         @assert tag ∈ tags
         dt = get!(diffs, tag, Dict{AbstractString,Float64}())
@@ -696,17 +693,17 @@ function stats_overlaps_all_diff(dirname::AbstractString; outlfrac::Float64 = 0.
             startswith(fn, "stats_") && continue
             startswith(fn, "output_") && continue
             startswith(fn, "Cs_") && continue
-            ismatch(r"^overlaps_(...)_sx\d+\.txt$", fn) || (warn("skipping file $fn"); continue)
+            occursin(r"^overlaps_(...)_sx\d+\.txt$", fn) || (@warn "skipping file $fn"; continue)
             tag = Symbol(match(r"overlaps_(...)_sx\d+\.txt", fn).captures[1])
             @assert tag ∈ tags
-            fn ∈ outliers[tag] && (info("skip $fn"); continue)
+            fn ∈ outliers[tag] && (@info "skip $fn"; continue)
             q2md_tag = q2mdict[tag]
             q2sd_tag = q2sdict[tag]
             x2md_tag = x2mdict[tag]
             x2sd_tag = x2sdict[tag]
             open(joinpath(dirname, fn)) do f
                 for l in eachline(f)
-                    ismatch(r"^\s*#", l) && continue
+                    occursin(r"^\s*#", l) && continue
                     sl = split(l)
                     @assert length(sl) ≥ 4
                     t_st = parse(Float64, sl[1])
@@ -757,7 +754,7 @@ function stats_overlaps_all_diff(dirname::AbstractString; outlfrac::Float64 = 0.
             end
         end
 
-        hasnans && warn("empty bins found (increase step?)")
+        hasnans && @warn "empty bins found (increase step?)"
 
         for i = 1:L
             t_st = all_t_st[i]
@@ -791,14 +788,14 @@ function test_QIsing(; N = 1_024,
 
     dirname = "output_QIsing_N$(N)_M$(M)_beta$(β)_Gamma$(Γ)_tmax$(t_limit)_step$(step)$(tag)"
     gen_fname(alg, seed) = joinpath(dirname, "output_$(alg)_sx$(seedx)_s$(seed).txt")
-    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld")
+    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld2")
 
     samples = iters ÷ step
 
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && error("file $fn exists")
+        !force && isfile(fn) && @error "file $fn exists"
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -816,23 +813,23 @@ function test_QIsing(; N = 1_024,
         return hook, cleanup, Cv
     end
 
-    srand(seedx)
+    Random.seed!(seedx)
     X = RRRMC.GraphQSKT(N, M, Γ, β)
 
-    info("compile...")
+    @info "compile..."
     RRRMC.standardMC(X, β, 10^3)
     RRRMC.rrrMC(X, β, 10^3)
 
     seed = seed0
     for tst = 1:ntests
-        info("### SEED = $seed SEEDx = $seedx")
+        @info "### SEED = $seed SEEDx = $seedx"
 
-        srand(seedx)
+        Random.seed!(seedx)
         X = RRRMC.GraphQSKT(N, M, Γ, β)
 
         if :met in algs
-            info("# Metropolis")
-            gc()
+            @info "# Metropolis"
+            GC.gc()
             rstep = round(Int, step * met_factor)
             riters = rstep * samples
             hook, cleanup, met_Cv = gen_hook("met", seed)
@@ -845,8 +842,8 @@ function test_QIsing(; N = 1_024,
             save(gen_Cfname("met", seedx, seed), Dict("Cs"=>met_Cs))
         end
         if :rrr in algs
-            info("# RRR")
-            gc()
+            @info "# RRR"
+            GC.gc()
             rstep = round(Int, step * rrr_factor)
             riters = rstep * samples
             hook, cleanup, rrr_Cv = gen_hook("rrr", seed)
@@ -862,7 +859,7 @@ function test_QIsing(; N = 1_024,
         seed += seedst
         seedx += seedstx
 
-        println(STDERR)
+        println(stderr)
     end
 end
 
@@ -891,14 +888,14 @@ function test_REIsing(; N = 1_024,
 
     dirname = "output_REIsing_N$(N)_M$(M)_beta$(β)_gamma$(γ)_tmax$(t_limit)_step$(step)$(tag)"
     gen_fname(alg, seed) = joinpath(dirname, "output_$(alg)_sx$(seedx)_s$(seed).txt")
-    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld")
+    gen_Cfname(alg, seedx, seed) = joinpath(dirname, "Cs_$(alg)_sx$(seedx)_s$(seed).jld2")
 
     samples = iters ÷ step
 
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && error("file $fn exists")
+        !force && isfile(fn) && @error "file $fn exists"
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -916,23 +913,23 @@ function test_REIsing(; N = 1_024,
         return hook, cleanup, Cv
     end
 
-    srand(seedx)
+    Random.seed!(seedx)
     X = RRRMC.GraphSKRE(N, M, γ, β)
 
-    info("compile...")
+    @info "compile..."
     RRRMC.standardMC(X, β, 10^3)
     RRRMC.rrrMC(X, β, 10^3)
 
     seed = seed0
     for tst = 1:ntests
-        info("### SEED = $seed SEEDx = $seedx")
+        @info "### SEED = $seed SEEDx = $seedx"
 
-        srand(seedx)
+        Random.seed!(seedx)
         X = RRRMC.GraphSKRE(N, M, γ, β)
 
         if :met in algs
-            info("# Metropolis")
-            gc()
+            @info "# Metropolis"
+            GC.gc()
             rstep = round(Int, step * met_factor)
             riters = rstep * samples
             hook, cleanup, met_Cv = gen_hook("met", seed)
@@ -945,8 +942,8 @@ function test_REIsing(; N = 1_024,
             save(gen_Cfname("met", seedx, seed), Dict("Cs"=>met_Cs))
         end
         if :rrr in algs
-            info("# RRR")
-            gc()
+            @info "# RRR"
+            GC.gc()
             rstep = round(Int, step * rrr_factor)
             riters = rstep * samples
             hook, cleanup, rrr_Cv = gen_hook("rrr", seed)
@@ -962,11 +959,11 @@ function test_REIsing(; N = 1_024,
         seed += seedst
         seedx += seedstx
 
-        println(STDERR)
+        println(stderr)
     end
 end
 function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, :bkl, :rrr, :wtm])
-    isdir(dirname) || error("directory $dirname not found")
+    isdir(dirname) || @error "directory $dirname not found"
 
     @assert all(a ∈ [:met, :bkl, :rrr, :wtm] for a in algs)
 
@@ -987,7 +984,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
             startswith(fn, "stats_") && return false
             startswith(fn, "overlaps_") && return false
             startswith(fn, "Cs_") && return false
-            ismatch(r"^output_(...)_sx\d+_s\d+\.txt$", fn) || (warn("skipping file $fn"); return false)
+            occursin(r"^output_(...)_sx\d+_s\d+\.txt$", fn) || (@warn "skipping file $fn"; return false)
             tag = Symbol(match(r"output_(...)_sx\d+_s\d+\.txt", fn).captures[1])
             @assert tag ∈ algs # XXX
             return true
@@ -1017,7 +1014,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
             #         end
             #         return final_t / final_gt
             #     end
-            #     #info("ratio = $ratio")
+            #     #@info "ratio = $ratio"
             # else
             #     ratio = 1.0
             # end
@@ -1027,7 +1024,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
                 max_file_t = 0.0
                 Ed_tmp = Dict{Float64,Vector{Float64}}()
                 for l in eachline(f)
-                    ismatch(r"^\s*#", l) && continue
+                    occursin(r"^\s*#", l) && continue
                     sl = split(l)
                     @assert length(sl) ≥ 4
                     E = parse(Float64, sl[3])
@@ -1059,7 +1056,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
         all_t_st = sort!(collect(keys(t_st_count)))
 
         L = findfirst(t_st->t_st_count[t_st] < 1.0 * max_t_st_count, sort!(collect(keys(t_st_count))))
-        L == 0 && (L = length(all_t_st))
+        L ≡ nothing && (L = length(all_t_st))
 
         all_t_st = all_t_st[1:L]
 
@@ -1090,7 +1087,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
             end
         end
 
-        hasnans && warn("empty bins found (increase step?)")
+        hasnans && @warn "empty bins found (increase step?)"
 
         for i = 1:L
             t_st = all_t_st[i]
@@ -1100,7 +1097,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
 end
 
 # function stats_accrate_vs_β(dirname::AbstractString)
-#     isdir(dirname) || error("directory $dirname not found")
+#     isdir(dirname) || @error "directory $dirname not found"
 #
 #     tags = [:met, :rrr]
 #
@@ -1115,7 +1112,7 @@ end
 #         for fn in files
 #             isfile(joinpath(dirname, fn)) || continue
 #             startswith(fn, "stats_") && continue
-#             ismatch(r"^output_(...)_s\d+\.txt$", fn) || (warn("skipping file $fn"); continue)
+#             occursin(r"^output_(...)_s\d+\.txt$", fn) || (@warn "skipping file $fn"; continue)
 #             tag = Symbol(match(r"output_(...)_s\d+\.txt", fn).captures[1])
 #             @assert tag ∈ tags
 #             sd_tag = sdict[tag]
@@ -1125,7 +1122,7 @@ end
 #                 it1 = 0
 #                 acc1 = 0
 #                 for l in eachline(f)
-#                     ismatch(r"^\s*#", l) && continue
+#                     occursin(r"^\s*#", l) && continue
 #                     sl = split(l)
 #                     @assert length(sl) ≥ 5
 #                     it = parse(Int, sl[1])
@@ -1188,7 +1185,7 @@ end
 # end
 
 # function stats_accrate_vs_time(dirname::AbstractString; step::Float64 = 10.0)
-#     isdir(dirname) || error("directory $dirname not found")
+#     isdir(dirname) || @error "directory $dirname not found"
 #
 #     tags = [:met, :rrr]
 #
@@ -1203,7 +1200,7 @@ end
 #         for fn in files
 #             isfile(joinpath(dirname, fn)) || continue
 #             startswith(fn, "stats_") && continue
-#             ismatch(r"^output_(...)_s\d+\.txt$", fn) || (warn("skipping file $fn"); continue)
+#             occursin(r"^output_(...)_s\d+\.txt$", fn) || (@warn "skipping file $fn"; continue)
 #             tag = Symbol(match(r"output_(...)_s\d+\.txt", fn).captures[1])
 #             @assert tag ∈ tags
 #             sd_tag = sdict[tag]
@@ -1212,7 +1209,7 @@ end
 #                 it0 = 0
 #                 acc0 = 0
 #                 for l in eachline(f)
-#                     ismatch(r"^\s*#", l) && continue
+#                     occursin(r"^\s*#", l) && continue
 #                     sl = split(l)
 #                     @assert length(sl) ≥ 4
 #                     it = parse(Int, sl[1])
@@ -1262,7 +1259,7 @@ end
 #             end
 #         end
 #
-#         hasnans && warn("empty bins found (increase step?)")
+#         hasnans && @warn "empty bins found (increase step?)"
 #
 #         for i = 1:L
 #             t_st = all_t_st[i]
