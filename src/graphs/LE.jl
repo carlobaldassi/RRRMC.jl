@@ -6,9 +6,7 @@ using ExtractMacro
 using ..Interface
 using ..Common
 
-if isdefined(Main, :Documenter)
 using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
-end
 
 export GraphLE, GraphLocalEntropy, LEenergies
 

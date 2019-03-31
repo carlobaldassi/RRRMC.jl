@@ -11,7 +11,7 @@ they can be constructed like in this example:
 julia> X = RRRMC.GraphRRG(10, 3)
 ```
 
-Note that for models which involve randomness in the constructor you may want to set the random seed with `srand`
+Note that for models which involve randomness in the constructor you may want to set the random seed with `Random.seed!`
 before calling the constructor, for reproducibility purposes.
 
 ## Basic spin glass models
@@ -31,7 +31,6 @@ GraphRRGNormalDiscretized
 ```
 
 ### Edwards-Anderson graphs
-
 
 ```@docs
 GraphEA
@@ -101,6 +100,10 @@ GraphRobustEnsemble
 
 ```@docs
 GraphLocalEntropy
+```
+
+```@docs
+GraphTopologicalLocalEntropy
 ```
 
 ## Trivial models used for testing and debugging

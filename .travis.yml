@@ -1,19 +1,38 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+
 os:
   - linux
   - osx
+
 julia:
-  - 0.5
-  - 0.6
+  - 1.0
+  - 1.1
   - nightly
+
+# # Uncomment the following lines to allow failures on nightly julia
+# # (tests will run but not make your overall status red)
+# matrix:
+#   allow_failures:
+#   - julia: nightly
+
 notifications:
   email: false
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia --check-bounds=yes --inline=no -e 'Pkg.clone(pwd()); Pkg.build("RRRMC"); Pkg.test("RRRMC"; coverage=true)'
+
+#script: # the default script is equivalent to the following
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("RRRMC"); Pkg.test("RRRMC"; coverage=true)';
+
 after_success:
-  - julia -e 'Pkg.add("Documenter", v"0.9.0")'
-  - julia -e 'cd(Pkg.dir("RRRMC")); include(joinpath("docs", "make.jl"))'
-  - julia -e 'Pkg.add("Coverage", v"0.3")'
-  - julia -e 'cd(Pkg.dir("RRRMC")); include(joinpath("docs", "coverage.jl"))'
+  - julia -e 'using Pkg; cd(Pkg.dir("RRRMC")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())';
+
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 1.1
+      os: linux
+      script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.instantiate();
+                                    Pkg.develop(PackageSpec(path=pwd()))'
+        - julia --project=docs/ docs/make.jl
+      after_success: skip

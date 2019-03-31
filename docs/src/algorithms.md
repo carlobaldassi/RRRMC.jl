@@ -27,5 +27,3 @@ extremal_opt
 ```@docs
 Config
 ```
-
-

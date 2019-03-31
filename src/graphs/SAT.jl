@@ -7,10 +7,7 @@ using ExtractMacro
 using ..Interface
 using ..Common
 
-if isdefined(Main, :Documenter)
-# this is silly but it's required for correct cross-linking in docstrings, apparently
-using ...RRRMC
-end
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
 
 export GraphSAT
 
@@ -120,7 +117,9 @@ end
 """
   GraphSAT(N::Integer, α::Real, K::Integer)
 
-A `DiscGraph` implementing a random `K`-SAT graph with `N` spins and `αN` clauses.
+A `DiscrGraph` implementing a random `K`-SAT graph with `N` spins and `αN` clauses.
+
+The energy of the model is the number of violated clauses.
 """
 function GraphSAT(N::Integer, K::Integer, α::Real)
     A, J = gen_randomKSAT(N, K, α)

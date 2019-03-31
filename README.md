@@ -1,8 +1,8 @@
 # RRRMC.jl
 
-| **Documentation**                       | **PackageEvaluator**                                    | **Build Status**                                                                                | **Releases**                     |
-|:---------------------------------------:|:-------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
-| [![][docs-latest-img]][docs-latest-url] | [![][pkg-0.5-img]][pkg-url] [![][pkg-0.6-img]][pkg-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
+| **Documentation**                       | **Build Status**                                                                                | **Releases**                     |
+|:---------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
+| [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
 *"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
@@ -18,15 +18,20 @@ It also provides:
 * an implementation of the "τ-Extremal Optimization" heuristic technique described in the paper
   ["Optimization with Extremal Dynamics"][EOpaper] by S. Boettcher and A. G. Percus.
 
-The code is written in [Julia], and tested against Julia `0.5`, `0.6` and *current* (at the time of writing) `0.7-DEV` on
-Linux, OS X, and Windows.
+The code is written in [Julia]. It requires Julia `1.0`.
 
 ### Installation
 
-To install the module, use Julia's package manager:
+To install the package, use Julia's package manager: from the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```
-julia> Pkg.add("RRRMC")
+pkg> add RRRMC
+```
+
+Or, equivalently, via the Pkg API:
+
+```
+julia> import Pkg; Pkg.add("RRRMC")
 ```
 
 Dependencies will be installed automatically.

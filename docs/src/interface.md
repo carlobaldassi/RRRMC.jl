@@ -73,5 +73,13 @@ LEenergies
 ```
 
 ```@docs
+TLEenergies
+```
+
+```@docs
 cenergy
+```
+
+```@docs
+distances
 ```

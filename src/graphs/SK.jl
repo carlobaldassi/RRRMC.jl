@@ -8,6 +8,8 @@ using ..Interface
 using ..Common
 using ..QT
 
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
+
 export GraphSK, GraphSKNormal
 
 import ..Interface: energy, delta_energy, update_cache!, neighbors

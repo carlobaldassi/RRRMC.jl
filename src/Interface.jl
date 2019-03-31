@@ -6,10 +6,8 @@ using Random
 using ExtractMacro
 using ..Common
 
-if isdefined(Main, :Documenter)
 # this is silly but it's required for correct cross-linking in docstrings, apparently
 using ...RRRMC
-end
 
 export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
        spinflip!, energy, delta_energy, neighbors, getN, allΔE, inner_graph,
@@ -243,7 +241,6 @@ be flipped, excluding the contribution from the internal [`SimpleGraph`](@ref)
 See also [`delta_energy`](@ref). There is a default fallback implementation, but
 it should be overloaded for efficiency.
 """
-
 delta_energy_residual(X::DoubleGraph, C::Config, move::Int) =
     delta_energy(X, C, move) - delta_energy(inner_graph(X), C, move)
 
@@ -268,8 +265,8 @@ allΔE(X::DoubleGraph{ET,GT}) where {ET,GT<:DiscrGraph} = allΔE(typeof(inner_gr
     cenergy(X::DoubleGraph)
 
 Returns the individual energy (as defined by the original model)
-of the reference configuration in a [`GraphLocalEntropy`](@ref) graph or a
-[`GraphTopologicalLocalEntropy`](@ref) graph.
+of the reference configuration in a [`GraphLocalEntropy`](@ref RRRMC.GraphLocalEntropy) graph or a
+[`GraphTopologicalLocalEntropy`](@ref RRRMC.GraphTopologicalLocalEntropy) graph.
 """
 cenergy(::AbstractGraph) = @error("not implemented")
 
@@ -277,8 +274,8 @@ cenergy(::AbstractGraph) = @error("not implemented")
     distances(X::DoubleGraph)
 
 Returns the matrix of the Hamming distances between replicas, in graphs with
-replicas: [`GraphQuant`](@ref), [`GraphLocalEntropy`](@ref), [`GraphTopologicalLocalEntropy`](@ref)
-or [`GraphRobustEnsemble`](@ref).
+replicas: [`GraphQuant`](@ref RRRMC.GraphQuant), [`GraphLocalEntropy`](@ref RRRMC.GraphLocalEntropy),
+[`GraphTopologicalLocalEntropy`](@ref RRRMC.GraphTopologicalLocalEntropy) or [`GraphRobustEnsemble`](@ref RRRMC.GraphRobustEnsemble).
 """
 distances(::AbstractGraph) = @error("not implemented")
 

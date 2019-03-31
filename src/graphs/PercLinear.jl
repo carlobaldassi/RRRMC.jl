@@ -9,6 +9,8 @@ using ..Common
 
 using ..DeltaE.ArraySets
 
+using ...RRRMC # this is silly but it's required for correct cross-linking in docstrings, apparently
+
 export GraphPercLinear
 
 import ..Interface: energy, delta_energy, update_cache!, neighbors
@@ -67,7 +69,7 @@ trained on `P` random i.i.d. \$±1\$ patterns.
 The energy of the model is computed for each pattern as the minimum number of weights which need
 to be flipped in order to satisfy that pattern.
 
-See also [`GraphPercStep`](@ref)
+See also [`GraphPercStep`](@ref RRRMC.GraphPercStep), [`GraphPercXEntr`](@ref RRRMC.GraphPercXEntr).
 """
 GraphPercLinear(N::Integer, P::Integer) = GraphPercLinear(gen_ξ(N, P)...)
 

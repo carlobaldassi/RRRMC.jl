@@ -28,5 +28,3 @@ SingleGraph
 ```@docs
 DoubleGraph
 ```
-
-
