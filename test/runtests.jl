@@ -68,6 +68,7 @@ function test()
         RRRMC.GraphSAT(10, 3, 4.2),
         RRRMC.GraphPercLinear(101, 30),
         RRRMC.GraphPercStep(101, 30),
+        RRRMC.GraphPercXEntr(101, 30, 1.5),
         RRRMC.GraphCommStep(21, 5, 30),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),

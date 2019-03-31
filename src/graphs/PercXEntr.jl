@@ -30,11 +30,12 @@ mutable struct Stabilities
     newΔs::Vector{Int}
     ξsi::BitVector
     last_move::Int
+    justΔ::Bool
     function Stabilities(P::Integer)
         Δs = zeros(P)
         newΔs = zeros(P)
         ξsi = BitArray(undef, P)
-        return new(Δs, newΔs, ξsi, 0)
+        return new(Δs, newΔs, ξsi, 0, false)
     end
 end
 
@@ -87,6 +88,7 @@ function Base.empty!(stab::Stabilities)
     @extract stab : Δs
     fill!(Δs, 0)
     stab.last_move = 0
+    stab.justΔ = false
     return stab
 end
 
@@ -118,25 +120,30 @@ function update_cache!(X::GraphPercXEntr{λ}, C::Config, move::Int) where {λ}
     @assert X.N == C.N
 
     @extract X : stab
+    @extract stab : last_move justΔ
     # NOTE: this only works if called right after delta_energy
-    swap_Δs!(stab)
+    if justΔ && last_move == move
+        swap_Δs!(stab)
+        return
+    end
 
-    # @extract C : s
-    # @extract X : N P ξ stab
-    # @extract stab : Δs ξsi last_move
-    # @assert N == length(s)
+    @extract C : s
+    @extract X : N P ξ
+    @extract stab : Δs ξsi
+    @assert N == length(s)
 
-    # si = ~s[move]
-    # last_move ≠ move && unsafe_copy!(ξsi, 1, ξ, (move-1)*P + 1, P)
-    # stab.last_move = move
-    # si && flipbits!(ξsi)
-    # # @assert ξsi == ξ[:,move] .⊻ si
-    # @inbounds for a = 1:P
-    #     oldΔ = Δs[a]
-    #     newΔ = oldΔ + (4 * ξsi[a] - 2)
-    #     Δs[a] = newΔ
-    # end
-    # si && flipbits!(ξsi)
+    si = ~s[move]
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
+    stab.last_move = move
+    si && flipbits!(ξsi)
+    # @assert ξsi == ξ[:,move] .⊻ si
+    @inbounds for a = 1:P
+        oldΔ = Δs[a]
+        newΔ = oldΔ + (4 * ξsi[a] - 2)
+        Δs[a] = newΔ
+    end
+    si && flipbits!(ξsi)
+    stab.justΔ = false
 
     return
 end
@@ -149,6 +156,7 @@ function delta_energy_naive(X::GraphPercXEntr, C::Config, move::Int)
     E1 = energy(X, C)
     spinflip!(C, move)
     E0 = energy(X, C)
+    X.stab.justΔ = false
     return E1 - E0
 end
 
@@ -178,6 +186,7 @@ function delta_energy(X::GraphPercXEntr{λ}, C::Config, move::Int) where {λ}
     # td = delta_energy_naive(X, s, stab, move)
     # ΔE == td || @show ΔE, td
     # @assert ΔE == td
+    stab.justΔ = true
     return ΔE
 end
 
