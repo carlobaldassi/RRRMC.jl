@@ -1,0 +1,23 @@
+name = "RRRMC"
+uuid = "ff70551f-00bc-5e1a-85c4-e17d0b71e9c9"
+version = "2.0.0"
+author = ["Carlo Baldassi <carlobaldassi@gmail.com>"]
+desc = "Reduced-rejection-rate MonteCarlo and more."
+keywords = ["monte carlo", "spin glass"]
+license = "MIT"
+
+[deps]
+ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+
+[compat]
+julia = "1"
+DataStructures = "0.15"
+SpecialFunctions = "0.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
