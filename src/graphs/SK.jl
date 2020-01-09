@@ -199,7 +199,7 @@ struct GraphSKNormal <: SimpleGraph{Float64}
 end
 
 """
-    GraphSK(N::Integer) <: SimpleGraph{Float64}
+    GraphSKNormal(N::Integer) <: SimpleGraph{Float64}
 
 A `SimpleGraph` implementing a Sherrington-Kirkpatrick fully-connected Ising model
 with `N` spins and random interactions extracted from a normal distribution with
