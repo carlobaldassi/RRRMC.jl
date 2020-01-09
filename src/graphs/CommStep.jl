@@ -57,11 +57,13 @@ mutable struct GraphCommStep <: SimpleGraph{Int}
     stab::Stabilities
     tmps::BitVector
     function GraphCommStep(K2::Int, ξ::BitMatrix, ξv::Vector{BitVector})
-        P, K1 = size(ξ)
-        #TODO: check
+        P, N = size(ξ)
+        @assert N % K2 == 0
+        K1 = N ÷ K2
+        @assert length(ξv) == P
+        @assert all(length(ξ1) == N for ξ1 in ξv)
         isodd(K1) || throw(ArgumentError("K1 must be odd, given: $K1"))
         isodd(K2) || throw(ArgumentError("K2 must be odd, given: $K2"))
-        N = K1 * K2
         stab = Stabilities(K2, P)
         tmps = BitVector(undef, N)
         return new(N, K1, K2, P, ξ, ξv, stab, tmps)
@@ -69,15 +71,26 @@ mutable struct GraphCommStep <: SimpleGraph{Int}
 end
 
 """
-    GraphCommStep(K1::Integer, K2::Integer, P::Integer) <: SimpleGraph{Int}
+    GraphCommStep(K1::Integer, K2::Integer, P::Integer; fc = false) <: SimpleGraph{Int}
 
-A `SimpleGraph` implementing a two-layer fully-connected binary committee machine
-with `K2` hidden units, where each hidden unit has `K1` binary (\$±1\$) synapses,
-trained on `P` random i.i.d. \$±1\$ patterns.
+A `SimpleGraph` implementing a two-layer binary committee machine with `K2` hidden units,
+where each hidden unit has `K1` binary (\$±1\$) synapses, trained on `P` random i.i.d. \$±1\$
+patterns. The output of each hidden unit is computed through a step function \$sign(x)\$.
+Both `K1` and `K2` must be odd.
+The default is to generate a tree-like machine, but it can be made fully-connected with the
+argument `fc=true`.
 
 The energy of the model is computed as the number of misclassified patterns.
 """
-GraphCommStep(K1::Integer, K2::Integer, P::Integer) = GraphCommStep(K2, gen_ξ(K1, P)...)
+function GraphCommStep(K1::Integer, K2::Integer, P::Integer; fc::Bool = false)
+    Kin = fc ? K1 : K1 * K2
+    ξ, ξv = gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
+    GraphCommStep(K2, ξ, ξv)
+end
 
 function Base.empty!(stab::Stabilities)
     @extract stab : p1 m1 p2 m2 Δ1s Δ2s ξsi
@@ -105,7 +118,7 @@ function energy(X::GraphCommStep, C::Config)
         Δ2 = 0
         for k = 1:K2
             unsafe_copyto!(tmps, 1, s, (k-1)*K1 + 1, K1)
-            map!(⊻, tmps, tmps, ξv[a])
+            map!(⊻, tmps, tmps, ξv[a][(k-1)*K1 .+ (1:K1)])
             Δ1 = K1 - 2 * sum(tmps)
             Δ1s[k][a] = Δ1
             Δ2 += sign(Δ1)
@@ -136,8 +149,8 @@ function update_cache!(X::GraphCommStep, C::Config, move::Int)
 
     si = s[move]
     k2 = (move - 1) ÷ K1 + 1
-    k1 = (move - 1) % K1 + 1
-    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (k1-1)*P + 1, P)
+    # k1 = (move - 1) % K1 + 1
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     Δ1k = Δ1s[k2]
@@ -205,9 +218,9 @@ function delta_energy(X::GraphCommStep, C::Config, move::Int)
 
     si = s[move]
     k2 = (move - 1) ÷ K1 + 1
-    k1 = (move - 1) % K1 + 1
+    # k1 = (move - 1) % K1 + 1
 
-    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (k1-1)*P + 1, P)
+    last_move ≠ move && unsafe_copyto!(ξsi, 1, ξ, (move-1)*P + 1, P)
     stab.last_move = move
     si && flipbits!(ξsi)
     ΔE = 0
@@ -222,7 +235,7 @@ function delta_energy(X::GraphCommStep, C::Config, move::Int)
         end
     end
     si && flipbits!(ξsi)
-    # td = delta_energy_naive(X, s, stab, move)
+    # td = delta_energy_naive(X, C, move)
     # ΔE == td || @show ΔE, td
     # @assert ΔE == td
     return ΔE
