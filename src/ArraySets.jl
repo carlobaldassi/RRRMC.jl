@@ -43,7 +43,7 @@ end
 
 length(aset::ArraySet) = aset.t
 
-in(aset::ArraySet, i) = pos[i] ≠ 0
+in(aset::ArraySet, i::Integer) = pos[i] ≠ 0
 
 function show(io::IO, aset::ArraySet)
     @extract aset : v t
@@ -91,7 +91,7 @@ function empty!(aset::ArraySet)
     return aset
 end
 
-function iterate(aset::ArraySet, i = 1)
+function iterate(aset::ArraySet, i::Integer = 1)
     i == aset.t + 1 && return nothing
     @extract aset : v
     @boundscheck 1 ≤ i ≤ aset.t
