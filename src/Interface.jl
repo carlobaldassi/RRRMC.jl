@@ -10,7 +10,7 @@ using ..Common
 using ...RRRMC
 
 export Config, AbstractGraph, SimpleGraph, DiscrGraph, SingleGraph, DoubleGraph,
-       spinflip!, energy, delta_energy, neighbors, getN, allΔE, inner_graph,
+       spinflip!, energy, delta_energy, energy_type, neighbors, getN, allΔE, inner_graph,
        delta_energy_residual, update_cache!, update_cache_residual!,
        cenergy, distances
 
@@ -103,6 +103,14 @@ All graphs must implement this function.
 It *must* also be used to initialize/reset the cache for a given graph, if any (see [`update_cache!`](@ref)).
 """
 energy(::AbstractGraph, ::Config) = @error("not implemented")
+
+
+"""
+    energy_type(X::AbstractGraph{ET}) where ET
+
+Returns the type `ET`, that is the return type of the [`energy`](@ref) and [`delta_energy`](@ref) functions.
+"""
+energy_type(::AbstractGraph{ET}) where ET = ET
 
 """
     delta_energy(X::AbstractGraph, C::Config, move::Int)
