@@ -106,6 +106,12 @@ GraphLocalEntropy
 GraphTopologicalLocalEntropy
 ```
 
+## Mixed models
+
+```@docs
+GraphMixed
+```
+
 ## Trivial models used for testing and debugging
 
 ```@docs

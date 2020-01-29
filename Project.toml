@@ -1,23 +1,23 @@
 name = "RRRMC"
 uuid = "ff70551f-00bc-5e1a-85c4-e17d0b71e9c9"
-version = "2.0.0"
-author = ["Carlo Baldassi <carlobaldassi@gmail.com>"]
-desc = "Reduced-rejection-rate MonteCarlo and more."
 keywords = ["monte carlo", "spin glass", "ising spin models"]
 license = "MIT"
+desc = "Reduced-rejection-rate MonteCarlo and more."
+author = ["Carlo Baldassi <carlobaldassi@gmail.com>"]
+version = "2.1.0"
 
 [deps]
-ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+ExtractMacro = "f86d3d12-fd5b-522c-99e9-61577282a1e9"
+Future = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Future = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
+DataStructures = "≥ 0.15"
+SpecialFunctions = "≥ 0.7"
 julia = "1"
-DataStructures = "0.15"
-SpecialFunctions = "0.7"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
