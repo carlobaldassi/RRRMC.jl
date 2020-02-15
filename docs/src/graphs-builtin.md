@@ -120,6 +120,16 @@ GraphTopologicalLocalEntropy
 GraphMixed
 ```
 
+## Models with additional fields
+
+```@docs
+GraphAddFields
+```
+
+```@docs
+GraphAddSubFields
+```
+
 ## Trivial models used for testing and debugging
 
 ```@docs
