@@ -26,7 +26,7 @@ The code is written in [Julia](http://julialang.org). It requires Julia `1.0`.
 To install the package, use Julia's package manager: from the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```
-pkg> add RRRMC
+(v1.3) pkg> add RRRMC
 ```
 
 Or, equivalently, via the Pkg API:
