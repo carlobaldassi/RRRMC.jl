@@ -117,7 +117,9 @@ function test()
                          RRRMC.GraphSK(10)),
         RRRMC.GraphMixed(RRRMC.GraphSK(31),
                          RRRMC.GraphPercStep(31, 30),
-                         RRRMC.GraphSAT(31, 3, 4.2))
+                         RRRMC.GraphSAT(31, 3, 4.2)),
+        RRRMC.GraphAddFields(randn(10), RRRMC.GraphRRGNormal(10, 3)),
+        RRRMC.GraphAddSubFields(randn(10), RRRMC.GraphRRGNormal(10, 3)),
        ]
 
     β = 2.0
@@ -160,7 +162,7 @@ function test()
         C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=checkenergy_hook_EO)
         C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=gen_timeout_hook())
 
-        if isa(X, RRRMC.DoubleGraph)
+        if X isa RRRMC.DoubleGraph
             X0 = RRRMC.inner_graph(X)
             E, C = bklMC(X0, β, iters, step=st, quiet=quiet)
             E, C = bklMC(X0, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
