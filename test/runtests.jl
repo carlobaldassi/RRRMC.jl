@@ -69,28 +69,32 @@ function test()
         RRRMC.GraphPercLinear(101, 30),
         RRRMC.GraphPercStep(101, 30),
         RRRMC.GraphPercXEntr(101, 30, 1.5),
-        RRRMC.GraphCommStep(21, 5, 30),
+        RRRMC.GraphCommStep(25, 5, 30),
+        RRRMC.GraphCommStep(21, 5, 30, fc=true),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),
         RRRMC.GraphQuant(10, 8, 0.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphQuant(3, 8, 0.5, 2.0, RRRMC.GraphThreeSpin),
         RRRMC.GraphQPercLinearT(101, 30, 5, 0.5, 2.0),
         RRRMC.GraphQPercStepT(101, 30, 5, 0.5, 2.0),
-        RRRMC.GraphQCommStepT(21, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphQCommStepT(25, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphQCommStepT(21, 5, 30, 5, 0.5, 2.0, fc=true),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(10)),
         RRRMC.GraphRobustEnsemble(10, 8, 1.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphRobustEnsemble(3, 8, 1.5, 2.0, RRRMC.GraphThreeSpin),
         RRRMC.GraphPercLinearRE(101, 30, 5, 0.5, 2.0),
         RRRMC.GraphPercStepRE(101, 30, 5, 0.5, 2.0),
-        RRRMC.GraphCommStepRE(21, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepRE(25, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepRE(21, 5, 30, 5, 0.5, 2.0, fc=true),
         RRRMC.GraphLocalEntropy(10, 8, 1.5, 2.0, RRRMC.GraphEmpty, 10),
         RRRMC.GraphLocalEntropy(10, 8, 1.5, 2.0, RRRMC.GraphSKNormal, RRRMC.SK.gen_J_gauss(10)),
         RRRMC.GraphLocalEntropy(3, 8, 1.5, 2.0, RRRMC.GraphThreeSpin),
         RRRMC.GraphRobustEnsemble(20, 4, 1.5, 2.0, RRRMC.GraphQuant, 5, 4, 0.5, 2.0, RRRMC.GraphSK, RRRMC.SK.gen_J(5)),
         RRRMC.GraphPercLinearLE(101, 30, 5, 0.5, 2.0),
         RRRMC.GraphPercStepLE(101, 30, 5, 0.5, 2.0),
-        RRRMC.GraphCommStepLE(21, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepLE(25, 5, 30, 5, 0.5, 2.0),
+        RRRMC.GraphCommStepLE(21, 5, 30, 5, 0.5, 2.0, fc=true),
         RRRMC.GraphMixed(RRRMC.GraphRRGNormal(18, 3),
                          RRRMC.GraphPSpin3(18, 5)),
         RRRMC.GraphMixed(RRRMC.GraphRRG(10, 3),
@@ -140,7 +144,7 @@ function test()
         C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=checkenergy_hook_EO)
         C, Emin, Cmin, itmin = extremal_opt(X, τ, iters, step=st, quiet=quiet, hook=gen_timeout_hook())
 
-        if isa(X, RRRMC.DoubleGraph)
+        if X isa RRRMC.DoubleGraph
             X0 = RRRMC.inner_graph(X)
             E, C = bklMC(X0, β, iters, step=st, quiet=quiet)
             E, C = bklMC(X0, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
