@@ -9,9 +9,11 @@ using ..EA
 using ..PercLinear
 using ..PercStep
 using ..CommStep
+using ..CommReLU
 
 export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT,
-       GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT
+       GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT,
+       GraphQCommReLUT
 
 const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
 
@@ -131,6 +133,28 @@ end
 
 function GraphQCommStepT(X::GraphCommStep, M::Integer, Γ::Float64, β::Float64)
     GraphQuant(X.N, M, Γ, β, GraphCommStep, X.K2, X.ξ, X.ξv)
+end
+
+const GraphQCommReLUT{fourK} = GraphQuant{fourK,GraphCommReLU}
+
+# """
+#     GraphQCommReLUT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphQCommReLUT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64; fc::Bool = false)
+    N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv, y = CommReLU.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
+    GraphQuant(N, M, Γ, β, GraphCommReLU, K2, ξ, ξv, y)
+end
+
+function GraphQCommReLUT(X::GraphCommReLU, M::Integer, Γ::Float64, β::Float64)
+    GraphQuant(X.N, M, Γ, β, GraphCommReLU, X.K2, X.ξ, X.ξv, X.y)
 end
 
 end # module

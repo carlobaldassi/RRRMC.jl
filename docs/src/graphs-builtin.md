@@ -78,6 +78,10 @@ GraphPercXEntr
 GraphCommStep
 ```
 
+```@docs
+GraphCommReLU
+```
+
 ### SAT
 
 ```@docs
