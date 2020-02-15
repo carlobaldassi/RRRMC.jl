@@ -16,7 +16,8 @@ end
 @include_graph "RE.jl"
 @include_graph "LE.jl"
 @include_graph "TLE.jl"
+@include_graph "AddFields.jl"
 
-for filename in filter(f->endswith(f, ".jl") && f ∉ ["QT.jl", "RE.jl", "LE.jl", "TLE.jl"], readdir(graphs_dir))
+for filename in filter(f->endswith(f, ".jl") && f ∉ ["QT.jl", "RE.jl", "LE.jl", "TLE.jl", "AddFields.jl"], readdir(graphs_dir))
     @eval @include_graph $filename
 end

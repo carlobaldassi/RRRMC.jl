@@ -117,7 +117,9 @@ function test()
                          RRRMC.GraphSK(10)),
         RRRMC.GraphMixed(RRRMC.GraphSK(31),
                          RRRMC.GraphPercStep(31, 30),
-                         RRRMC.GraphSAT(31, 3, 4.2))
+                         RRRMC.GraphSAT(31, 3, 4.2)),
+        RRRMC.GraphAddFields(randn(10), RRRMC.GraphRRGNormal(10, 3)),
+        RRRMC.GraphAddSubFields(randn(10), RRRMC.GraphRRGNormal(10, 3)),
        ]
 
     β = 2.0
