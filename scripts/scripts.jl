@@ -53,7 +53,7 @@ function test_RRG(; N = 10_000,
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && @error "file $fn exists"
+        !force && isfile(fn) && error("file $fn exists")
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -182,7 +182,7 @@ function test_RRGCont(; N = 10_000,
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && @error "file $fn exists"
+        !force && isfile(fn) && error("file $fn exists")
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -466,7 +466,7 @@ end
 function stats_overlaps(dirname::AbstractString, tag::Symbol,
                         sx::Int, s1::Int, s2::Int, step::Float64 = 30.0/2^8,
                         incr::Float64 = 2.0)
-    isdir(dirname) || @error "directory $dirname not found"
+    isdir(dirname) || error("directory $dirname not found")
     tags = [:met, :bkl, :rrr, :wtm]
     @assert tag ∈ tags
 
@@ -475,10 +475,10 @@ function stats_overlaps(dirname::AbstractString, tag::Symbol,
     Cfname1 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s1).jld2")
     Cfname2 = joinpath(dirname, "Cs_$(tag)_sx$(sx)_s$(s2).jld2")
 
-    isfile(outfname1) || @error "file $outfname1 not found"
-    isfile(outfname2) || @error "file $outfname2 not found"
-    isfile(Cfname1) || @error "file $Cfname1 not found"
-    isfile(Cfname2) || @error "file $Cfname2 not found"
+    isfile(outfname1) || error("file $outfname1 not found")
+    isfile(outfname2) || error("file $outfname2 not found")
+    isfile(Cfname1) || error("file $Cfname1 not found")
+    isfile(Cfname2) || error("file $Cfname2 not found")
 
     fname = joinpath(dirname, "overlaps_$(tag)_sx$(sx).txt")
 
@@ -522,7 +522,7 @@ function stats_overlaps(dirname::AbstractString, tag::Symbol,
 end
 
 function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
-    isdir(dirname) || @error "directory $dirname not found"
+    isdir(dirname) || error("directory $dirname not found")
     tags = [:met, :bkl, :rrr, :wtm]
 
     diffs = Dict{Symbol, Dict{AbstractString,Float64}}()
@@ -645,7 +645,7 @@ function stats_overlaps_all(dirname::AbstractString; outlfrac::Float64 = 0.0)
 end
 
 function stats_overlaps_all_diff(dirname::AbstractString; outlfrac::Float64 = 0.0)
-    isdir(dirname) || @error "directory $dirname not found"
+    isdir(dirname) || error("directory $dirname not found")
     tags = [:met, :bkl, :rrr, :wtm]
 
     diffs = Dict{Symbol, Dict{AbstractString,Float64}}()
@@ -795,7 +795,7 @@ function test_QIsing(; N = 1_024,
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && @error "file $fn exists"
+        !force && isfile(fn) && error("file $fn exists")
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -895,7 +895,7 @@ function test_REIsing(; N = 1_024,
     function gen_hook(alg, seed)
         isdir(dirname) || mkdir(dirname)
         fn = gen_fname(alg, seed)
-        !force && isfile(fn) && @error "file $fn exists"
+        !force && isfile(fn) && error("file $fn exists")
         f = open(fn, "w")
         Cv = Vector{BitVector}() #BitArray(N, samples)
         t0 = time()
@@ -963,7 +963,7 @@ function test_REIsing(; N = 1_024,
     end
 end
 function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, :bkl, :rrr, :wtm])
-    isdir(dirname) || @error "directory $dirname not found"
+    isdir(dirname) || error("directory $dirname not found")
 
     @assert all(a ∈ [:met, :bkl, :rrr, :wtm] for a in algs)
 
@@ -1097,7 +1097,7 @@ function stats_time(dirname::AbstractString; step::Float64 = 2.0, algs = [:met, 
 end
 
 # function stats_accrate_vs_β(dirname::AbstractString)
-#     isdir(dirname) || @error "directory $dirname not found"
+#     isdir(dirname) || error("directory $dirname not found")
 #
 #     tags = [:met, :rrr]
 #
@@ -1185,7 +1185,7 @@ end
 # end
 
 # function stats_accrate_vs_time(dirname::AbstractString; step::Float64 = 10.0)
-#     isdir(dirname) || @error "directory $dirname not found"
+#     isdir(dirname) || error("directory $dirname not found")
 #
 #     tags = [:met, :rrr]
 #

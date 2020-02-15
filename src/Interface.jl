@@ -102,7 +102,7 @@ All graphs must implement this function.
 
 It *must* also be used to initialize/reset the cache for a given graph, if any (see [`update_cache!`](@ref)).
 """
-energy(::AbstractGraph, ::Config) = @error("not implemented")
+energy(::AbstractGraph, ::Config) = error("not implemented")
 
 
 """
@@ -155,7 +155,7 @@ not required by [`standardMC`](@ref).
 For performance reasons, it is best if the returned value is stack-allocated
 rather than heap-allocated, e.g. it is better to return an `NTuple` than a `Vector`.
 """
-neighbors(::AbstractGraph, i::Int) = @error("not implemented")
+neighbors(::AbstractGraph, i::Int) = error("not implemented")
 
 
 
@@ -197,7 +197,7 @@ be computed from the type of the graph alone (possibly using a generated
 function), i.e. it is best to implement the first definition above — the
 second one then falls back automatically to the first.
 """
-allΔE(::Type{P}) where {P<:DiscrGraph} = @error("not implemented")
+allΔE(::Type{P}) where {P<:DiscrGraph} = error("not implemented")
 allΔE(X::DiscrGraph) = allΔE(typeof(X))
 
 """
@@ -276,7 +276,7 @@ Returns the individual energy (as defined by the original model)
 of the reference configuration in a [`GraphLocalEntropy`](@ref RRRMC.GraphLocalEntropy) graph or a
 [`GraphTopologicalLocalEntropy`](@ref RRRMC.GraphTopologicalLocalEntropy) graph.
 """
-cenergy(::AbstractGraph) = @error("not implemented")
+cenergy(::AbstractGraph) = error("not implemented")
 
 """
     distances(X::DoubleGraph)
@@ -285,6 +285,6 @@ Returns the matrix of the Hamming distances between replicas, in graphs with
 replicas: [`GraphQuant`](@ref RRRMC.GraphQuant), [`GraphLocalEntropy`](@ref RRRMC.GraphLocalEntropy),
 [`GraphTopologicalLocalEntropy`](@ref RRRMC.GraphTopologicalLocalEntropy) or [`GraphRobustEnsemble`](@ref RRRMC.GraphRobustEnsemble).
 """
-distances(::AbstractGraph) = @error("not implemented")
+distances(::AbstractGraph) = error("not implemented")
 
 end # module
