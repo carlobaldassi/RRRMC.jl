@@ -1,8 +1,8 @@
 # RRRMC.jl
 
-| **Documentation**                       | **Build Status**                                                                                | **Releases**                     |
-|:---------------------------------------:|:-----------------------------------------------------------------------------------------------:|:--------------------------------:|
-| [![][docs-latest-img]][docs-latest-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
+| **Documentation**                 | **Build Status**                                              | **Releases**                     |
+|:---------------------------------:|:-------------------------------------------------------------:|:--------------------------------:|
+| [![][docs-dev-img]][docs-dev-url] | [![][travis-img]][travis-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
 *"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
@@ -25,7 +25,7 @@ The code is written in [Julia]. It requires Julia `1.0`.
 To install the package, use Julia's package manager: from the Julia REPL, type `]` to enter the Pkg REPL mode and run:
 
 ```
-pkg> add RRRMC
+(v1.3) pkg> add RRRMC
 ```
 
 Or, equivalently, via the Pkg API:
@@ -39,7 +39,7 @@ Dependencies will be installed automatically.
 ### Documentation
 
 - [**STABLE**][docs-stable-url] &mdash; stable version of the documentation
-- [**LATEST**][docs-latest-url] &mdash; *in-development version of the documentation.*
+- [**DEV**][docs-dev-url] &mdash; *in-development version of the documentation.*
 
 [Julia]: https://julialang.org
 [RRRpaper]: https://doi.org/10.1088/1742-5468/aa5335
@@ -50,18 +50,11 @@ Dependencies will be installed automatically.
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://carlobaldassi.github.io/RRRMC.jl/stable
-[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
-[docs-latest-url]: https://carlobaldassi.github.io/RRRMC.jl/latest
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://carlobaldassi.github.io/RRRMC.jl/dev
 
 [travis-img]: https://travis-ci.org/carlobaldassi/RRRMC.jl.svg?branch=master
 [travis-url]: https://travis-ci.org/carlobaldassi/RRRMC.jl
-
-[pkg-0.5-img]: http://pkg.julialang.org/badges/RRRMC_0.5.svg
-[pkg-0.6-img]: http://pkg.julialang.org/badges/RRRMC_0.6.svg
-[pkg-url]: http://pkg.julialang.org/?pkg=RRRMC
-
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/bq8jj4u0dx6x6xm1/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/carlobaldassi/rrrmc-jl/branch/master
 
 [codecov-img]: https://codecov.io/gh/carlobaldassi/RRRMC.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/carlobaldassi/RRRMC.jl

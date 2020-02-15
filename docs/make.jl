@@ -17,7 +17,4 @@ makedocs(
 
 deploydocs(
     repo   = "github.com/carlobaldassi/RRRMC.jl.git",
-    target = "build",
-    deps = nothing,
-    make = nothing,
 )
