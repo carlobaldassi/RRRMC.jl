@@ -10,8 +10,11 @@ using ..SAT
 using ..PercLinear
 using ..PercStep
 using ..CommStep
+using ..CommReLU
 
-export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE, GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE,
+       GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE,
+       GraphCommReLULE
 
 const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -136,4 +139,23 @@ function GraphCommStepLE(X::GraphCommStep, M::Integer, γ::Float64, β::Float64)
     GraphLocalEntropy(X.N, M, γ, β, GraphCommStep, X.K2, X.ξ, X.ξv)
 end
 
+# """
+#     GraphCommReLULE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphCommReLULE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64; fc::Bool = false)
+    N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv, y = CommReLU.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
+    GraphLocalEntropy(N, M, γ, β, GraphCommReLU, K2, ξ, ξv, y)
+end
+
+function GraphCommReLULE(X::GraphCommReLU, M::Integer, γ::Float64, β::Float64)
+    GraphLocalEntropy(X.N, M, γ, β, GraphCommReLU, X.K2, X.ξ, X.ξv, X.y)
+end
 end # module
