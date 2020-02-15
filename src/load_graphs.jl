@@ -1,6 +1,6 @@
 # This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
 
-const graphs_dir = joinpath(dirname(@__FILE__), "graphs")
+const graphs_dir = joinpath(@__DIR__, "graphs")
 const valid_graph_name = r"^([^/]+)\.jl$"
 
 macro include_graph(filename)
