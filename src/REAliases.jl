@@ -11,10 +11,11 @@ using ..PercLinear
 using ..PercStep
 using ..CommStep
 using ..CommReLU
+using ..CommQu
 
 export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE,
        GraphPercLinearRE, GraphPercStepRE, GraphCommStepRE,
-       GraphCommReLURE
+       GraphCommReLURE, GraphCommQuRE
 
 const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -162,6 +163,26 @@ end
 
 function GraphCommReLURE(X::GraphCommReLU, M::Integer, γ::Float64, β::Float64)
     GraphRobustEnsemble(X.N, M, γ, β, GraphCommReLU, X.K2, X.ξ, X.ξv, X.y)
+end
+
+# """
+#     GraphCommQuRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64) <: DoubleGraph
+#
+# TODO
+# """
+function GraphCommQuRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64; fc::Bool = false)
+    N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv, y = CommQu.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
+    GraphRobustEnsemble(N, M, γ, β, GraphCommQu, K2, ξ, ξv, y)
+end
+
+function GraphCommQuRE(X::GraphCommQu, M::Integer, γ::Float64, β::Float64)
+    GraphRobustEnsemble(X.N, M, γ, β, GraphCommQu, X.K2, X.ξ, X.ξv, X.y)
 end
 
 end # module

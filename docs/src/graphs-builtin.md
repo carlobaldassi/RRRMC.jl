@@ -82,6 +82,10 @@ GraphCommStep
 GraphCommReLU
 ```
 
+```@docs
+GraphCommQu
+```
+
 ### SAT
 
 ```@docs
