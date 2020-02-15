@@ -11,7 +11,8 @@ using ..PercLinear
 using ..PercStep
 using ..CommStep
 
-export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE, GraphPercLinearRE, GraphPercStepRE, GraphCommStepRE
+export Graph0RE, GraphSKRE, GraphEARE, GraphSATRE,
+       GraphPercLinearRE, GraphPercStepRE, GraphCommStepRE
 
 const Graph0RE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphEmpty}
 
@@ -126,9 +127,14 @@ const GraphCommStepRE{M,γ,β} = GraphRobustEnsemble{M,γ,β,GraphCommStep}
 #
 # TODO
 # """
-function GraphCommStepRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = CommStep.gen_ξ(K1, P)
+function GraphCommStepRE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64; fc::Bool = false)
     N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv = CommStep.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
     GraphRobustEnsemble(N, M, γ, β, GraphCommStep, K2, ξ, ξv)
 end
 

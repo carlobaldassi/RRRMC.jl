@@ -10,7 +10,8 @@ using ..PercLinear
 using ..PercStep
 using ..CommStep
 
-export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT, GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT
+export GraphQ0T, GraphQSKT, GraphQSKNormalT, GraphQEAT,
+       GraphQPercLinearT, GraphQPercStepT, GraphQCommStepT
 
 const GraphQ0T{fourK} = GraphQuant{fourK,GraphEmpty}
 
@@ -117,9 +118,14 @@ const GraphQCommStepT{fourK} = GraphQuant{fourK,GraphCommStep}
 #
 # TODO
 # """
-function GraphQCommStepT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64)
-    ξ, ξv = CommStep.gen_ξ(K1, P)
+function GraphQCommStepT(K1::Integer, K2::Integer, P::Integer, M::Integer, Γ::Float64, β::Float64; fc::Bool = false)
     N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv = CommStep.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
     GraphQuant(N, M, Γ, β, GraphCommStep, K2, ξ, ξv)
 end
 

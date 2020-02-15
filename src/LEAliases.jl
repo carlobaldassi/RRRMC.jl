@@ -11,7 +11,8 @@ using ..PercLinear
 using ..PercStep
 using ..CommStep
 
-export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE, GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE
+export Graph0LE, GraphSKLE, GraphEALE, GraphSATLE,
+       GraphPercLinearLE, GraphPercStepLE, GraphCommStepLE
 
 const Graph0LE{M,γT} = GraphLocalEntropy{M,γT,GraphEmpty}
 
@@ -126,9 +127,14 @@ const GraphCommStepLE{M,γT} = GraphLocalEntropy{M,γT,GraphCommStep}
 #
 # TODO
 # """
-function GraphCommStepLE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64)
-    ξ, ξv = CommStep.gen_ξ(K1, P)
+function GraphCommStepLE(K1::Integer, K2::Integer, P::Integer, M::Integer, γ::Float64, β::Float64; fc::Bool = false)
     N = K1 * K2
+    Kin = fc ? K1 : N
+    ξ, ξv = CommStep.gen_ξ(Kin, P)
+    if fc
+        ξ = repeat(ξ, outer=(1,K2))
+        ξv = [repeat(ξ1, K2) for ξ1 in ξv]
+    end
     GraphLocalEntropy(N, M, γ, β, GraphCommStep, K2, ξ, ξv)
 end
 
