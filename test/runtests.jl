@@ -107,7 +107,13 @@ function test()
     samples = iters ÷ st
     quiet = true
 
-    for X in graphs
+    function abbrev(X, n)
+        s = string(X)
+        l = length(s)
+        return l > n ? chop(s, tail = l-n) : rpad(s, n)
+    end
+
+    @testset "$(abbrev(X, 60))" for X in graphs
         # @show X
         E, C = standardMC(X, β, iters, step=st, quiet=quiet)
         E, C = standardMC(X, β, iters, step=st, quiet=quiet, C0=C, hook=checkenergy_hook)
