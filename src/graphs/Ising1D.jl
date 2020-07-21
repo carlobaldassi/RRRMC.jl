@@ -26,7 +26,7 @@ end
     GraphIsing1D(N::Integer) <: DiscrGraph{Int}
 
 A simple 1-dimensional `DiscrGraph` type with `N` spins, antiferromagnetic interactions
-(\$J=-1\$), no fields, and periodic boundary conditions.
+(\$J=-1\$), contstant fields (\$h=1\$), and periodic boundary conditions.
 
 Mostly useful for testing/debugging purposes.
 """ -> GraphIsing1D(N::Integer)
@@ -91,8 +91,6 @@ end
 #neighbors(X::GraphIsing1D, i::Int) = (i > 1 ? i-1 : X.N), (i < X.N ? i + 1 : 1)
 neighbors(X::GraphIsing1D, i::Int) = (mod1(i-1, X.N), mod1(i+1, X.N))
 allΔE(::Type{GraphIsing1D}) = (2,  6)
-
-
 
 end
 
