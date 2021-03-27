@@ -141,9 +141,9 @@ function energy(X::GraphCommQu, C::Config)
         δΔ2Hsmax[a] = δΔ2Hmax
         δΔ2Hsmin[a] = δΔ2Hmin
         if Δ2 > 0
-            Δ2 + top(δΔ2Hmin) ≤ 0 && push!(p2, a)
+            Δ2 + first(δΔ2Hmin) ≤ 0 && push!(p2, a)
         else
-            Δ2 + top(δΔ2Hmax) > 0 && push!(m2, a)
+            Δ2 + first(δΔ2Hmax) > 0 && push!(m2, a)
             E += 1
         end
     end
@@ -175,14 +175,14 @@ function update_cache!(X::GraphCommQu, C::Config, move::Int)
 
         newΔ2 = oldΔ2 + co * (newΔ1^2 - oldΔ1^2)
 
-        # oldδΔ2max = top(δΔ2Hsmax[a])
-        # oldδΔ2min = top(δΔ2Hsmin[a])
+        # oldδΔ2max = first(δΔ2Hsmax[a])
+        # oldδΔ2min = first(δΔ2Hsmin[a])
 
         update!(δΔ2Hsmax[a], k2, 4 * (co + abs(co * newΔ1)))
         update!(δΔ2Hsmin[a], k2, 4 * (co - abs(co * newΔ1)))
 
-        newδΔ2max = top(δΔ2Hsmax[a])
-        newδΔ2min = top(δΔ2Hsmin[a])
+        newδΔ2max = first(δΔ2Hsmax[a])
+        newδΔ2min = first(δΔ2Hsmin[a])
 
         oldm2 = a ∈ m2
         newm2 = newΔ2 ≤ 0 && newΔ2 + newδΔ2max > 0
