@@ -23,13 +23,14 @@ mutable struct DynamicSampler
     levs::Int
     tinds::Vector{Int}
     tpos::Vector{Int}
+    trefresh::Int
     function DynamicSampler(N::Int)
         levs = ceil(Int, log2(N))
         N2 = 2^levs
         v2 = zeros(N2)
         ps = zeros(N2 - 1)
         tinds, tpos = buildtable(levs)
-        return new(v2, ps, 0.0, N, levs, tinds, tpos)
+        return new(v2, ps, 0.0, N, levs, tinds, tpos, 0)
     end
     function DynamicSampler(v)
         isempty(v) && throw(ArgumentError("input must be non-empty"))
@@ -37,15 +38,13 @@ mutable struct DynamicSampler
         levs = ceil(Int, log2(N))
         N2 = 2^levs
         v2 = zeros(N2)
-        for (i,x) in enumerate(v)
-            v2[i] = x
-        end
+        v2[1:N] .= v
         n = findfirst(v2 .< 0)
         n ≡ nothing || throw(ArgumentError("negative element given: v[$n] = $(v2[n])"))
         ps = zeros(N2 - 1)
         tinds, tpos = buildtable(levs)
 
-        dynsmp = new(v2, ps, 0.0, N, levs, tinds, tpos)
+        dynsmp = new(v2, ps, 0.0, N, levs, tinds, tpos, 0)
         refresh!(dynsmp)
 
         return dynsmp
@@ -94,6 +93,7 @@ function refresh!(dynsmp::DynamicSampler)
             ps[k] += v[i]
         end
     end
+    dynsmp.trefresh = 0
     return dynsmp
 end
 
@@ -143,8 +143,11 @@ function getel(dynsmp::DynamicSampler, x::Float64)
         end
         off *= 2
     end
-    #@assert k < N
-    #@assert v[k+1] > 0
+    if k ≥ N || v[k+1] == 0
+        dynsmp.trefresh > 0 || throw(Error("Unrecoverable loss of precision detected in the dynamic sampler"))
+        refresh!(dynsmp)
+        return getel(dynsmp, x)
+    end
     return k+1
 end
 
@@ -156,6 +159,11 @@ rand(dynsmp::DynamicSampler) = rand(Random.GLOBAL_RNG, dynsmp)
 @propagate_inbounds function setindex!(dynsmp::DynamicSampler, x::Float64, i::Int)
     @extract dynsmp : v ps N levs tinds tpos
     @boundscheck 1 ≤ i ≤ N || throw(BoundsError(dynsmp, i))
+
+    if dynsmp.trefresh ≥ max(N, 100)
+        refresh!(dynsmp)
+    end
+    dynsmp.trefresh += 1
 
     @inbounds d = x - v[i]
     @inbounds v[i] = x
