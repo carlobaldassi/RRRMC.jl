@@ -1,8 +1,6 @@
 # RRRMC.jl
 
-| **Documentation**                 | **Build Status**                                              | **Releases**                     |
-|:---------------------------------:|:-------------------------------------------------------------:|:--------------------------------:|
-| [![][docs-dev-img]][docs-dev-url] | [![][travis-img]][travis-url] [![][codecov-img]][codecov-url] | [![DOI][zenodo-img]][zenodo-url] |
+[![DOCS][docs-img]][docs-url] [![CI][CI-img]][CI-url] [![CODECOV][codecov-img]][codecov-url] [![DOI][zenodo-img]][zenodo-url]
 
 This code implements the Reduced-Rejection-Rate (RRR) Monte Carlo method for Ising spin models described in the paper
 *"A method to reduce the rejection rate in Monte Carlo Markov Chains"* by C. Baldassi,
@@ -48,13 +46,11 @@ Dependencies will be installed automatically.
 [WTMpaper]: https://doi.org/10.1016/S0010-4655(01)00412-X
 [EOpaper]: https://doi.org/10.1103/PhysRevLett.86.5211
 
-[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://carlobaldassi.github.io/RRRMC.jl/stable
-[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://carlobaldassi.github.io/RRRMC.jl/dev
+[docs-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-url]: https://carlobaldassi.github.io/RRRMC.jl/stable
 
-[travis-img]: https://travis-ci.org/carlobaldassi/RRRMC.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/carlobaldassi/RRRMC.jl
+[CI-img]: https://github.com/carlobaldassi/RRRMC.jl/actions/workflows/ci.yml/badge.svg
+[CI-url]: https://github.com/carlobaldassi/RRRMC.jl/actions/workflows/ci.yml
 
 [codecov-img]: https://codecov.io/gh/carlobaldassi/RRRMC.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/carlobaldassi/RRRMC.jl
