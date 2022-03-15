@@ -1,10 +1,15 @@
 # This file is a part of RRRMC.jl. License is MIT: http://github.com/carlobaldassi/RRRMC.jl/LICENCE.md
 
 const graphs_dir = joinpath(@__DIR__, "graphs")
-const valid_graph_name = r"^([^/]+)\.jl$"
+## load all julia files in the graphs_dir, without descending in subdirectories
+## silently skip files starting with an underscore
+const valid_graph_name = r"^([^/_][^/]*)\.jl$"
 
 macro include_graph(filename)
-    occursin(valid_graph_name, filename) || (warn("Unrecogniezd file $filename, skipping"); return :())
+    if !occursin(valid_graph_name, filename)
+        startswith(filename, '_') || @warn("Unrecogniezd file $filename, skipping")
+        return :()
+    end
     modname = Symbol(replace(filename, valid_graph_name => s"\1"))
     quote
         include(joinpath(graphs_dir, $(esc(filename))))
