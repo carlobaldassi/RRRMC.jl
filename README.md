@@ -16,7 +16,7 @@ It also provides:
 * an implementation of the "τ-Extremal Optimization" heuristic technique described in the paper
   ["Optimization with Extremal Dynamics"][EOpaper] by S. Boettcher and A. G. Percus.
 
-The code is written in [Julia]. It requires Julia `1.0`.
+The code is written in [Julia]. It requires Julia `1.3` or later.
 
 ### Installation
 
